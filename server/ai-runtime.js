@@ -114,7 +114,7 @@ async function reserve(env, model, input, budget) {
 async function reserveGemini(env, input, budget) {
   if (!env.DB?.prepare) throw safeError('La réserve quotidienne de l’assistant ne peut pas être vérifiée. Réessaie plus tard.', 503, 'AI_BUDGET');
   const bytes = new TextEncoder().encode(JSON.stringify(input.messages || input.prompt || '')).length;
-  const cost = bytes + 64 * ((input.messages || []).length + 1) + input.max_tokens;
+  const cost = bytes + 64 * ((input.messages || []).length + 1) + input.max_tokens + 2000 * (input.images?.length || 0);
   if (cost > 60000) throw safeError('Cette demande est trop longue. Raccourcis-la ou utilise le formulaire.', 429, 'AI_QUOTA');
   const now = new Date(), minute = now.toISOString().slice(0, 16);
   const claim = async (key, amount, limit, message) => {
@@ -139,6 +139,8 @@ export async function runAI(env, options, { json = true, timeoutMs = 30000, fetc
   const input = { ...options, max_tokens: Number.isFinite(max) ? Math.max(100, Math.min(2400, Math.round(max))) : 900,
     temperature:Number.isFinite(requestedTemperature) ? Math.min(c.preferences.creativity,Math.max(0,requestedTemperature)) : c.preferences.creativity,messages:withResponseInstructions(options,c.preferences) };
   delete input.prompt;
+  // 8.35 : une capture d'écran ne peut être lue que par Gemini (les modèles Workers AI choisis ici ne voient pas les images).
+  if (input.images?.length && provider !== 'gemini') throw safeError('Pour analyser une capture d’écran, choisis le modèle Gemini dans Paramètres › Administration › Assistant du site.', 400, 'AI_CONFIG');
   if (provider === 'gemini') {
     input.thinking_level=c.preferences.reasoning.toUpperCase();
     await reserveGemini(env, input, c.budget);

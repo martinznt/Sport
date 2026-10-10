@@ -25,7 +25,7 @@ async function seedHistory(audit) {
 const kpis = (page) => page.locator('.kpis .kpi').evaluateAll((els) => Object.fromEntries(els.map((k) => [k.querySelector('span').innerText.replace(/^\S+\s/, '').trim(), [k.querySelector('b').innerText.trim(), (k.querySelector('i')?.innerText || '').trim()]])));
 
 test('ST01 Résumé : séances, minutes, séries et écarts sur 7, 30 et 90 jours', async ({ page, audit }) => {
-  await seedHistory(audit); await synced(page); await setInterface(page, 'advanced');
+  await seedHistory(audit); await synced(page); await setInterface(page);
   await go(page, 'progress/summary', '.kpis');
   for (const days of [7, 30, 90]) {
     await page.click(`[data-act=benchDays][data-id="${days}"]`); await page.waitForTimeout(150);
@@ -38,7 +38,7 @@ test('ST01 Résumé : séances, minutes, séries et écarts sur 7, 30 et 90 jour
 });
 
 test('ST02 Charge : 420 cette semaine, 270 la semaine d’avant, 0 sans ressenti', async ({ page, audit }) => {
-  await seedHistory(audit); await synced(page); await setInterface(page, 'advanced');
+  await seedHistory(audit); await synced(page); await setInterface(page);
   await go(page, 'progress/summary', '.stat');
   const card = page.locator('section.card', { has: page.locator('h3', { hasText: 'Charge' }) });
   const values = await card.locator('.stat').evaluateAll((els) => els.map((e) => [e.querySelector('span').innerText.trim(), e.querySelector('b').innerText.trim()]));
@@ -46,7 +46,7 @@ test('ST02 Charge : 420 cette semaine, 270 la semaine d’avant, 0 sans ressenti
 });
 
 test('ST03 Historique : chaque séance faite apparaît une fois, avec sa durée ; une séance supprimée disparaît partout', async ({ page, audit }) => {
-  await seedHistory(audit); await synced(page); await setInterface(page, 'advanced');
+  await seedHistory(audit); await synced(page); await setInterface(page);
   await go(page, 'progress/history', '#main');
   const text = await page.locator('#main').innerText();
   for (const i of [0, 1, 3, 9]) expect.soft(text.split('Calcul ' + i).length - 1, `« Calcul ${i} » une seule fois`).toBe(1);

@@ -76,7 +76,7 @@ function doRender() {
   const pl = pendingLink();
   if (!S.user) { app.innerHTML = (pub ? vPublicVisitor(safeDecode(pub[1])) : pl && !S.authMode ? h`<main class="wrap">${vLanding(pl)}</main>` : vAuth()).s; return; }
   if (!S.loaded) { app.innerHTML = h`<main class="wrap">${skeleton(4)}</main>`.s; return; }
-  document.documentElement.dataset.interface = S.settings.interfaceMode === 'advanced' ? 'advanced' : 'simple';
+  document.documentElement.dataset.interface = 'simple'; // 8.35 : interface unique
   let body;
   try { body = layoutEditing() ? layoutEditor() : pl ? vLanding(pl) : pub && safeDecode(pub[1]).toLowerCase() !== S.user.username.toLowerCase() ? vPublicVisitor(safeDecode(pub[1])) : VIEWS[S.tab](); }
   catch (e) {

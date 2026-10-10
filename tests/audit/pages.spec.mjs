@@ -19,13 +19,13 @@ async function visit(page, audit, route) {
 }
 
 for (const role of ['membre', 'admin']) {
-  for (const mode of ['simple', 'advanced']) {
+  for (const mode of ['simple']) { // 8.35 : interface unique (la variante « avancée » n'existe plus)
     test(`toutes les pages — ${role}, interface ${mode === 'simple' ? 'simple' : 'avancée'}`, async ({ page, audit }, info) => {
       test.setTimeout(240000); audit.allowPageErrors = true; // attribuées page par page ci-dessous
       // Un signalement et une proposition de Bob, pour que les pages d'administration aient du contenu.
       await audit.users.AuditBob.post('/api/bugs', { title: 'Le bouton Valider ne répond pas', description: 'Sur la page du calendrier, après avoir choisi une date.', page: 'home/cal' });
       if (role === 'admin') { await audit.admin('AuditAdmin'); await audit.loginAs('AuditAdmin'); }
-      await seedRealistic(page); await setInterface(page, mode);
+      await seedRealistic(page); await setInterface(page);
       const routes = role === 'admin' ? [...MEMBER_ROUTES, ...ADMIN_ROUTES] : [...MEMBER_ROUTES, ...ADMIN_ROUTES.map((r) => r + '#membre')];
       const report = {};
       for (const entry of routes) {

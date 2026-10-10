@@ -13,7 +13,7 @@ const STEPS = [
   ['library', 'home', '#main .setmenu', '📚 Bibliothèque', 'Tes séances enregistrées, « Créer une séance » (l’app te guide), le carnet de séances prêtes par niveau, et tous les exercices.'],
   ['library', 'catalog', '#main h1', '📖 Le carnet de séances', 'Pas le temps de créer ? Des séances toutes prêtes pour chaque sport, de débutant à avancé.'],
   ['profile', 'home', '#main', '👤 Ton profil', 'Tout ce que l’app sait de toi : corps, sports, lieux et matériel, objectifs, mesures. Plus il est complet, plus tes séances sont justes.'],
-  ['settings', 'main', '#main .setmenu', 'Paramètres', 'Le choix Simple ou Avancée est en haut. Les réglages courants sont dans la liste ; la recherche retrouve les autres.'],
+  ['settings', 'main', '#main .setmenu', 'Paramètres', 'Les réglages courants sont dans la liste ; la recherche retrouve les autres.'],
   ['settings', 'help', '[data-act=helpTour]', '🧭 C’est parti !', 'Tu pourras relancer cette visite ici, et la visite de chaque page avec le bouton 🧭 en haut. Bon entraînement 💪'],
 ];
 const T = { i: -1, onEnd: null, raf: 0, steps: STEPS, stay: false };

@@ -192,10 +192,14 @@ test.describe('avec le Service Worker', () => {
 test('A29 un texte écrit par l’utilisateur s’affiche sans exécuter de HTML', async ({ page }) => {
   await manual(page, '8 squats', '<img src=x onerror="window.__injected=1">'); await synced(page); await go(page, 'library/seances'); await expect(page.locator('#main')).toContainText('<img'); expect(await page.evaluate(() => window.__injected || 0)).toBe(0); expect(await page.locator('#main img[src=x]').count()).toBe(0);
 });
-test('A30 modes simple et avancé : données et choix gardés', async ({ page }) => {
-  await manual(page, '8 squats', 'Même séance'); await synced(page); await go(page, 'settings/main', '[data-act=interfaceSet]'); await page.click('[data-act=interfaceSet][data-v=advanced]'); await synced(page); await page.reload(); await loaded(page); await expect(page.locator('html')).toHaveAttribute('data-interface', 'advanced');
+// 8.35 : le choix simple / avancée a été retiré à la demande. Un compte qui avait choisi « avancée » retrouve
+// l'interface simple, sans rien perdre, et aucun réglage caché ne subsiste.
+test('A30 interface unique : un ancien réglage « avancée » est sans effet, données gardées', async ({ page }) => {
+  await manual(page, '8 squats', 'Même séance'); await synced(page);
+  await page.evaluate(async () => { const m = await import('/state.js'); m.S.settings.interfaceMode = 'advanced'; m.saveSettings(); }); await synced(page);
+  await page.reload(); await loaded(page); await expect(page.locator('html')).toHaveAttribute('data-interface', 'simple');
   expect(await page.evaluate(async () => (await import('/state.js')).S.seances.items.find((x) => x.name === 'Même séance').exercises[0].repsMin)).toBe(8);
-  await go(page, 'settings/main', '[data-act=interfaceSet]'); await page.click('[data-act=interfaceSet][data-v=simple]'); await synced(page); await page.reload(); await loaded(page); await expect(page.locator('html')).toHaveAttribute('data-interface', 'simple');
+  await go(page, 'settings/main', '#main'); expect(await page.locator('[data-act=interfaceSet]').count()).toBe(0);
 });
 test('A31 clavier : ouvrir et fermer une fenêtre sans piège', async ({ page }) => {
   await go(page, 'home/dash', '[data-act=allOpen]'); await page.locator('[data-act=allOpen]').first().click(); const button = page.locator('#sheet [data-act=timerOpen]'); await button.focus(); await page.keyboard.press('Enter'); await expect(page.locator('#sheet.open')).toBeVisible(); await page.keyboard.press('Tab'); expect(await page.evaluate(() => !!document.activeElement?.closest('#sheet'))).toBe(true); await page.keyboard.press('Escape'); await expect(page.locator('#sheet.open')).toHaveCount(0); await page.keyboard.press('Tab'); expect(await page.evaluate(() => document.activeElement?.tagName)).not.toBe('BODY');

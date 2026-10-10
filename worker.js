@@ -6,6 +6,7 @@ import { mergeSeances, readStored, normalizeSession, normalizeEx, normalizeConte
 import { cleanRecurrence, cleanAgendaMeta, validDay, calendarIcsEvents } from './public/agenda.js';
 import { cleanItem, cleanId, COLLECTIONS } from './public/items.js';
 import { legacyItems } from './server/migrate.js';
+import { cleanImages, attachStmts, attachmentIds, readAttachment, imageResponse } from './server/attachments.js';
 import { interpretAgenda } from './server/agenda.js';
 import { aiDraft, aiChat, aiGoal, aiIntent, cleanCaps, extractJson } from './server/ai.js';
 import { runAI, aiError, aiStatus, saveAIConfig, hasAI } from './server/ai-runtime.js';
@@ -44,7 +45,7 @@ const MAX_ITEMS_PER_USER = 20000;
 
 // Seuls ces fichiers sont servis publiquement (worker.js, wrangler.json, README, tests… restent privés).
 // tests/assets.test.mjs vérifie que chaque module importé par le navigateur figure ici ET dans le précache du Service Worker.
-const PUBLIC_FILES = new Set(['/external.js', '/pathlinks.js', '/sportprefs.js', '/library-howto.js', '/choices.js', '/views-choices.js', '/backup.js', '/integrations.js', '/views-integrations.js', '/', '/index.html', '/style.css', '/boot.js', '/app.js', '/ui.js', '/state.js', '/views-home.js', '/views-progress.js', '/views-library.js', '/views-profile.js', '/views-settings.js', '/views-setup.js', '/install.js', '/questions.js', '/views-ai.js', '/tour.js', '/move.js', '/news.js', '/hr.js', '/fx.js', '/anim.js', '/timer.js', '/sound.js', '/climb.js', '/views-climb.js', '/motivation.js', '/views-motiv.js', '/program.js', '/views-program.js', '/views-coach.js', '/reminders.js', '/ics.js', '/layout.js', '/body.js', '/body-rules.js', '/intentions.js', '/views-gen.js', '/inbox.js', '/sources.js', '/srcui.js', '/catalog.js', '/views-catalog.js', '/qr.js', '/share.js', '/duo.js', '/scene.js', '/i18n.js', '/format.js', '/finder.js', '/find-ui.js', '/global.js', '/content.js', '/help.js', '/merge.js', '/sfilter.js', '/explain.js', '/climbplan.js', '/views-climbplan.js', '/surprise.js', '/guide.js', '/goaldone.js', '/nav.js', '/places.js', '/picker.js', '/hints.js', '/sportplan.js', '/catchup.js', '/phase.js', '/phaseplan.js', '/adminlist.js', '/sessionmeta.js', '/views-studio.js', '/intents.js', '/filters.js', '/budget.js', '/sessionchain.js', '/whatif.js', '/dna.js', '/strategy.js', '/knowledge.js', '/sessionedit.js', '/assess.js', '/views-assistant.js', '/loop.js', '/fit.js', '/aimplan.js', '/physique.js', '/pagetour.js', '/adapt.js', '/views-adapt.js', '/group.js', '/views-group.js', '/bodycomp.js', '/coachbrain.js', '/views-forme.js', '/agenda.js', '/experience.js', '/views-agenda.js', '/views-experience.js', '/planning.js', '/views-planning.js', '/live.js', '/sports.js', '/views-sports.js', '/story.js', '/views-story.js', '/views-community.js', '/demo.js', '/catgen.js', '/gym.js', '/routines.js', '/views-routines.js', '/stretch.js', '/views-stretch.js', '/views-gym.js', '/library-more.js', '/player.js',
+const PUBLIC_FILES = new Set(['/external.js', '/pathlinks.js', '/sportprefs.js', '/library-howto.js', '/choices.js', '/views-choices.js', '/backup.js', '/integrations.js', '/views-integrations.js', '/', '/index.html', '/style.css', '/boot.js', '/app.js', '/ui.js', '/state.js', '/views-home.js', '/views-progress.js', '/views-library.js', '/views-profile.js', '/views-settings.js', '/views-setup.js', '/install.js', '/questions.js', '/views-ai.js', '/tour.js', '/move.js', '/news.js', '/hr.js', '/fx.js', '/anim.js', '/timer.js', '/sound.js', '/climb.js', '/views-climb.js', '/motivation.js', '/views-motiv.js', '/program.js', '/views-program.js', '/views-coach.js', '/reminders.js', '/ics.js', '/layout.js', '/body.js', '/body-rules.js', '/intentions.js', '/views-gen.js', '/inbox.js', '/sources.js', '/srcui.js', '/catalog.js', '/views-catalog.js', '/qr.js', '/share.js', '/duo.js', '/scene.js', '/i18n.js', '/format.js', '/finder.js', '/find-ui.js', '/global.js', '/content.js', '/help.js', '/merge.js', '/sfilter.js', '/explain.js', '/climbplan.js', '/views-climbplan.js', '/surprise.js', '/guide.js', '/goaldone.js', '/nav.js', '/places.js', '/picker.js', '/hints.js', '/sportplan.js', '/catchup.js', '/phase.js', '/phaseplan.js', '/adminlist.js', '/sessionmeta.js', '/views-studio.js', '/intents.js', '/filters.js', '/budget.js', '/sessionchain.js', '/whatif.js', '/dna.js', '/strategy.js', '/knowledge.js', '/sessionedit.js', '/assess.js', '/views-assistant.js', '/loop.js', '/fit.js', '/aimplan.js', '/physique.js', '/pagetour.js', '/adapt.js', '/views-adapt.js', '/group.js', '/views-group.js', '/bodycomp.js', '/coachbrain.js', '/views-forme.js', '/agenda.js', '/experience.js', '/views-agenda.js', '/views-experience.js', '/planning.js', '/views-planning.js', '/live.js', '/sports.js', '/views-sports.js', '/story.js', '/views-story.js', '/views-community.js', '/demo.js', '/catgen.js', '/gym.js', '/routines.js', '/views-routines.js', '/stretch.js', '/views-stretch.js', '/shots.js', '/views-gym.js', '/library-more.js', '/player.js',
   '/objectivelinks.js', '/engine.js', '/library.js', '/shared.js', '/items.js', '/model.js', '/grading.js', '/brain.js', '/estimate.js', '/generator.js', '/csv.js', '/search.js', '/anatomy.js', '/commands.js', '/outbox.js',
   '/sw.js', '/manifest.json', '/icon-192.png', '/icon-512.png', '/icon-maskable-512.png', '/badge-96.png', '/robots.txt',
   '/app-icon-seances-v1-badge-96.png', '/app-icon-gold-v1-badge-96.png', '/app-icon-slate-v1-badge-96.png', '/app-icon-white-v1-badge-96.png', '/app-icon-forest-v1-badge-96.png', '/app-icon-ocean-v1-badge-96.png', '/app-icon-climb-v1-badge-96.png', '/app-icon-route-v1-badge-96.png', '/app-icon-rope-v1-badge-96.png', '/app-icon-mono-v1-badge-96.png', '/app-icon-terra-v1-badge-96.png', '/app-icons.js', '/app-icons.css', '/icon-art.js', '/admin-search.js', '/app-icon-seances-v1-180.png', '/app-icon-seances-v1-192.png', '/app-icon-seances-v1-512.png', '/app-icon-seances-v1-maskable-512.png', '/manifest-icons-seances-v1.json', '/app-icon-gold-v1-180.png', '/app-icon-gold-v1-192.png', '/app-icon-gold-v1-512.png', '/app-icon-gold-v1-maskable-512.png', '/manifest-icons-gold-v1.json', '/app-icon-slate-v1-180.png', '/app-icon-slate-v1-192.png', '/app-icon-slate-v1-512.png', '/app-icon-slate-v1-maskable-512.png', '/manifest-icons-slate-v1.json', '/app-icon-white-v1-180.png', '/app-icon-white-v1-192.png', '/app-icon-white-v1-512.png', '/app-icon-white-v1-maskable-512.png', '/manifest-icons-white-v1.json', '/app-icon-forest-v1-180.png', '/app-icon-forest-v1-192.png', '/app-icon-forest-v1-512.png', '/app-icon-forest-v1-maskable-512.png', '/manifest-icons-forest-v1.json', '/app-icon-ocean-v1-180.png', '/app-icon-ocean-v1-192.png', '/app-icon-ocean-v1-512.png', '/app-icon-ocean-v1-maskable-512.png', '/manifest-icons-ocean-v1.json', '/app-icon-climb-v1-180.png', '/app-icon-climb-v1-192.png', '/app-icon-climb-v1-512.png', '/app-icon-climb-v1-maskable-512.png', '/manifest-icons-climb-v1.json', '/app-icon-route-v1-180.png', '/app-icon-route-v1-192.png', '/app-icon-route-v1-512.png', '/app-icon-route-v1-maskable-512.png', '/manifest-icons-route-v1.json', '/app-icon-rope-v1-180.png', '/app-icon-rope-v1-192.png', '/app-icon-rope-v1-512.png', '/app-icon-rope-v1-maskable-512.png', '/manifest-icons-rope-v1.json', '/app-icon-mono-v1-180.png', '/app-icon-mono-v1-192.png', '/app-icon-mono-v1-512.png', '/app-icon-mono-v1-maskable-512.png', '/manifest-icons-mono-v1.json', '/app-icon-terra-v1-180.png', '/app-icon-terra-v1-192.png', '/app-icon-terra-v1-512.png', '/app-icon-terra-v1-maskable-512.png', '/manifest-icons-terra-v1.json']);
@@ -291,6 +292,7 @@ async function createSession(env, userId) {
 async function housekeeping(env, now) {
   try {
     await db(env, 'DELETE FROM op_log WHERE created_at<?', now - 7 * DAY).run();
+    await db(env, 'DELETE FROM attachments WHERE created_at<?', now - 365 * DAY).run(); // captures d'écran : un an au plus
     await db(env, "DELETE FROM system_state WHERE key LIKE 'rl:%' AND CAST(json_extract(value,'$.t') AS INTEGER)<?", now - 2 * DAY).run();
   } catch (e) { console.error('housekeeping', e); }
 }
@@ -790,7 +792,16 @@ async function routeAuthed(request, env, url, auth, secure) {
       await env.DB.batch([db(env, 'UPDATE users SET is_admin=? WHERE id=?', make ? 1 : 0, x[1]), auditStmt(env, u, 'role', { type: 'user', id: x[1], after: { admin: make } })]);
       return json({ ok: true, admin: make });
     }
-    if (p === '/api/admin/proposals' && m === 'GET') return json({ ok: true, proposals: ((await db(env, `SELECT p.id,p.kind,p.activity,p.label,p.detail,p.payload_json,p.status,p.reply,p.created_at,p.reviewed_at,u.username,r.username AS reviewer FROM proposals p LEFT JOIN users u ON u.id=p.user_id LEFT JOIN users r ON r.id=p.reviewed_by WHERE p.status=? ORDER BY COALESCE(p.reviewed_at,p.created_at) DESC LIMIT 100`, url.searchParams.get('status') === 'done' ? 'done' : 'open').all()).results || []).map((r) => ({ ...r, payload: safeParse(r.payload_json) || {}, payload_json: undefined })) });
+    if (p === '/api/admin/proposals' && m === 'GET') {
+      const rows = (await db(env, `SELECT p.id,p.kind,p.activity,p.label,p.detail,p.payload_json,p.status,p.reply,p.created_at,p.reviewed_at,u.username,r.username AS reviewer FROM proposals p LEFT JOIN users u ON u.id=p.user_id LEFT JOIN users r ON r.id=p.reviewed_by WHERE p.status=? ORDER BY COALESCE(p.reviewed_at,p.created_at) DESC LIMIT 100`, url.searchParams.get('status') === 'done' ? 'done' : 'open').all()).results || [];
+      const shots = await attachmentIds(env, 'proposal', rows.map((r) => r.id));
+      return json({ ok: true, proposals: rows.map((r) => ({ ...r, payload: safeParse(r.payload_json) || {}, payload_json: undefined, images: shots[r.id] || [] })) });
+    }
+    // 8.35 : capture d'écran d'un signalement (rôle technique) ou d'une proposition (rôle contenu), vérifié ici.
+    if (p.startsWith('/api/admin/attachments/') && m === 'GET') {
+      const a = await readAttachment(env, decodeURIComponent(p.slice('/api/admin/attachments/'.length)), (role) => can(u, role));
+      return a ? imageResponse(a) : fail('Capture introuvable.', 404);
+    }
     if ((x = p.match(/^\/api\/admin\/proposals\/([\w-]{1,64})$/)) && m === 'POST') return proposalReview(request, env, u, x[1]);
     if (p.startsWith('/api/admin/studio') || p === '/api/admin/audit' || p === '/api/admin/lab' || p === '/api/admin/assistant' || p.startsWith('/api/admin/versions/')) { const r = await studioRoute(request, env, u, url, p, m); if (r) return r; }
     if ((x = p.match(/^\/api\/admin\/global\/(\w{1,20})\/([\w-]{1,64})$/))) {
@@ -894,7 +905,7 @@ async function deleteAccount(request, env, auth, secure) {
     } catch { stravaRemoval = { stravaRevoked: false, notice: 'La révocation sur Strava n’a pas été confirmée : retire aussi cette application dans les réglages Strava.' }; }
   }
   // Données privées supprimées ; contributions à la bibliothèque commune conservées de façon anonyme (auteur : compte supprimé).
-  await env.DB.batch(['sessions', 'user_data', 'calendar_events', 'history', 'user_exercises', 'profiles', 'user_items', 'op_log', 'bug_reports', 'push_subs', 'proposals', 'ical_feeds'].map((t) => db(env, `DELETE FROM ${t} WHERE user_id=?`, id))
+  await env.DB.batch(['sessions', 'user_data', 'calendar_events', 'history', 'user_exercises', 'profiles', 'user_items', 'op_log', 'bug_reports', 'push_subs', 'proposals', 'ical_feeds', 'attachments'].map((t) => db(env, `DELETE FROM ${t} WHERE user_id=?`, id))
     .concat([
       db(env, 'DELETE FROM follows WHERE follower_id=? OR followee_id=?', id, id),
       db(env, 'DELETE FROM cheers WHERE from_id=? OR to_id=?', id, id),
@@ -1656,7 +1667,16 @@ async function studioRoute(request, env, u, url, p, m) {
   }
   // Discuter avec l'assistant du site : réponse + propositions validées, rangées dans UN brouillon (jamais publiées).
   if (p === '/api/admin/assistant' && m === 'POST') {
-    const b = await readJson(request, 30000);
+    const b = await readJson(request, MAX_BODY);
+    // 8.35 : une capture d'écran jointe (envoyée ou déjà reçue avec un signalement / une proposition) est analysée.
+    const shot = cleanImages(b?.images); if (shot.error) return fail(shot.error, 413);
+    for (const aid of (Array.isArray(b?.attachmentIds) ? b.attachmentIds : []).slice(0, 2)) {
+      const a = await readAttachment(env, aid, (role) => can(u, role));
+      if (!a) return fail('Capture introuvable ou non accessible avec ton rôle.', 404);
+      let bin = ''; for (const x of a.bytes) bin += String.fromCharCode(x);
+      shot.images.push({ mime: a.mime, data: btoa(bin), size: a.bytes.length });
+    }
+    const images = shot.images.slice(0, 2);
     const msgs = (Array.isArray(b?.messages) ? b.messages : []).slice(-12);
     const last = [...msgs].reverse().find((x) => x?.role === 'user');
     if (!last || str(last.content, 1500).length < 2) return fail('Écris ta demande.');
@@ -1682,7 +1702,7 @@ async function studioRoute(request, env, u, url, p, m) {
     let out;
     try {
       const { sources: research } = await researchSources(str(last.content, 1500));
-      out = cleanAssistant(await runAI(env, { messages: buildAssistant(msgs, context, { research }), max_tokens: 2200, temperature: 0.2 }, { allowClarification: true }), { base, context, research, requireEvidence: true });
+      out = cleanAssistant(await runAI(env, { messages: buildAssistant(msgs, context, { research, images: images.length }), max_tokens: 2200, temperature: 0.2, ...(images.length ? { images } : {}) }, { allowClarification: true }), { base, context, research, requireEvidence: true });
     }
     catch (e) { console.error('ai-assistant', e?.message); const err = aiError(e); return json({ error: err.error, quota: err.quota }, err.status); }
     if (!out) return fail('Réponse de l’assistant inutilisable : reformule ta demande.', 422);
@@ -1763,7 +1783,8 @@ async function studioRoute(request, env, u, url, p, m) {
 }
 
 async function proposalCreate(request, env, u) {
-  const b = await readJson(request, 60000);
+  const b = await readJson(request, MAX_BODY); // 8.35 : jusqu'à 2 captures d'écran
+  const shots = cleanImages(b?.images); if (shots.error) return fail(shots.error, 413);
   const kind = ['intent', 'category', 'idea', ...GLOBAL_KINDS].includes(b?.kind) ? b.kind : 'idea', label = str(b?.label, 80), detail = str(b?.detail, 1000);
   if (label.length < 2) return fail('Donne au moins un nom à ta proposition.');
   // Proposition d'un élément complet (système de cotation, style, exercice, séance, format) : validé comme s'il était publié.
@@ -1777,7 +1798,7 @@ async function proposalCreate(request, env, u) {
     // Endroit touché dans l'app (idée) : sélecteur simple et texte visible, pour que l'admin y aille en un clic.
     ...(PLACE_SEL.test(String(b?.sel || '')) ? { sel: String(b.sel), snippet: str(b?.snippet, 120) } : {}) };
   const id = 'pr-' + uid().slice(0, 12), activity = /^[\w:.-]{0,60}$/.test(String(b?.activityId || '')) ? String(b?.activityId || '') : '';
-  await db(env, 'INSERT INTO proposals(id,user_id,kind,activity,label,detail,payload_json,status,created_at) VALUES(?,?,?,?,?,?,?,?,?)', id, u.id, kind, activity, label, detail, JSON.stringify(payload), 'open', Date.now()).run();
+  await env.DB.batch([db(env, 'INSERT INTO proposals(id,user_id,kind,activity,label,detail,payload_json,status,created_at) VALUES(?,?,?,?,?,?,?,?,?)', id, u.id, kind, activity, label, detail, JSON.stringify(payload), 'open', Date.now()), ...attachStmts(env, { userId: u.id, kind: 'proposal', refId: id, images: shots.images, uid })]);
   // Prévenir les administrateurs (notification sur leurs appareils abonnés ; best effort)
   try {
     const admins = ((await db(env, 'SELECT id FROM users WHERE is_admin=1 AND id<>? LIMIT 20', u.id).all()).results || []).map((r) => r.id);
@@ -1824,7 +1845,8 @@ async function aiChatRoute(request, env, u) {
   catch (e) { console.error('ai-chat', e?.message); const err = aiError(e, 'Le coach n’a pas pu répondre. Réessaie dans un instant.'); return json({ error: err.error, quota: err.quota }, err.status); }
 }
 async function bugCreate(request, env, u) {
-  const b = await readJson(request, 30000);
+  const b = await readJson(request, MAX_BODY); // 8.35 : jusqu'à 2 captures d'écran
+  const shots = cleanImages(b?.images); if (shots.error) return fail(shots.error, 413);
   if (!b) return fail('Données invalides.');
   const description = str(b.description, 5000), title = str(b.title, 120) || description.slice(0, 120);
   if (description.length < 5) return fail('Décris le problème en quelques mots.');
@@ -1833,10 +1855,10 @@ async function bugCreate(request, env, u) {
   if (existing) return existing.user_id === u.id ? json({ ok: true, id, replay: true }) : fail('Identifiant déjà utilisé.', 409);
   if (await limited(env, 'bug-h:' + u.id, 5, 3600000) || await limited(env, 'bug-d:' + u.id, 20, DAY)) return fail('Trop de signalements envoyés. Réessaie plus tard.', 429);
   const now = Date.now();
-  const r = await db(env, "INSERT INTO bug_reports(id,user_id,title,description,page,app_version,user_agent,status,created_at,updated_at) VALUES(?,?,?,?,?,?,?,'open',?,?)",
-    id, u.id, title, description, str(b.page, 80), str(b.appVersion, 30), str(b.userAgent, 300), now, now).run();
+  const [r] = await env.DB.batch([db(env, "INSERT INTO bug_reports(id,user_id,title,description,page,app_version,user_agent,status,created_at,updated_at) VALUES(?,?,?,?,?,?,?,'open',?,?)",
+    id, u.id, title, description, str(b.page, 80), str(b.appVersion, 30), str(b.userAgent, 300), now, now), ...attachStmts(env, { userId: u.id, kind: 'bug', refId: id, images: shots.images, uid })]);
   if (!r.meta?.changes) return fail('Signalement non enregistré.', 500);
-  return json({ ok: true, id });
+  return json({ ok: true, id, images: shots.images.length });
 }
 async function bugMine(env, u) {
   const r = await db(env, 'SELECT id,title,description,page,status,created_at,updated_at FROM bug_reports WHERE user_id=? ORDER BY created_at DESC LIMIT 100', u.id).all();
@@ -1873,7 +1895,8 @@ async function adminBugs(url, env) {
   const st = ['open', 'in_progress', 'done', 'ignored'].includes(url.searchParams.get('status')) ? url.searchParams.get('status') : null;
   const r = await db(env, `SELECT b.id,b.title,b.description,b.page,b.app_version,b.user_agent,b.status,b.created_at,b.updated_at,us.username FROM bug_reports b LEFT JOIN users us ON us.id=b.user_id
     ${st ? 'WHERE b.status=?' : ''} ORDER BY b.created_at DESC LIMIT 500`, ...(st ? [st] : [])).all();
-  return json({ ok: true, reports: r.results.map((x) => ({ id: x.id, title: x.title, description: x.description, page: x.page, appVersion: x.app_version, userAgent: x.user_agent, status: x.status, createdAt: x.created_at, updatedAt: x.updated_at, author: x.username || 'compte supprimé' })) });
+  const shots = await attachmentIds(env, 'bug', r.results.map((x) => x.id));
+  return json({ ok: true, reports: r.results.map((x) => ({ id: x.id, title: x.title, description: x.description, page: x.page, appVersion: x.app_version, userAgent: x.user_agent, status: x.status, createdAt: x.created_at, updatedAt: x.updated_at, author: x.username || 'compte supprimé', images: shots[x.id] || [] })) });
 }
 async function adminBugStatus(request, env, u, id) {
   const b = await readJson(request, 2000);

@@ -2,6 +2,7 @@
 // Tout le monde peut modifier « pour moi » (lié à son compte). Un administrateur choisit à chaque fois :
 // « pour moi » ou « pour tout le monde » (enregistré sur le serveur, appliqué à tous les comptes).
 import { h, raw, openSheet, closeSheet, toast, ask, menuList, relDate } from './ui.js';
+import { shotField, shotsPayload, clearShots, shotsView } from './shots.js';
 import { S, ACT, SUBMIT, INPUT, api, ls, render, itemsOf, putItem, delItem, item, go } from './state.js';
 import { uid, normalizeEx } from './shared.js';
 import { parseFormats, PART_TYPES } from './format.js';
@@ -282,15 +283,17 @@ ACT.pubGlobal = async (el) => {
 };
 ACT.propose = (el) => {
   const x = SHARE[el.dataset.k]?.(el.dataset.id); if (!x) { toast('Impossible : il manque des informations.'); return; }
+  clearShots('prop');
   S.propDraft = { kind: el.dataset.k, ...x };
   openSheet(h`<form data-submit="proposeGo" class="stack"><h2 style="margin:0">💡 Proposer à tout le monde</h2>
     <p class="small">Ton ${WHAT[el.dataset.k]} « ${x.label} » sera envoyé aux administrateurs. S’ils l’acceptent, tout le monde pourra l’utiliser.</p>
     <label>Un mot pour expliquer (facultatif)<textarea name="detail" rows="3" maxlength="600" placeholder="Ex. c’est la cotation de ma salle, beaucoup de grimpeurs y vont"></textarea></label>
+    ${shotField('prop')}
     <button class="btn pri big">Envoyer la proposition</button></form>`);
 };
 SUBMIT.proposeGo = async (f) => {
   const d = S.propDraft; if (!d) return;
-  try { await api('POST', '/api/proposals', { kind: d.kind, label: d.label, detail: String(new FormData(f).get('detail') || ''), data: d.data, activityId: d.activityId || '', from: d.kind }); closeSheet(); S.propDraft = null; toast('Merci ! Ta proposition est envoyée aux administrateurs'); }
+  try { await api('POST', '/api/proposals', { kind: d.kind, label: d.label, detail: String(new FormData(f).get('detail') || ''), data: d.data, activityId: d.activityId || '', from: d.kind, images: shotsPayload('prop') }); clearShots('prop'); closeSheet(); S.propDraft = null; toast('Merci ! Ta proposition est envoyée aux administrateurs'); }
   catch (e) { toast(e.offline ? 'Connexion requise pour proposer.' : e.message, 4500, 'bad'); }
 };
 
@@ -310,7 +313,8 @@ function preview(p) {
 ACT.propOpen = async (el) => {
   if (!isAdmin()) return;
   let p = (S.inbox?.adminList || S.admin?.props || []).find((x) => x.id === el.dataset.id);
-  if (!p) { try { p = (await api('GET', '/api/admin/proposals')).proposals.find((x) => x.id === el.dataset.id); } catch { /* hors ligne */ } }
+  // La liste de la boîte de réception n'a pas les captures : la fiche complète est relue (8.35).
+  if (!p || !Array.isArray(p.images)) { try { p = (await api('GET', '/api/admin/proposals')).proposals.find((x) => x.id === el.dataset.id) || p; } catch { /* hors ligne : fiche sans capture */ } }
   if (!p) { toast('Proposition introuvable (déjà traitée ?)'); return; }
   if (typeof p.payload_json === 'string' && !p.payload) try { p.payload = JSON.parse(p.payload_json); } catch { p.payload = {}; }
   closeSheet();
@@ -322,7 +326,7 @@ ACT.propOpen = async (el) => {
     <div class="grid2"><button type="button" class="btn" data-act="propSee">👁 Voir l’endroit</button><button type="button" class="btn pri" data-act="propEditPlace">✏️ Modifier pour tout le monde</button></div></div>` : '';
   if (p.payload?.sel) setTimeout(() => placeEl(p.payload.sel, true), 400);
   setTimeout(() => openSheet(h`<div class="stack"><span class="kicker">💡 ${p.payload?.target ? 'Demande de modification' : 'Proposition'} · ${WHAT[p.kind] || 'idée'}</span><h2 style="margin:0">${p.label}</h2>
-    <p class="tiny muted">De ${p.username || 'un compte supprimé'} · ${relDate(p.created_at)}</p>${p.detail ? h`<p class="small">« ${p.detail} »</p>` : ''}${place}${preview(p)}
+    <p class="tiny muted">De ${p.username || 'un compte supprimé'} · ${relDate(p.created_at)}</p>${p.detail ? h`<p class="small">« ${p.detail} »</p>` : ''}${shotsView(p.images, 'proposal', p.id, `Proposition « ${p.label} » : ${p.detail || ''}`)}${place}${preview(p)}
     <form data-submit="propDecide" class="stack"><input type="hidden" name="id" value="${p.id}"><label>Réponse à ${p.username || 'la personne'} (facultatif)<input name="reply" maxlength="300" placeholder="Merci !"></label>
     <div class="grid2"><button class="btn pri" name="decision" value="accept">${p.kind === 'idea' ? '✓ C’est noté' : p.payload?.target ? '✓ Appliquer pour tout le monde' : '✓ Ajouter pour tout le monde'}</button><button class="btn danger" name="decision" value="refuse">✗ Refuser</button></div></form>
     <p class="tiny muted">Une fois ajouté, tu peux encore le modifier ici avec ✏️, ou l’annuler dans Paramètres › Administration.</p></div>`, { wide: true }), 180);
@@ -474,11 +478,12 @@ function ideaSheet() {
     <label>Ton idée<textarea name="detail" rows="4" maxlength="1000" required data-input="ideaText" placeholder="Ex. ce texte n’est pas clair, ajouter un exercice pour les pinces…">${d.detail}</textarea></label>
     ${d.place ? h`<div class="card flat acc-b row"><span class="grow small">📍 <b>Endroit joint</b> : « ${d.place.snippet || 'élément'} »</span><button type="button" class="btn sm ic" data-act="ideaPlaceDel" aria-label="Retirer l’endroit">✕</button></div>`
       : h`<button type="button" class="btn" data-act="ideaPick">📍 Choisir l’endroit à changer <span class="tiny muted">(facultatif)</span></button>`}
+    ${shotField('idea')}
     <button class="btn pri big">Envoyer</button></form>`);
 }
 ACT.ideaNew = () => {
   if (!S.user || S.user.guest) { toast('Crée un compte (gratuit) pour proposer une amélioration.'); return; }
-  S.ideaDraft = null; closeSheet(); ideaSheet();
+  S.ideaDraft = null; clearShots('idea'); closeSheet(); ideaSheet();
 };
 INPUT.ideaText = (el) => { if (S.ideaDraft) S.ideaDraft.detail = el.value; };
 ACT.ideaPlaceDel = () => { S.ideaDraft.place = null; ideaSheet(); };
@@ -486,8 +491,8 @@ SUBMIT.ideaGo = async (f) => {
   const d = S.ideaDraft || {}, text = String(new FormData(f).get('detail') || '').trim(); if (text.length < 3) return;
   const pl = d.place || {};
   try {
-    await api('POST', '/api/proposals', { kind: 'idea', label: text.slice(0, 70), detail: text, from: (pl.from || d.from || '').slice(0, 80), ...(pl.sel ? { sel: pl.sel, snippet: pl.snippet } : {}) });
-    S.ideaDraft = null; closeSheet(); toast('Merci ! Ton idée est envoyée aux administrateurs');
+    await api('POST', '/api/proposals', { kind: 'idea', label: text.slice(0, 70), detail: text, from: (pl.from || d.from || '').slice(0, 80), ...(pl.sel ? { sel: pl.sel, snippet: pl.snippet } : {}), images: shotsPayload('idea') });
+    S.ideaDraft = null; clearShots('idea'); closeSheet(); toast('Merci ! Ton idée est envoyée aux administrateurs');
   } catch (e) { toast(e.offline ? 'Connexion requise pour envoyer.' : e.message, 4500, 'bad'); }
 };
 /** Sélecteur court et stable pour un élément de la page (d'abord ses attributs data-act / data-id, sinon son chemin). */

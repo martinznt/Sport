@@ -20,10 +20,10 @@ async function axe(page) {
   });
 }
 
-for (const mode of ['simple', 'advanced']) {
+for (const mode of ['simple']) { // 8.35 : interface unique
   test(`AX01 règles WCAG 2.1 AA (axe) sur chaque page — interface ${mode === 'simple' ? 'simple' : 'avancée'}`, async ({ page }, info) => {
     test.setTimeout(240000);
-    await seedRealistic(page); await setInterface(page, mode);
+    await seedRealistic(page); await setInterface(page);
     const report = {};
     for (const route of PAGES) {
       await test.step(route, async () => {
@@ -65,7 +65,7 @@ test('AX03 focus visible : chaque bouton atteint au clavier montre où l’on es
 });
 
 test('AX04 taille des cibles tactiles : au moins 24 × 24 px (WCAG 2.2, 2.5.8) sur les pages principales', async ({ page }, info) => {
-  await seedRealistic(page); await setInterface(page, 'advanced');
+  await seedRealistic(page); await setInterface(page);
   const small = {};
   for (const route of ['home/dash', 'home/cal', 'library/seances', 'library/seance/s-renfo', 'profile/home', 'profile/body', 'progress/summary', 'settings/main', 'settings/display']) {
     await go(page, route, '#main'); await page.waitForTimeout(200);

@@ -5,6 +5,7 @@
 // à enregistrer comme proposition de code, puis à valider et envoyer en Pull Request GitHub — jamais déployés seuls.
 // La conversation reste sur cet appareil.
 import { h, toast, chip, tag, ask } from './ui.js';
+import { shotField, shotsPayload, clearShots } from './shots.js';
 import { S, ACT, SUBMIT, INPUT, CHG, api, ls, render, go } from './state.js';
 import { canRole } from './views-studio.js';
 
@@ -98,7 +99,7 @@ ACT.asAITest = async () => {
 SUBMIT.asAIConfig = async (f) => { const d = new FormData(f), owner = key(); try { const r = await api('POST', '/api/admin/ai', { model: d.get('model'), budget: Number(d.get('budget')), preferences: { answerStyle: d.get('answerStyle'), detail: d.get('detail'), reasoning: d.get('reasoning'), creativity: Number(d.get('creativity')) } }); if (key() === owner) { S.admin.ai = r; render(); toast('Réglage de l’IA enregistré'); } } catch (e) { if (key() === owner) toast(e.message, 5000, 'bad'); } };
 
 function bubble(m, i) {
-  if (m.role === 'user') return h`<div class="msg user"><span class="t">${m.content}</span></div>`;
+  if (m.role === 'user') return h`<div class="msg user"><span class="t">${m.content}</span>${m.shots ? h`<span class="tiny">📎 ${m.shots > 1 ? `${m.shots} captures jointes` : 'capture jointe'}</span>` : ''}</div>`;
   const r = m.meta || {};
   const actionable = !['clarify', 'unverified'].includes(r.status);
   return h`<div class="msg assistant"><span class="t">${m.content}</span>
@@ -126,7 +127,8 @@ export function vAssistant() {
         <p class="tiny muted">Le site utilise le modèle choisi par l’administrateur : Workers AI ou Gemini. Il peut se tromper : chaque proposition est vérifiée par le serveur et reste un brouillon.</p></details></div>
     <div class="chat"><div class="aslog" id="aslog">${c.messages.length ? c.messages.map(bubble) : h`<p class="small muted">Exemples :</p><div class="chips">${EXAMPLES.map((e, k) => chip(false, e, `data-act="asEx" data-i="${k}"`))}</div>`}
       ${busy ? h`<div class="msg assistant typing"><i></i><i></i><i></i></div>` : ''}</div>
-      <form data-submit="asSend" class="stack"><textarea name="t" rows="3" maxlength="1500" data-input="asDraft" placeholder="Ex. « Ajoute un exercice de gainage pour les grimpeurs débutants »" aria-label="Ta demande" ${busy ? 'disabled' : ''}>${S.admin.chatDraft || ''}</textarea>
+      <form data-submit="asSend" class="stack">${(S.admin.asAttach || []).length ? h`<div class="card flat acc-b row" style="flex-wrap:nowrap"><span class="grow small">📎 ${S.admin.asAttach.length > 1 ? `${S.admin.asAttach.length} captures reçues` : 'Capture reçue'} jointe${S.admin.asAttach.length > 1 ? 's' : ''} à ton prochain message</span><button type="button" class="btn sm ic ghost" data-act="asAttachDrop" aria-label="Ne pas joindre">✕</button></div>` : ''}<textarea name="t" rows="3" maxlength="1500" data-input="asDraft" placeholder="Ex. « Ajoute un exercice de gainage pour les grimpeurs débutants »" aria-label="Ta demande" ${busy ? 'disabled' : ''}>${S.admin.chatDraft || ''}</textarea>
+        ${shotField('as', { hint: 'Joins une capture de l’écran dont tu parles : l’assistant la regarde (modèle Gemini nécessaire).' })}
         <div class="row wrapf"><button class="btn pri" ${busy ? 'disabled' : ''}>Envoyer</button><button type="button" class="btn" data-act="asCodeNow" ${busy ? 'disabled' : ''}>💻 Proposer dans le code</button>${c.messages.length ? h`<button type="button" class="btn ghost" data-act="asReset">Nouvelle conversation</button>` : ''}</div></form>
       ${c.draftId ? h`<p class="tiny muted">Brouillon de cette conversation : <button class="linkish acc-t" data-act="studioOpen" data-id="${c.draftId}">le relire dans le Studio</button>. ${tag('jamais publié sans toi')}</p>` : ''}</div>`;
 }
@@ -163,9 +165,12 @@ ACT.asCodeSave = async (el) => {
 const scroll = () => setTimeout(() => { const m = [...document.querySelectorAll('#aslog .msg')].at(-1); m?.scrollIntoView({ block: 'start', behavior: 'smooth' }); }, 30);
 async function send(text) {
   const c = C(), owner = key(), t = String(text || '').trim().slice(0, 1500); if (!t || S.admin.chatBusy) return;
-  c.messages.push({ role: 'user', content: t }); S.admin.chatDraft = ''; S.admin.chatBusy = true; save(); render(); scroll();
+  // Captures jointes : envoyées avec ce message seulement (jamais gardées dans la conversation enregistrée).
+  const images = shotsPayload('as'), attachmentIds = (S.admin.asAttach || []).slice(0, 2), nShots = images.length + attachmentIds.length;
+  c.messages.push({ role: 'user', content: t, ...(nShots ? { shots: nShots } : {}) }); S.admin.chatDraft = ''; S.admin.chatBusy = true; save(); render(); scroll();
   try {
-    const r = await api('POST', '/api/admin/assistant', { messages: c.messages.map(({ role, content }) => ({ role, content })), draftId: c.draftId || '' }, { timeout: 60000 });
+    const r = await api('POST', '/api/admin/assistant', { messages: c.messages.map(({ role, content }) => ({ role, content })), draftId: c.draftId || '', ...(images.length ? { images } : {}), ...(attachmentIds.length ? { attachmentIds } : {}) }, { timeout: 60000 });
+    if (nShots) { clearShots('as'); S.admin.asAttach = []; }
     if (key() !== owner) return;
     if (r.draftId) c.draftId = r.draftId;
     c.messages.push({ role: 'assistant', content: r.reply, meta: { ...responseInfo(r), added: r.added, diff: r.diff, explain: r.explain, rejected: r.rejected, questions: r.questions, needsCode: r.needsCode, draftId: r.draftId } });
@@ -182,3 +187,4 @@ ACT.asCopy = async (el) => {
   const text = `${nc.title}\n\n${nc.summary}\n\n(Demande rédigée par l’assistant du site « Séances entraînement ».)`;
   try { await navigator.clipboard.writeText(text); toast('Demande copiée'); } catch { toast('Copie impossible ici : sélectionne le texte à la main.', 4000); }
 };
+ACT.asAttachDrop = () => { S.admin.asAttach = []; render(); };

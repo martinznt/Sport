@@ -19,7 +19,7 @@ for (const plan of plans) {
     const name = plan.role === 'admin' ? 'AuditAdmin' : 'AuditAlice';
     const { restore, open, tryClick } = await explorer({ page, context, audit, info, name }); // avant le chargement : effets comptés dès le départ
     if (plan.role === 'admin') { await audit.users.AuditBob.post('/api/bugs', { title: 'Le bouton Valider ne répond pas', description: 'Sur la page du calendrier.', page: 'home/cal' }); await audit.admin(name); }
-    await audit.loginAs(name); await seedRealistic(page); await setInterface(page, 'advanced');
+    await audit.loginAs(name); await seedRealistic(page); await setInterface(page);
     await page.reload(); await loaded(page);
     const log = [], done = new Set();
     for (const route of plan.routes) {

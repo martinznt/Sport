@@ -1,7 +1,7 @@
 // schema.js — tables D1. Le worker les crée / complète tout seul au premier appel (CREATE TABLE IF NOT EXISTS
 // + migrations idempotentes de worker.js upgradeSchema) : aucune commande à lancer, compatible avec la base existante.
 // Aucune table existante n'est supprimée ; les colonnes ajoutées ont des valeurs par défaut.
-export const SCHEMA_VERSION = 13;
+export const SCHEMA_VERSION = 14;
 export const SCHEMA = [
   "CREATE TABLE IF NOT EXISTS users (id TEXT PRIMARY KEY, username TEXT NOT NULL UNIQUE, email TEXT UNIQUE, password_hash TEXT NOT NULL, password_salt TEXT NOT NULL, created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL)",
   "CREATE TABLE IF NOT EXISTS sessions (id TEXT PRIMARY KEY, user_id TEXT NOT NULL, token_hash TEXT NOT NULL UNIQUE, expires_at INTEGER NOT NULL, created_at INTEGER NOT NULL, FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE)",
@@ -81,6 +81,10 @@ export const SCHEMA = [
   "CREATE TABLE IF NOT EXISTS idea_votes (idea_id TEXT NOT NULL, user_id TEXT NOT NULL, created_at INTEGER NOT NULL, PRIMARY KEY(idea_id, user_id), FOREIGN KEY(idea_id) REFERENCES ideas(id) ON DELETE CASCADE, FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE)",
   "CREATE TABLE IF NOT EXISTS ical_feeds (user_id TEXT PRIMARY KEY, token_hash TEXT NOT NULL UNIQUE, created_at INTEGER NOT NULL, FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE)",
   "CREATE TABLE IF NOT EXISTS code_proposals (id TEXT PRIMARY KEY, title TEXT NOT NULL, summary TEXT NOT NULL DEFAULT '', diff TEXT NOT NULL DEFAULT '', impact_json TEXT NOT NULL DEFAULT '{}', tests TEXT NOT NULL DEFAULT '', status TEXT NOT NULL DEFAULT 'draft', author_id TEXT, reviewer_id TEXT, note TEXT NOT NULL DEFAULT '', created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL, reviewed_at INTEGER)",
+  // 8.35 : captures d'écran jointes à un signalement ou une proposition (images vérifiées, 500 Ko au plus, 2 par envoi),
+  // lisibles seulement par les administrateurs du bon rôle ; effacées avec le compte et au bout d'un an.
+  "CREATE TABLE IF NOT EXISTS attachments (id TEXT PRIMARY KEY, user_id TEXT, kind TEXT NOT NULL, ref_id TEXT NOT NULL, mime TEXT NOT NULL, data_b64 TEXT NOT NULL, size INTEGER NOT NULL DEFAULT 0, position INTEGER NOT NULL DEFAULT 0, created_at INTEGER NOT NULL, FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE)",
+  "CREATE INDEX IF NOT EXISTS idx_attachments_ref ON attachments(kind,ref_id)",
 ];
 // Colonnes ajoutées aux tables existantes (migration idempotente : ajoutées seulement si absentes).
 export const ADD_COLUMNS = [

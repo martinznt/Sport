@@ -5,7 +5,7 @@ import { test, expect, go, loaded, synced, seedRealistic, setInterface, pageAnom
 const perfs = (page) => page.evaluate(async () => (await import('/state.js')).itemsOf('perf'));
 
 test('P01 pesée complète 72,5 kg et 15 % de gras, taille 178 cm : IMC 22,9, masse maigre 61,6 kg, gras 10,9 kg, FFMI 19,4', async ({ page, audit }) => {
-  await setInterface(page, 'advanced');
+  await setInterface(page);
   // Saisie au clavier, virgule française comprise (« 72,5 », « 32,5 ») : c'est ce que tape une personne.
   const type = async (sel, text) => { await page.click(sel); await page.keyboard.type(text); };
   await go(page, 'profile/body', '[data-act=measureAll]'); await page.click('[data-act=measureAll]'); await type('#sheet [name=taille_corps]', '178'); await type('#sheet [name=tour_bras]', '32,5'); await page.click('#sheet form[data-submit=bodySaveMany] button');
@@ -21,7 +21,7 @@ test('P01 pesée complète 72,5 kg et 15 % de gras, taille 178 cm : IMC 22,9, ma
 });
 
 test('P02 valeurs impossibles refusées avec un message clair, rien n’est enregistré', async ({ page }) => {
-  await setInterface(page, 'advanced'); await go(page, 'profile/body', '[data-act=weighFull]');
+  await setInterface(page); await go(page, 'profile/body', '[data-act=weighFull]');
   for (const [field, value, message] of [['body_weight', '500', 'Poids entre 25 et 300 kg.'], ['masse_grasse', '95', 'Masse grasse entre 2 et 70 %.'], ['body_weight', '-3', 'Poids entre 25 et 300 kg.']]) {
     await page.click('[data-act=weighFull]'); await page.fill(`#sheet [name=${field}]`, value); await page.click('#sheet form[data-submit=bodySaveMany] button');
     await expect(page.locator('#toast')).toContainText(message); await page.evaluate(async () => (await import('/ui.js')).closeSheet());
@@ -34,7 +34,7 @@ test('P02 valeurs impossibles refusées avec un message clair, rien n’est enre
 });
 
 test('P03 zones à ménager : doigts cochés → aucun exercice qui charge les doigts, en escalade comme en renforcement', async ({ page }) => {
-  await seedRealistic(page); await setInterface(page, 'advanced');
+  await seedRealistic(page); await setInterface(page);
   const generate = async (activityId) => {
     await page.evaluate(async (activityId) => { const { S } = await import('/state.js'); S.gen = { ...(S.gen || {}), activityId, plan: null, result: null, seed: 7 }; location.hash = '#/library/generate'; (await import('/state.js')).render(); }, activityId);
     await page.waitForSelector('[data-act=genPlan]'); await page.click('[data-act=genPlan]'); await page.click('[data-act=genDo]'); await page.waitForSelector('#genresult');

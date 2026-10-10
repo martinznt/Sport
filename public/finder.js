@@ -7,7 +7,6 @@ export const norm = (s) => String(s || '').toLowerCase().normalize('NFD').replac
 const E = (kind, icon, title, sub, to, keys = '', extra = {}) => ({ kind, icon, title, sub, to, keys, ...extra });
 /** Paramètres : chaque réglage, sur la page où il se trouve (sel = l'élément à mettre en lumière). */
 export const SETTINGS_INDEX = [
-  E('setting', '⚙️', 'Interface simple ou avancée', 'Paramètres', 'settings/main', 'interface affichage mode simple avance avancee expert complique complexite detail', { sel: '[data-act=interfaceSet]' }),
   E('setting', '🌙', 'Thème sombre ou clair', 'Affichage', 'settings/display', 'mode nuit jour clair sombre couleur fond noir blanc', { sel: '[data-k=mode]' }),
   E('setting', '🖼️', 'Icône de l’application', 'Affichage', 'settings/display', 'icone icon app application accueil telephone installer installation android iphone pwa sobre dore', { sel: '#app-icons' }),
   E('setting', '🎨', 'Ambiance', 'Affichage', 'settings/display', 'style look chaleureux muscu neon nature minimal apparence', { sel: '.vibes' }),

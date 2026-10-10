@@ -172,10 +172,10 @@ export async function seedRealistic(p) {
   });
   await synced(p);
 }
-/** Interface simple ou avancée, choisie comme une personne le fait (Paramètres). */
-export async function setInterface(p, mode) {
-  await go(p, 'settings/main', `[data-act=interfaceSet][data-v=${mode}]`); await p.click(`[data-act=interfaceSet][data-v=${mode}]`);
-  await expect(p.locator('html')).toHaveAttribute('data-interface', mode); await synced(p);
+/** 8.35 : l'app n'a plus qu'une interface (simple) ; le choix a été retiré à la demande. Vérifie seulement qu'elle s'applique. */
+export async function setInterface(p) {
+  await go(p, 'settings/main', '#main'); await expect(p.locator('html')).toHaveAttribute('data-interface', 'simple');
+  expect(await p.locator('[data-act=interfaceSet]').count(), 'plus aucun choix d’interface').toBe(0); await synced(p);
 }
 /**
  * Défauts visibles d'une page déjà affichée : écran d'erreur, texte cassé, défilement de côté, éléments qui sortent de

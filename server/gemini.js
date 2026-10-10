@@ -13,6 +13,13 @@ export function buildGeminiInput(options, { json = true } = {}) {
     else contents.push({ role, parts: [{ text: message.content }] });
   }
   if (!contents.length && typeof options.prompt === 'string') contents.push({ role: 'user', parts: [{ text: options.prompt }] });
+  // 8.35 : captures d'écran (déjà vérifiées par le serveur) jointes au dernier message de la personne.
+  const images = (options.images || []).filter((x) => /^image\/(jpeg|png|webp)$/.test(x?.mime) && typeof x.data === 'string').slice(0, 2);
+  if (images.length) {
+    let lastUser = [...contents].reverse().find((c) => c.role === 'user');
+    if (!lastUser) contents.push(lastUser = { role: 'user', parts: [] });
+    lastUser.parts.push(...images.map((x) => ({ inline_data: { mime_type: x.mime, data: x.data } })));
+  }
   const max = Number(options.max_tokens), temperature = Number(options.temperature);
   return { ...(system.length ? { systemInstruction: { parts: system } } : {}), contents,
     generationConfig: { maxOutputTokens: Number.isFinite(max) ? Math.max(100, Math.min(2400, Math.round(max))) : 900,
