@@ -139,7 +139,7 @@ export function openSheet(content, { wide = false } = {}) {
   try { sheetHook?.(panel); } catch { /* un lien de moins, jamais une fenêtre cassée */ }
   restoreUserDetails(panel);
   if (keep && oldTitle && sheetTitle(panel) === oldTitle) panel.scrollTop = keep.top;
-  s.classList.add('open'); sheetStack++;
+  s.classList.toggle('redraw', !!old); s.classList.add('open'); sheetStack++; // redessinée : pas d'animation (sinon elle clignote à chaque choix)
   setTimeout(() => { if (!s.classList.contains('open')) return; const f = s.querySelector('[autofocus]'); if (f) f.focus(); else if (!s.contains(document.activeElement)) s.querySelector('.panel')?.focus({ preventScroll: true }); }, 30);
 }
 export function closeSheet() { const s = $('#sheet'), wasOpen = s.classList.contains('open'); s.classList.remove('open'); s.innerHTML = ''; if (wasOpen) { giveBackFocus(returnFocus); returnFocus = null; } sheetStack = 0; for (const k of [...userOpen.keys()]) if (k.startsWith('sheet:')) userOpen.delete(k); }

@@ -2,6 +2,7 @@ import { advancedUI, memoryView } from './views-experience.js';
 // views-profile.js — Profil : comprendre mon profil, carte d'entraînement et graphe, activités et catégories,
 // performances, escalade (cotations, styles, maxima, journal), objectifs complexes, matériel, préférences, profil public.
 import { h, subHead, menuList, raw, $, toast, openSheet, closeSheet, ask, seg, chip, tag, empty, howBox, meter, fmtDay, relDate, numberField, buzzOk, lineChart, skeleton, SOURCE_TAG, ymd, goHint } from './ui.js';
+import { openGoalWizard } from './views-goalwizard.js';
 import { sportState, setSportState, hiddenSports } from './sportprefs.js';
 import { registerPaths } from './pathlinks.js';
 import { hoursText, cleanSlots } from './planning.js';
@@ -356,7 +357,8 @@ function vGoals() {
   if (f === 'done') return h`<button class="btn sm ghost" data-act="goalFilter" data-id="active">‹ Objectifs en cours</button>${doneList(c.goals)}`;
   if (f !== 'active') return h`<button class="btn sm ghost" data-act="goalFilter" data-id="active">‹ Objectifs en cours</button><h2>${f === 'done' ? '🏆 Objectifs réussis' : '🗄️ Objectifs archivés'}</h2>
     ${list.length ? list.map((g) => { const pr = goalProgress(g, c); return h`<button class="card pick goalcard" data-act="goalOpen" data-id="${g.id}"><div class="row between"><b>${g.type === 'skill' ? SKILLS[g.skillId]?.emoji + ' ' : ''}${goalLabel(g)}</b><span class="small">${pr.pct == null ? '—' : pr.pct + ' %'}</span></div>${meter(pr.pct || 0, '', `Progression : ${goalLabel(g)}`)}<div class="tiny muted">${pr.text}</div></button>`; }) : itemsOf('project').some((p) => p.status === f) ? '' : empty('Aucun objectif ici. Exemples : front lever, drapeau, traction à un bras, 20 tractions, 7A en bloc, 3 séances par semaine…', h`<button class="btn pri" data-act="goalNew">＋ Ajouter un objectif</button>`)}${f === 'archived' ? projectsSection('archived') : ''}${f === 'done' && doneProjects().length ? doneList(c.goals) : ''}`;
-  return h`${goalsPicker()}<div class="row wrapf"><button class="btn pri" data-act="goalNew">＋ Objectif précis</button></div>
+  return h`${goalsPicker()}<div class="row wrapf"><button class="btn pri big" data-act="goalNew">＋ Ajouter un objectif</button></div>
+    <p class="tiny muted"><em>Un objectif précis (un niveau, un chiffre, une figure, une régularité) : l’app y oriente tes séances et suit ta progression.</em></p>
     <span class="kicker">En cours</span>
     ${list.length ? list.map((g) => { const pr = goalProgress(g, c); return h`<button class="card pick goalcard" data-act="goalOpen" data-id="${g.id}"><div class="row between"><b>${g.type === 'skill' ? SKILLS[g.skillId]?.emoji + ' ' : ''}${goalLabel(g)}</b><span class="small">${pr.pct == null ? '—' : pr.pct + ' %'}</span></div>${meter(pr.pct || 0, '', `Progression : ${goalLabel(g)}`)}<div class="tiny muted">${pr.text}</div></button>`; }) : empty('Aucun objectif ici. Exemples : front lever, drapeau, traction à un bras, 20 tractions, 7A en bloc, 3 séances par semaine…', h`<button class="btn pri" data-act="goalNew">＋ Ajouter un objectif</button>`)}
     ${projectsSection('active')}
@@ -464,7 +466,7 @@ SUBMIT.weighSave = (f) => { const kg = cleanBody({ weight: new FormData(f).get('
 /* ═════════ Objectifs du moment (plusieurs) et objectif écrit, analysé par l'assistant ═════════ */
 function goalsPicker() {
   const cur = item('config', 'main')?.goals || (item('config', 'main')?.goal ? [item('config', 'main').goal] : []);
-  return h`<section class="card"><h3>Ce que je veux en ce moment</h3><div class="chips">${GOALS.map(([k, l]) => chip(cur.includes(k), l, `data-act="goalsToggle" data-id="${k}"`))}</div>
+  return h`<section class="card"><h3>Ce que je veux en ce moment</h3><p class="tiny muted"><em>Tes envies générales : coche-en autant que tu veux, elles orientent les séances proposées.</em></p><div class="chips">${GOALS.map(([k, l]) => chip(cur.includes(k), l, `data-act="goalsToggle" data-id="${k}"`))}</div>
     <button class="btn" data-act="goalWrite">✍️ Écrire mon objectif avec mes mots</button></section>`;
 }
 ACT.goalsToggle = (el) => {
@@ -577,7 +579,9 @@ SUBMIT.goalFicheSave = (f) => {
   if (back === 'cp' && S.cp) { S.cp.intentGoal = id; S.cp.goalIds = [...new Set([...(S.cp.goalIds || []), id])]; go('library', 'climbplan'); } else go('profile', 'goals', id);
 };
 ACT.goalFilter = (el) => { S.filters.goals = el.dataset.id; render(); window.scrollTo(0, 0); };
-ACT.goalNew = () => openSheet(goalForm(null), { wide: true });
+// 8.35 : un nouvel objectif passe par l'assistant simple (« Que veux-tu ? ») ; le formulaire complet sert à modifier.
+ACT.goalNew = () => openGoalWizard();
+ACT.goalNewFull = () => openSheet(goalForm(null), { wide: true });
 ACT.goalNewSkill = (el) => { closeSheet(); const s = SKILLS[el.dataset.id]; const ex = ctx().goals.find((g) => g.skillId === el.dataset.id && g.status === 'active'); if (ex) { go('profile', 'goals', ex.id); return; } const id = 'g-' + uid().slice(0, 12); putItem('goal', id, { type: 'skill', skillId: el.dataset.id, label: s.label, status: 'active', startedAt: Date.now() }); toast(`Objectif « ${s.label} » créé`); go('profile', 'goals', id); };
 function goalForm(g) {
   const c = ctx(), t = g?.type || S.goalType || 'metric';

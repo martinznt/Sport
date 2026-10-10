@@ -369,12 +369,13 @@ function vWhy() {
 function aimsCard() {
   const c = CP(), l = c.aims || [], n = l.length, eq = !!c.equal && n > 1, T = tiers(l), tieN = (i) => T.filter((x) => x === T[i]).length;
   return h`<div class="card stack"><h3 style="margin:0">🎯 Tes objectifs${eq ? ', sans hiérarchie' : ', du plus au moins important'}</h3>
-    ${n > 1 ? seg('cpEqual', eq ? 'equal' : 'rank', [['rank', '🥇 Classés par importance'], ['equal', '⚖️ Sans hiérarchie']]) : ''}
     ${n ? h`<div class="aimlist">${l.map((a, i) => h`<div class="aimrow"><span class="rank ${!eq && tieN(i) > 1 ? 'tie' : ''}" aria-label="${eq ? 'Objectif' : rankWord(l, i)}">${eq ? '•' : T[i] + 1}${!eq && tieN(i) > 1 ? '=' : ''}</span><span class="grow aimtxt"><b>${a.emoji} ${a.label}</b><small>${[!eq && T[i] === 0 ? (tieN(i) > 1 ? 'n°1 ex æquo : le plus de temps, à égalité' : 'le plus important : le plus de temps') : !eq && tieN(i) > 1 ? `${rankWord(l, i)} : même part que les autres n°${T[i] + 1}` : '', SRC[a.source] || '', a.summary || ''].filter(Boolean).join(' · ')}</small></span>
-        <span class="aimbtns">${!eq && i > 0 ? h`<button class="btn sm ic ${a.tie ? 'pri' : ''}" data-act="cpAimTie" data-i="${i}" aria-pressed="${!!a.tie}" aria-label="${a.tie ? 'Séparer de l’objectif au-dessus' : 'Même importance que l’objectif au-dessus'}" title="${a.tie ? 'Séparer de l’objectif au-dessus' : 'Même importance que l’objectif au-dessus'}">=</button>` : ''}<button class="btn sm ic" data-act="cpAimUp" data-i="${i}" ${i ? '' : 'disabled'} aria-label="Monter ${a.label}">↑</button><button class="btn sm ic" data-act="cpAimDown" data-i="${i}" ${i < n - 1 ? '' : 'disabled'} aria-label="Descendre ${a.label}">↓</button><button class="btn sm ic danger" data-act="cpAimDel" data-i="${i}" aria-label="Retirer ${a.label}">✕</button></span></div>`)}</div>
-      <p class="tiny muted">${eq ? 'Tous aussi importants : chaque objectif pèse autant dans le temps attribué aux blocs compatibles. L’app choisit l’ordre selon l’effort (↑ ↓ ne change que l’ordre d’affichage). À l’étape 3, tu peux fixer le moment de chacun.' : '↑ ↓ pour classer. « = » met un objectif à la même importance que celui au-dessus (ex æquo). Leur importance oriente le temps et les capacités des blocs auxquels ils contribuent. À l’étape 3, tu peux choisir leur moment.'}</p>
-      <p class="tiny muted">Plusieurs objectifs compatibles peuvent partager le même bloc. Un objectif peut aussi servir de fil conducteur à la préparation et au travail principal ; le temps partagé est compté une seule fois.</p>
-      ${eq ? '' : h`<button class="btn sm" data-act="cpStrat">🧭 Plusieurs chemins pour ton n°1</button>`}`
+        <span class="aimbtns">${!eq && i > 0 && (c.fineAims || l.some((x) => x.tie)) ? h`<button class="btn sm ic ${a.tie ? 'pri' : ''}" data-act="cpAimTie" data-i="${i}" aria-pressed="${!!a.tie}" aria-label="${a.tie ? 'Séparer de l’objectif au-dessus' : 'Même importance que l’objectif au-dessus'}" title="${a.tie ? 'Séparer de l’objectif au-dessus' : 'Même importance que l’objectif au-dessus'}">=</button>` : ''}<button class="btn sm ic" data-act="cpAimUp" data-i="${i}" ${i ? '' : 'disabled'} aria-label="Monter ${a.label}">↑</button><button class="btn sm ic" data-act="cpAimDown" data-i="${i}" ${i < n - 1 ? '' : 'disabled'} aria-label="Descendre ${a.label}">↓</button><button class="btn sm ic danger" data-act="cpAimDel" data-i="${i}" aria-label="Retirer ${a.label}">✕</button></span></div>`)}</div>
+      <p class="tiny muted"><em>${eq ? 'Tous aussi importants : chacun a autant de temps.' : n > 1 ? 'Le n°1 compte le plus : la séance s’organise autour de lui. ↑ ↓ pour changer l’ordre, ✕ pour retirer.' : 'La séance s’organise autour de cet objectif. ✕ pour le retirer.'}</em></p>
+      ${n > 1 ? h`<details class="how mini" ${c.fineAims ? 'open' : ''}><summary data-act="cpFineAims">Plus de réglages <span class="tiny muted">(même importance, sans classement, autres chemins)</span></summary><div class="stack tight">
+        ${seg('cpEqual', eq ? 'equal' : 'rank', [['rank', '🥇 Classés par importance'], ['equal', '⚖️ Sans classement']])}
+        <p class="tiny muted">« = » à côté d’un objectif : même importance que celui au-dessus. Plusieurs objectifs compatibles peuvent partager un même bloc (le temps n’est compté qu’une fois).</p>
+        ${eq ? '' : h`<button class="btn sm" data-act="cpStrat">🧭 Plusieurs chemins pour ton n°1</button>`}</div></details>` : ''}`
       : h`<p class="small muted">Aucun objectif pour l’instant : ajoute-en un ou plusieurs ci-dessous. Sans objectif, l’app fait une séance équilibrée.</p>`}</div>`;
 }
 const addSport = (c = CP()) => (sportsOf(c).includes(c.addFor) ? c.addFor : c.sport);
@@ -388,8 +389,8 @@ function addCard() {
     ${sps.length > 1 ? h`<span class="kicker">Pour quel sport ?</span><div class="chips">${sps.map((id) => chip(id === sp, sportLabel(id), `data-act="cpAddFor" data-id="${id}"`))}</div>` : ''}
     <span class="kicker">1 · Ce que tu veux travailler en ${short}</span>
     <div class="setmenu">${cat.families.map((a) => h`<button class="setrow" data-act="cpAimAdd" data-k="${a.key}" data-sp="${sp}"><span class="sic">${a.emoji}</span><span class="grow"><b>${a.label}</b><small>${a.help}</small></span><span class="chev">${has(a.key) ? '✓' : '＋'}</span></button>`)}</div>
-    <span class="kicker">2 · Ou plus précis</span>
-    <div class="chips">${cat.precise.map((a) => chip(has(a.key), `${a.emoji} ${a.label.replace(/ · [^·]+$/, '')}`, `data-act="cpAimAdd" data-k="${a.key}" data-sp="${sp}"`))}</div>
+    ${cat.precise.length ? h`<details class="how mini" ${cat.precise.some((a) => has(a.key)) ? 'open' : ''}><summary><b>2 · Ou plus précis</b> <span class="tiny muted">(${cat.precise.length} choix : technique de pieds, doigts, seuil…)</span></summary>
+    <div class="chips">${cat.precise.map((a) => chip(has(a.key), `${a.emoji} ${a.label.replace(/ · [^·]+$/, '')}`, `data-act="cpAimAdd" data-k="${a.key}" data-sp="${sp}"`))}</div></details>` : ''}
     ${goals.length ? h`<span class="kicker">3 · Un de tes objectifs du profil</span><div class="chips">${goals.map((g) => chip((c.aims || []).some((a) => a.goalId === g.id), `🎯 ${goalLabel(g)}`, `data-act="cpAimGoal" data-id="${g.id}"`))}</div>` : ''}
     ${wordsField(true, goals.length ? 4 : 3)}
     ${S.cpAiDraft ? aiDraftCard() : ''}</details>`;
@@ -1449,3 +1450,4 @@ document.addEventListener('touchend', (e) => {
   if (!fast || Math.abs(dx) < 80 || Math.abs(dy) > 45 || document.querySelector('#sheet.open, #dialog.open')) return;
   document.querySelector(`.stepdock [data-act=cpStep][data-d="${dx < 0 ? 1 : -1}"]`)?.click();
 }, { passive: true });
+ACT.cpFineAims = (el) => { const d = el.closest('details'); if (!d) return; d.open = !d.open; CP().fineAims = d.open; render(); };

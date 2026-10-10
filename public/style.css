@@ -803,3 +803,5 @@ button.item.rowpick:last-child{border-bottom:0}
 .srcicos{display:inline-flex}.srcicos .srcico+.srcico{margin-left:-5px}
 .srcico{display:inline-grid;place-items:center;min-width:22px;height:22px;padding:0 4px;border-radius:7px;background:var(--c,#555);color:#fff;font-size:.62rem;font-weight:800;letter-spacing:-.02em;border:2px solid var(--card);flex:none}
 .srcquote{margin:0;padding:6px 10px;border-left:3px solid var(--acc);background:var(--card2);border-radius:6px;font-style:italic;overflow-wrap:anywhere}
+#sheet.redraw>.panel,#sheet.redraw>.back{animation:none}
+.phacts .btn{white-space:normal;max-width:100%;text-align:left;min-width:0}/* boutons des phases : passent à la ligne à 320 px */
