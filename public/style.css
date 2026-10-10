@@ -18,7 +18,7 @@ html,body{margin:0;background:var(--bg);color:var(--text);font-family:ui-sans-se
 body{min-height:100dvh;padding-bottom:calc(72px + env(safe-area-inset-bottom));overflow-x:hidden}
 body.noscroll{overflow:hidden}
 button,input,select,textarea{font:inherit;color:inherit}
-h1,h2,h3{overflow-wrap:break-word}/* un nom très long sans espace passe à la ligne au lieu d'élargir la page */
+h1,h2,h3{overflow-wrap:anywhere}/* un nom très long sans espace passe à la ligne au lieu d'élargir la page (« anywhere » : aussi dans une rangée flexible) */
 h1{font-size:1.4rem;margin:.2rem 0 .4rem;letter-spacing:-.01em}h2{font-size:1.1rem;margin:1rem 0 .4rem}h3{font-size:1rem;margin:.1rem 0 .3rem}
 p{margin:.3rem 0}ul,ol{margin:.3rem 0;padding-left:1.2rem}
 .wrap{max-width:760px;margin:0 auto;padding:12px 16px 0;display:grid;gap:var(--gap)}

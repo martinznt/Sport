@@ -721,6 +721,8 @@ await step('8.29 : horaires précis (voie 18:00–19:30, trajet, bloc 20:00–21
   await a.click('[data-act=cpAimAdd][data-k="fam:endurance@climbing_route"]');
   await a.click('[data-act=cpAddFor][data-id=climbing_boulder]'); await a.click('[data-act=cpAimAdd][data-k="fam:force@climbing_boulder"]');
   await a.click('[data-act=cpAddFor][data-id=conditioning]'); await a.click('[data-act=cpAimAdd][data-k="fam:force@conditioning"]');
+  // 8.35 : « = même importance » est rangé dans « Plus de réglages » (replié) tant qu'aucun objectif n'est ex æquo.
+  if (!(await a.count('[data-act=cpAimTie]'))) await a.click('summary[data-act=cpFineAims]');
   await a.click('[data-act=cpAimTie][data-i="2"]'); assert.match(await a.text('.aimlist'), /2=[\s\S]*n°2 ex æquo[\s\S]*2=/, 'ex æquo : même rang');
   await a.click('[data-act=cpAimTie][data-i="2"]');
   await a.click('[data-act=cpEqual][data-id=equal]'); assert.match(await a.text('#main'), /Tes objectifs, sans hiérarchie/);
@@ -735,7 +737,8 @@ await step('8.29 : planning — séance planifiée avec son heure (et heure modi
   await A.evaluate(async () => { const st = await import('/state.js'); st.addHistory({ id: 'e2e-oops', sessionId: 'x', sessionName: 'Séance pas vraiment faite', startedAt: Date.now() - 60000, durationSeconds: 60, data: { exercises: [] } }); });
   await a.tab('home'); await A.evaluate(() => { location.hash = '#/home/cal'; }); await A.waitForSelector(`[data-act=calDay][data-id="${today}"]`);
   assert.match(await a.text('#main'), /Touche un jour pour planifier une séance \(avec son heure\)/);
-  await a.click(`[data-act=calDay][data-id="${today}"]`); await A.waitForSelector('#sheet form[data-submit=addEvent]');
+  await a.click(`[data-act=calDay][data-id="${today}"]`); await A.waitForSelector('#sheet form[data-submit=addEvent]', { state: 'attached' });
+  if (!(await A.locator('#sheet form[data-submit=addEvent]').isVisible())) await A.locator('#sheet details:has(form[data-submit=addEvent]) > summary').click();
   await A.fill('#sheet input[name=time]', '18:30'); await a.click('#sheet form[data-submit=addEvent] button[type=submit]'); await A.waitForTimeout(300);
   assert.match(await a.text('#sheet'), /Séance pas vraiment faite[\s\S]*Pas faite/);
   assert.equal(await A.inputValue('#sheet input[data-change=evTime]'), '18:30');
@@ -1141,7 +1144,8 @@ await step('demande de modification d’un non-administrateur → l’admin l’
   await C.waitForSelector('text=Rien n’a encore été changé');
 });
 await step('idée avec l’endroit : B vise un élément, l’admin y est emmené et le modifie pour tout le monde', async () => {
-  cur = B; await b.tab('home'); await B.evaluate(() => { location.hash = '#/settings/main'; }); await B.waitForSelector('[data-act=ideaNew]');
+  cur = B; await b.tab('home'); await B.evaluate(() => { location.hash = '#/settings/main'; }); await B.waitForSelector('[data-act=ideaNew]', { state: 'attached' });
+  if (!(await B.locator('[data-act=ideaNew]').first().isVisible())) await B.click('#settings-more > summary'); // interface simple : dans « Autres options »
   await b.click('[data-act=ideaNew]'); await B.fill('#sheet textarea[name=detail]', 'Ce titre pourrait être plus clair');
   await b.click('#sheet [data-act=ideaPick]'); await B.waitForSelector('#pickbar');
   await b.click('#pickbar [data-act=pickNav]'); await b.tab('library'); await B.waitForSelector('#main h1');
@@ -1175,7 +1179,8 @@ await step('Admin organisé en 3 groupes ; assistant du site : on lui écrit, il
 });
 await step('admin sans code : réécrire un texte et envoyer une annonce ; l’autre compte les voit ; tout s’annule', async () => {
   cur = C; await c.tab('settings'); await c.sub('setSub', 'admin'); await c.click('[data-act=setSub][data-id=look]'); await c.click('[data-act=textModeOn]'); await C.waitForSelector('#textbar');
-  await C.locator('.quick .qa.pri b').first().click(); await C.waitForSelector('#sheet textarea[name=to]');
+  // 8.35 : l'accueil est l'accueil simple ; on réécrit son titre « Créer ma séance ».
+  await C.locator('#main h3', { hasText: 'Créer ma séance' }).first().click(); await C.waitForSelector('#sheet textarea[name=to]');
   await C.fill('#sheet textarea[name=to]', 'Ma séance du jour'); await c.click('#sheet form[data-submit=textSave] button.pri'); await C.waitForSelector('#toast.show:has-text("tout le monde")');
   await c.click('#textbar [data-act=textModeOff]');
   await c.tab('settings'); await c.sub('setSub', 'admin'); await c.click('[data-act=setSub][data-id=look]'); await c.click('[data-act=announceNew]');
@@ -1185,7 +1190,7 @@ await step('admin sans code : réécrire un texte et envoyer une annonce ; l’a
   await b.click('.topicons [data-act=notifOpen]'); await B.waitForSelector('#sheet :text("Salle Bloc Club ajoutée")', { timeout: 10000 }); await B.keyboard.press('Escape');
   cur = C; await c.tab('settings'); await c.sub('setSub', 'admin'); await c.click('[data-act=setSub][data-id=changes]');
   for (let k = 0; k < 2; k++) { await C.locator('[data-act=glReset]').first().click(); await c.confirm(); await C.waitForTimeout(400); }
-  cur = B; await B.reload(); await B.waitForSelector('nav.tabs'); await b.tab('home'); await B.waitForSelector('#main :text-is("Séance du jour")', { timeout: 10000 });
+  cur = B; await B.reload(); await B.waitForSelector('nav.tabs'); await b.tab('home'); await B.waitForSelector('#main :text-is("Créer ma séance")', { timeout: 10000 });
 });
 // Réouverture hors ligne : l'app doit afficher sa navigation. Au-delà de 5 s (0,4 s en local), le journal décrit l'état
 // de la page (écran, données locales chargées, connexion, Service Worker) pour comprendre une lenteur de la CI.
@@ -1239,7 +1244,8 @@ console.log('Autre appareil');
 await step('tout suit le compte sur un autre appareil : données, réglages et apparence', async () => {
   const a2 = H(A2);
   await a2.tab('settings'); await a2.sub('setSub', 'display');
-  await A2.click('[data-act=appear][data-k=mode][data-v=light]'); await A2.click('[data-act=appearColor][data-id=granit]'); await A2.click('[data-act=a11ySize][data-v=l]');
+  // Interface simple : « Couleurs, ambiance et animations » est replié ; a2.click ouvre le bloc comme une personne.
+  await a2.click('[data-act=appear][data-k=mode][data-v=light]'); await a2.click('[data-act=appearColor][data-id=granit]'); await a2.click('[data-act=a11ySize][data-v=l]');
   await a2.sub('setSub', 'main'); await a2.sub('setSub', 'session');
   await A2.fill('input[name=defaultRest]', '75'); await A2.dispatchEvent('input[name=defaultRest]', 'change');
   await poll(async () => (await a2.api('GET', '/api/items?since=0')).data.items.some((i) => i.c === 'config' && i.id === 'appearance' && i.d.palette === 'granit'), 15000, 'apparence enregistrée dans le compte');
@@ -1341,9 +1347,9 @@ await step('chrono, format intervalles : préréglage, préparation puis effort,
   await g.click('#itimer [data-act=timerStop]'); await G.waitForSelector('#itimer', { state: 'detached' });
 });
 await step('séance : grand affichage (toucher l’écran valide), coach vocal activable', async () => {
-  // « Séance du jour » : l'assistant « Créer une séance », déjà rempli, séance prête (étape 5).
-  await g.click('[data-act=genOpen]'); await G.waitForSelector('[data-act=cpGenerate]', { timeout: 8000 }); assert.match(await g.text('.steps'), /Étape 6\/6/, 'dernière validation avant la génération');
-  await g.click('[data-act=cpGenerate]'); await G.waitForSelector('#cpresult [data-act=cpPlay]');
+  // 8.35 : la tuile « Séance du jour » appartenait à l'accueil avancé ; depuis l'accueil simple : « Créer une séance » puis « ⚡ Proposer ma séance ».
+  await g.tab('home'); await g.click('[data-act=cpResume]'); await G.waitForSelector('.steps'); if (await g.count('[data-act=cpRestart]')) await g.click('[data-act=cpRestart]');
+  await g.click('[data-act=cpQuick]'); await G.waitForSelector('#cpresult [data-act=cpPlay]', { timeout: 8000 });
   await g.click('#cpresult [data-act=cpPlay]'); await G.waitForSelector('#player.open');
   await g.click('#player [data-act=pVoice]'); await G.waitForSelector('#player [data-act=pVoice][aria-pressed=true]');
   await g.click('#player [data-act=pBig]'); await G.waitForSelector('#player .pl.big');

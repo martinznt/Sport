@@ -7,7 +7,7 @@ Chaque demande est recopiée telle quelle (résumée quand elle est longue), ave
 
 | Demande | État | Où le voir |
 |---|---|---|
-| Ajouter des phases très simplement dans mon profil | ✅ | Profil › Mes phases › « ＋ Ajouter une phase » |
+| Ajouter des phases très simplement dans mon profil | ✅ | Profil › Mes phases (à l'accueil du Profil) › « ＋ Ajouter une phase » |
 | Quand je crée une séance du sport de la phase, l'app me propose toutes mes phases | ✅ | Créer une séance › Ta structure › « 🧩 Mes phases » |
 | Simple à programmer | ✅ | même endroit : un bouton ＋ par phase |
 | Supprimer des exercices ou des phases après coup, sans revenir en arrière | ✅ | Structure finale et séance proposée : ✕ sur un exercice, « Retirer cette phase » |
@@ -71,6 +71,21 @@ Chaque demande est recopiée telle quelle (résumée quand elle est longue), ave
 | Ne rien oublier de tout ce que j'ai dit | ✅ | cette liste |
 | Sources fiables pour les exercices, l'assistant…, citées dans l'app : repère « Sources » avec les icônes des sources ; un clic montre tous les liens ; un lien mène directement à l'endroit de l'info | ✅ / ⚠️ | « 📚 Sources » partout où une source est citée, et sur chaque exercice ; « 🎯 Voir le passage » mène à la phrase exacte lue par le serveur sur PubMed. Limite : PubMed est bloqué depuis l'environnement de travail, donc c'est vérifié avec un faux résumé, et la vraie phrase n'apparaîtra qu'en ligne. Pour 102 exercices sur 315 (technique pure), aucune étude n'est citée, et l'app le dit au lieu d'en inventer une |
 | Supprimer le choix interface simple / avancée : garder seulement l'interface simple | ✅ | plus aucun choix dans les Paramètres ; un ancien réglage « Avancée » est sans effet |
+
+## Trouvé et corrigé pendant la vérification finale
+
+Le retrait de l'interface avancée (ta demande) avait caché des éléments qui n'existaient que dans l'ancien accueil « avancé ». Les tests de bout en bout les ont révélés ; ils sont revenus dans l'interface simple :
+
+| Ce qui manquait | Où c'est maintenant |
+|---|---|
+| « Mes phases » et le Carnet d'escalade | Profil (accueil de l'onglet) |
+| Le programme en cours | Accueil (avec « ▶ C'est parti » le jour d'une séance) |
+| « ✓ Séance enregistrée » : ce que la séance change pour la suite | Accueil, juste après l'enregistrement |
+| La « Petite question » du profil | Accueil |
+| Le chrono | Accueil › Créer ma séance › « ⏱ Chrono » (et ☰ Menu) |
+| « ✍️ Avec tes mots » dans le créateur sans « Mes objectifs » coché | Créer une séance, étape 1 |
+
+Autres défauts corrigés au passage : un choix fait à la main dans une phase (sport, lieu, objectifs) restait grisé ; « ＋ » sur une de tes phases et « Ajouter un échauffement » échouaient quand toutes les durées étaient réglées par toi (la séance s'allonge maintenant, et c'est dit) ; « Qui reçoit ta demande ? » restait sur « pas encore connu » ; « 🔎 Analyser avec l'assistant » ouvrait un message vide ; « Plus de détails sur ma séance » se refermait à chaque choix ; un message pouvait en effacer un autre avant d'être lu ; les messages parlaient encore de réglages « verrouillés ».
 
 ## Toujours valables
 

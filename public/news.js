@@ -244,8 +244,10 @@ export const missedNews = () => missedVersions(NEWS, ls.get(KEY, '0'), APP_VERSI
 export const latestNews = () => NEWS.filter((n) => num(n.v) <= num(APP_VERSION)).at(-1)?.steps || [];
 export const markNewsToured = () => { ls.set(KEY, APP_VERSION); ls.set(KEY + '-at', Date.now()); };
 /** Première utilisation de l'appareil : rien de « nouveau » à montrer (la visite complète s'en charge).
- *  Appareil déjà utilisé avant l'arrivée de cette visite : on montre les nouveautés depuis la 8.3. */
+ *  Appareil déjà utilisé avant l'arrivée de cette visite (il a déjà vu une version du site) : nouveautés depuis la 8.3.
+ *  8.35 : un compte connecté ne suffit plus à le croire (le compte peut être tout neuf) ; sinon, au rechargement
+ *  suivant, un nouveau compte voyait « 40 mises à jour depuis ta dernière visite ». */
 export function initNews() {
   if (ls.get(KEY, null) !== null) return;
-  if (ls.get('sea:seen-build', null) || ls.get('sea:user', null)) ls.set(KEY, '8.2.9'); else markNewsToured();
+  if (ls.get('sea:seen-build', null)) ls.set(KEY, '8.2.9'); else markNewsToured();
 }

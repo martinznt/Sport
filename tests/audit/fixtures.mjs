@@ -121,7 +121,9 @@ export async function manual(p, text = '4 × 8 tractions repos 2 min', name = 'S
 }
 export async function closeSheet(p) { await p.evaluate(async () => { (await import('/ui.js')).closeSheet(); }); }
 /** Rien ne dépasse horizontalement. */
-export async function noOverflow(p) { expect(await p.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth + 1)).toBe(true); }
+// 8.35 : en émulation mobile, Chromium élargit la fenêtre à la taille du contenu (innerWidth 478 pour un écran de 390) :
+// on compare donc à la vraie largeur de l'écran, et plus seulement à celle de la fenêtre (défaut de l'outil, corrigé).
+export async function noOverflow(p) { const vw = p.viewportSize()?.width || 0; expect(await p.evaluate((vw) => { const W = Math.min(document.documentElement.clientWidth, vw || Infinity); return Math.max(document.documentElement.scrollWidth, innerWidth) <= W + 1; }, vw), 'la page tient dans la largeur de l’écran').toBe(true); }
 /**
  * Contrôles visibles recouverts par un autre élément (bandeau, barre fixe…) : la vérification de largeur ne les voit pas.
  * Renvoie la liste des boutons / liens / champs dont le centre est caché.
@@ -183,12 +185,13 @@ export async function setInterface(p) {
  * et boutons sans nom, identifiants en double.
  */
 export async function pageAnomalies(p) {
-  const out = await p.evaluate(() => {
-    const W = document.documentElement.clientWidth, H = innerHeight, out = [], main = document.getElementById('main') || document.querySelector('main');
+  const vw = p.viewportSize()?.width || 0;
+  const out = await p.evaluate((vw) => {
+    const W = Math.min(document.documentElement.clientWidth, vw || Infinity), H = innerHeight, out = [], main = document.getElementById('main') || document.querySelector('main');
     if (!main) return ['aucune zone principale'];
     const text = main.innerText;
     if (/n’a pas pu s’afficher/.test(text)) out.push('écran « Cet écran n’a pas pu s’afficher »');
-    if (document.documentElement.scrollWidth > W + 1) out.push(`défilement horizontal (${document.documentElement.scrollWidth} px pour ${W} px)`);
+    if (Math.max(document.documentElement.scrollWidth, innerWidth) > W + 1) out.push(`défilement horizontal (${Math.max(document.documentElement.scrollWidth, innerWidth)} px pour ${W} px)`);
     // Une rubrique repliée (<details> fermé) garde la taille de son contenu dans Chromium, mais ne l'affiche pas.
     const folded = (el) => { for (let d = el.closest('details:not([open])'); d; d = d.parentElement?.closest('details:not([open])')) if (!d.querySelector(':scope > summary')?.contains(el)) return true; return false; };
     const visible = (el) => { const r = el.getBoundingClientRect(), st = getComputedStyle(el); return r.width > 0 && r.height > 0 && st.visibility !== 'hidden' && st.display !== 'none' && !el.closest('[hidden],.hidden') && !folded(el); };
@@ -214,6 +217,6 @@ export async function pageAnomalies(p) {
     }
     for (const m of text.matchAll(/undefined|\bNaN\b|\[object Object\]|Invalid Date|null null/g)) out.push(`texte cassé : « ${text.slice(Math.max(0, m.index - 30), m.index + 25).replace(/\s+/g, ' ')} »`);
     return out;
-  });
+  }, vw);
   return [...new Set(out)];
 }

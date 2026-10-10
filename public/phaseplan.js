@@ -175,7 +175,9 @@ export function analyzeSession(phasesIn, ctx = {}, o = {}) {
     missing: ['Ton intention d’aujourd’hui est vraiment travaillée', 'La phase partage son temps avec une priorité de plus'],
     'too-long': ['Séance plus soutenable', 'Rien n’est retiré : à toi de voir'],
   };
-  const add = (s) => { const [benefit, compromise] = TRADE[s.id] || TRADE[s.id.replace(/-.*$/, '')] || ['', '']; s = { problem: s.why?.[0]?.text || '', benefit, compromise, ...s }; const blk = (s.patch || []).find((op) => op.op === 'set' && locked(phases.find((p) => p.id === op.id) || {}, op.field === 'minutes' ? 'minutes' : op.field)); out.push({ ...s, blocked: blk ? `Tu as réglé ça toi-même (${blk.field === 'minutes' ? 'durée' : blk.field}) : l’app n’y touche pas.` : '' }); };
+  const add = (s) => { const [benefit, compromise] = TRADE[s.id] || TRADE[s.id.replace(/-.*$/, '')] || ['', '']; s = { problem: s.why?.[0]?.text || '', benefit, compromise, ...s }; const blk = (s.patch || []).find((op) => op.op === 'set' && locked(phases.find((p) => p.id === op.id) || {}, op.field === 'minutes' ? 'minutes' : op.field)); const ins = (s.patch || []).find((op) => op.op === 'insert'), np = ins && { ...ins.phase, ...((phases[ins.at] || phases.at(-1))?.window ? { window: (phases[ins.at] || phases.at(-1)).window } : {}) }, noRoom = !!ins && !insertDonor(phases.map((p) => ({ ...p })), np);
+    // 8.35 : sans temps à prendre (durées réglées par toi), la séance s'allonge — sauf dans un créneau horaire fixe.
+    out.push({ ...s, ...(noRoom && !windowKey(np) ? { compromise: `La séance s’allonge de ${np.minutes || 0} min : les durées que tu as réglées sont gardées` } : {}), blocked: blk ? `Tu as réglé ça toi-même (${blk.field === 'minutes' ? 'durée' : blk.field}) : l’app n’y touche pas.` : noRoom && windowKey(np) ? 'Pas de temps libre dans ce créneau du lieu : allonge le créneau ou raccourcis une phase toi-même.' : '' }); };
   const perfIdx = phases.findIndex((p) => p.role === 'perf');
   // 1. Trop de fatigue avant une phase de performance.
   if (perfIdx > 0) {
@@ -229,11 +231,15 @@ export function analyzeSession(phasesIn, ctx = {}, o = {}) {
 }
 export const phaseName = (p) => (p.goal ? p.goal.slice(0, 40) : p.label ? String(p.label).replace(/^\S+\s/, '').slice(0, 40) : p.role === 'custom' && p.roleLabel ? p.roleLabel : ROLES[p.role]?.[1] || 'Phase');
 
-/** Applique une suggestion (nouvelle liste de phases). Refuse si elle touche un réglage verrouillé. */
-export function applySuggestion(phases, s) {
+const windowKey = (p) => p?.window ? `${p.window.envId || ''}:${p.window.from}:${p.window.to}` : '';
+/** Phase qui peut céder le temps d'une phase insérée (pas une pause, pas une durée réglée par toi, même créneau). */
+const insertDonor = (list, np) => list.filter((p) => !locked(p, 'minutes') && p.type !== 'pause' && windowKey(p) === windowKey(np) && p.minutes - np.minutes >= 10).sort((a, b) => b.minutes - a.minutes)[0];
+/** Applique une suggestion (nouvelle liste de phases). Refuse si elle touche un réglage fait par toi.
+ *  extend (8.35) : une phase insérée sans temps à prendre ailleurs allonge la séance (hors créneau horaire d'un lieu). */
+export function applySuggestion(phases, s, { extend = false } = {}) {
   if (!s?.patch || s.blocked) return { phases, applied: false };
   const refuse = () => ({ phases, applied: false });
-  const windowKey = (p) => p?.window ? `${p.window.envId || ''}:${p.window.from}:${p.window.to}` : '';
+  let extended = 0;
   const windowTotals = (list) => { const totals = new Map(); for (const p of list) if (windowKey(p)) totals.set(windowKey(p), (totals.get(windowKey(p)) || 0) + p.minutes); return totals; };
   const before = windowTotals(phases);
   let list = phases.map((p) => ({ ...p }));
@@ -252,14 +258,14 @@ export function applySuggestion(phases, s) {
       // Le temps de la nouvelle phase est pris sur la plus longue phase non verrouillée (le total ne change pas).
       const at = Math.max(0, Math.min(op.at, list.length)), neighbour = list[at] || list.at(-1);
       const np = normalizePhase({ ...op.phase, id: `ph-s${list.length + 1}-${op.phase.type}`, ...(neighbour?.window ? { window: { ...neighbour.window } } : {}) }, 0, neighbour?.activity || '');
-      const donor = list.filter((p) => !locked(p, 'minutes') && p.type !== 'pause' && windowKey(p) === windowKey(np) && p.minutes - np.minutes >= 10).sort((a, b) => b.minutes - a.minutes)[0];
-      if (!donor) return refuse();
-      donor.minutes -= np.minutes;
+      const donor = insertDonor(list, np);
+      if (!donor && !(extend && !windowKey(np))) return refuse();
+      if (donor) donor.minutes -= np.minutes; else extended += np.minutes;
       if(list[at]?.place?.mode==='other'){np.place={...list[at].place};list[at].place={mode:'same'};}
       list.splice(at, 0, np);
     }
   }
   const after = windowTotals(list);
   if ([...new Set([...before.keys(), ...after.keys()])].some((key) => before.get(key) !== after.get(key))) return refuse();
-  return { phases: list, applied: true };
+  return { phases: list, applied: true, extended };
 }

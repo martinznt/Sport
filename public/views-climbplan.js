@@ -600,13 +600,14 @@ function vImprove() {
     ${whatIfCard()}
     ${(c.ignored || []).length ? h`<button class="btn sm ghost" data-act="cpSugReset">Revoir les ${c.ignored.length} suggestion(s) ignorée(s)</button>` : ''}`;
 }
-const pushHist = () => { const c = CP(); c.hist = [...(c.hist || []), JSON.stringify({ parts: c.parts, built: c.built, changes: c.changes || [] })].slice(-15); };
+const pushHist = () => { const c = CP(); c.hist = [...(c.hist || []), JSON.stringify({ parts: c.parts, built: c.built, changes: c.changes || [], minutes: c.minutes })].slice(-15); };
 ACT.cpSugApply = (el) => {
   const c = CP(), x = suggestionsNow().find((y) => y.id === el.dataset.id); if (!x) return;
-  const r = applySuggestion(c.built, x); if (!r.applied) return toast(x.blocked || 'Suggestion impossible à appliquer.', 4000);
+  const r = applySuggestion(c.built, x, { extend: true }); if (!r.applied) return toast(x.blocked || 'Suggestion impossible à appliquer : raccourcis une phase toi-même, puis réessaie.', 4000);
+  if (r.extended) c.minutes = Math.min(300, (c.minutes || 0) + r.extended);
   pushHist(); const picks = Object.fromEntries(c.built.map((p) => [p.id, p.pick]));
   c.built = r.phases.map((p) => ({ ...p, pick: picks[p.id] })); c.parts = c.built.map(({ pick, ...p }) => p); c.partsTouched = true;
-  c.changes = [...(c.changes || []), x.title]; remember('suggestion', x.title, { ref: x.id, reason: x.benefit || '' }); c.generated = false; rebuild(); keep(); render(); toast('Appliqué. « ↶ Revenir » annule.');
+  c.changes = [...(c.changes || []), x.title]; remember('suggestion', x.title, { ref: x.id, reason: x.benefit || '' }); c.generated = false; rebuild(); keep(); render(); toast(r.extended ? `Appliqué : la séance passe à ${c.minutes} min. « ↶ Revenir » annule.` : 'Appliqué. « ↶ Revenir » annule.');
 };
 ACT.cpSugIgnore = (el) => { const c = CP(), x = suggestionsNow().find((y) => y.id === el.dataset.id); c.ignored = [...new Set([...(c.ignored || []), el.dataset.id])]; if (x) remember('ignored', x.title, { ref: x.id }); keep(); render(); };
 ACT.cpSugReset = () => { CP().ignored = []; keep(); render(); };
@@ -618,7 +619,7 @@ ACT.cpSugEdit = (el) => {
 };
 ACT.cpUndo = () => {
   const c = CP(), last = (c.hist || []).pop(); if (!last) return;
-  const st = JSON.parse(last); c.parts = st.parts; c.built = st.built; c.changes = st.changes; c.generated = false; rebuild(); keep(); render(); toast('Structure précédente rétablie.');
+  const st = JSON.parse(last); c.parts = st.parts; c.built = st.built; c.changes = st.changes; if (st.minutes) c.minutes = st.minutes; c.generated = false; rebuild(); keep(); render(); toast('Structure précédente rétablie.');
 };
 /* ═════════ Étape 6 : structure finale (minute par minute), puis génération ═════════ */
 const INT_W = { easy: 1, mod: 2, hard: 3, max: 4 };

@@ -60,7 +60,7 @@ function loopCard() {
 }
 function simpleHome() {
   const date = ymd(new Date());
-  return h`${hero()}${loopCard()}${resumeCard()}${setupCard()}${installCard()}${agendaDayCards(date)}${activeProgram() ? programCard() : ''}${BLOCK_VIEWS.today()}${creationChoices()}${agendaActions(date)}${BLOCK_VIEWS.command()}${BLOCK_VIEWS.progress()}<details class="card"><summary>Pourquoi ces conseils ?</summary>${impactCard()}${BLOCK_VIEWS.goals()}</details><button class="btn ghost" data-act="homeDetails">Voir tous les détails de l’accueil</button>`;
+  return h`${hero()}${loopCard()}${resumeCard()}${setupCard()}${questionCard()}${installCard()}${agendaDayCards(date)}${activeProgram() ? programCard() : ''}${BLOCK_VIEWS.today()}${creationChoices()}${agendaActions(date)}${BLOCK_VIEWS.command()}${BLOCK_VIEWS.progress()}<details class="card"><summary>Pourquoi ces conseils ?</summary>${impactCard()}${BLOCK_VIEWS.goals()}</details><button class="btn ghost" data-act="homeDetails">Voir tous les détails de l’accueil</button>`;
 }
 ACT.homeSimple = () => { S.homeDetails = false; render(); };
 ACT.homeDetails = () => { S.homeDetails = true; render(); };

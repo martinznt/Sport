@@ -49,6 +49,15 @@ ok('appliquer une suggestion : le total ne change pas ; refuser = ne rien appliq
   const warm = analyzeSession(w, ctx, {}).find((x) => x.id === 'warmup'); const r2 = applySuggestion(w, warm);
   assert.equal(r2.phases[0].type, 'warmup'); assert.equal(totalMinutes(r2.phases), 90, 'le temps de l’échauffement est pris ailleurs');
 });
+ok('8.35 : durées réglées par toi, « Ajouter un échauffement » allonge la séance et le dit ; jamais dans un créneau fixe', () => {
+  const w = normalizePhases([{ id: 'x', type: 'main', minutes: 20, intensity: 'hard', locks: { minutes: 'user' } }, { id: 'y', type: 'main', minutes: 20, intensity: 'hard', locks: { minutes: 'user' } }]);
+  const warm = analyzeSession(w, ctx, {}).find((x) => x.id === 'warmup'); assert.ok(warm && !warm.blocked); assert.match(warm.compromise, /s’allonge/);
+  assert.equal(applySuggestion(w, warm).applied, false, 'sans l’option : refus');
+  const r = applySuggestion(w, warm, { extend: true }); assert.ok(r.applied); assert.ok(r.extended > 0); assert.equal(totalMinutes(r.phases), 40 + r.extended);
+  assert.deepEqual(r.phases.filter((p) => p.type !== 'warmup').map((p) => p.minutes), [20, 20], 'tes durées sont gardées');
+  const win = { from: 1080, to: 1120, envId: 'a' }, ww = normalizePhases([{ id: 'x', type: 'main', minutes: 20, intensity: 'hard', window: win, locks: { minutes: 'user' } }, { id: 'y', type: 'main', minutes: 20, intensity: 'hard', window: win, locks: { minutes: 'user' } }]);
+  const wb = analyzeSession(ww, ctx, {}).find((x) => x.id === 'warmup'); assert.ok(wb.blocked, 'créneau fixe : expliqué'); assert.match(wb.blocked, /créneau/);
+});
 ok('rien de faux : pas de mur → signalé sans modification automatique ; intention non couverte → suggérée', () => {
   const ph = PREP_PERF(), s = analyzeSession(ph, ctx, { eq: new Set(['bar']), intent: { priorities: ['mobilite_hanches'] } });
   const wall = s.find((x) => x.id === 'no-wall'); assert.equal(wall.patch, null);
