@@ -216,6 +216,14 @@ export const NEWS = [
     ['profile','body','','La virgule est comprise','« 72,5 » kg ou « 32,5 » cm sont bien enregistrés : avant, la virgule était effacée sans prévenir.'],
     ['home','dash','','Moins de petites gênes','Le menu se ferme quand on touche la page où l’on est, un message ne s’efface plus aussitôt, un ressenti non donné ne compte plus comme « 1 », et l’icône du calendrier n’affiche plus « 17 juillet ».'],
   ] },
+  { v:'8.35.0', date:'2026-10-10', title:'Tes phases, tes étirements, des sources', why:'Tes propres phases dans le profil, une séance d’étirement préparée pour toi, des objectifs en deux temps, des sources citées partout et une seule interface, plus simple.', steps:[
+    ['profile','phases','','Tes phases à toi','« ＋ Ajouter une phase » : échauffement aux élastiques, spray wall, no foot… Quand tu crées une séance de ce sport, l’app te les propose ; un toucher les ajoute. Une phase peut n’avoir aucun exercice, juste une consigne.'],
+    ['library','stretch','','Des étirements faits pour toi','Choisis la séance, les zones, le lieu et le matériel, quand t’étirer et combien de temps : l’app prépare la séance d’étirement. À la fin de ta séance, « Dans 15 min » la programme dans ton calendrier.'],
+    ['library','climbplan','','Tu choisis ce que tu règles','À l’étape 1, coche ce que tu veux choisir toi-même (phases, durées, objectifs…) ; l’app propose le reste. À la fin, retire un exercice (✕) ou une phase sans revenir en arrière.'],
+    ['profile','goals','[data-act=goalNew]','Des objectifs plus simples','« ＋ Ajouter un objectif » : dis ce que tu veux en un toucher, puis deux ou trois choix. La cible part de ta dernière valeur notée.'],
+    ['library','exercises','','Des sources pour chaque conseil','« 📚 Sources » montre les études et les sites d’où viennent les conseils, avec leur icône. « 🎯 Voir le passage » ouvre la source à la phrase exacte.'],
+    ['settings','main','','Une capture d’écran pour expliquer','En signalant un bug ou en proposant une amélioration, joins une capture d’écran : seuls les administrateurs la voient.'],
+  ] },
 ];
 
 const KEY = 'sea:news-toured';

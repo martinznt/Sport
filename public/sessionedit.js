@@ -64,7 +64,7 @@ export function planEdit(phasesIn, ops, o = {}) {
   const onlyIdx = ops.filter((x) => x.op === 'only').flatMap((x) => x.idx);
   for (const op of ops) {
     if (op.op === 'remove') for (const i of op.idx.sort((a, b) => b - a)) {
-      if (Object.values(phases[i].locks).includes('user') || protectedIdx.has(i)) { blocked.push(`« ${names[i]} » est verrouillée : elle n’est pas retirée.`); continue; }
+      if (Object.values(phases[i].locks).includes('user') || protectedIdx.has(i)) { blocked.push(`« ${names[i]} » a des réglages faits par toi : elle n’est pas retirée.`); continue; }
       changes.push(`Retirer « ${names[i]} » (${phases[i].minutes} min)`); tradeoffs.push(`Ce que travaillait « ${names[i]} » disparaît de la séance.`); phases[i] = null;
     }
     if (op.op === 'add') {
@@ -73,12 +73,12 @@ export function planEdit(phasesIn, ops, o = {}) {
       phases.splice(at >= 0 ? at : phases.length, 0, np); changes.push(`Ajouter ${op.minutes} min de ${ROLES[op.role][1].toLowerCase()}`); why.push('Ajout demandé.');
     }
     if (op.op === 'intensity') for (const i of (op.idx.length ? op.idx : phases.map((_, k) => k)).filter((k) => phases[k] && phases[k].type !== 'pause')) {
-      const p = phases[i]; if (p.locks.intensity === 'user') { if (op.idx.length) blocked.push(`L’intensité de « ${names[i]} » est verrouillée.`); continue; }
+      const p = phases[i]; if (p.locks.intensity === 'user') { if (op.idx.length) blocked.push(`L’intensité de « ${names[i]} » a été réglée par toi.`); continue; }
       const k = STEPS.indexOf(p.intensity), nk = Math.max(0, Math.min(3, k + op.dir)); if (nk === k) continue;
       changes.push(`« ${names[i]} » : intensité ${p.intensity} → ${STEPS[nk]}`); p.intensity = STEPS[nk];
       tradeoffs.push(op.dir < 0 ? `Moins de stimulation sur « ${names[i]} ».` : `Plus de fatigue sur « ${names[i]} ».`);
     }
-    if (op.op === 'shorten') for (const i of op.idx) { const p = phases[i]; if (!p) continue; if (p.locks.minutes === 'user') { blocked.push(`La durée de « ${names[i]} » est verrouillée.`); continue; } const m = Math.max(5, p.minutes - op.minutes); changes.push(`« ${names[i]} » : ${p.minutes} → ${m} min`); p.minutes = m; }
+    if (op.op === 'shorten') for (const i of op.idx) { const p = phases[i]; if (!p) continue; if (p.locks.minutes === 'user') { blocked.push(`La durée de « ${names[i]} » a été réglée par toi.`); continue; } const m = Math.max(5, p.minutes - op.minutes); changes.push(`« ${names[i]} » : ${p.minutes} → ${m} min`); p.minutes = m; }
   }
   phases = phases.filter(Boolean);
   const total = ops.find((x) => x.op === 'total');
@@ -87,11 +87,11 @@ export function planEdit(phasesIn, ops, o = {}) {
     const movable = new Set(onlyIdx.length ? onlyIdx.map((i) => phasesIn[i]?.id) : phases.map((p) => p.id));
     const list = phases.map((p) => (movable.has(p.id) ? p : { ...p, locks: { ...p.locks, minutes: 'user' } }));
     const r = fitDurations(list, total.minutes);
-    if (!r.ok) blocked.push(r.error || `Impossible de tenir en ${total.minutes} min avec ce qui est verrouillé ou gardé.`);
+    if (!r.ok) blocked.push(r.error || `Impossible de tenir en ${total.minutes} min avec ce que tu as réglé toi-même ou gardé.`);
     else {
       r.phases.forEach((p, k) => { const was = phases[k]; if (was.minutes !== p.minutes) changes.push(`« ${phaseName(was)} » : ${was.minutes} → ${p.minutes} min`); });
       phases = r.phases.map((p, k) => ({ ...p, locks: phases[k].locks }));
-      why.push(`Tu as ${total.minutes} min : ${onlyIdx.length ? 'seules les phases désignées sont raccourcies' : 'le temps est réparti sur les phases non verrouillées'}.`);
+      why.push(`Tu as ${total.minutes} min : ${onlyIdx.length ? 'seules les phases désignées sont raccourcies' : 'le temps est réparti sur les phases que tu n’as pas réglées toi-même'}.`);
       tradeoffs.push('Moins de volume sur les phases raccourcies.');
     }
   }

@@ -63,15 +63,25 @@ export const exLine = (e) => `${oneEach(e) && !e.unit && e.sets === 1 ? '1 fois'
 
 /* ───────── Messages et feuilles ───────── */
 // Un message reste au moins 1,8 s à l'écran avant d'être remplacé (sinon un « Nouveau badge » effaçait aussitôt
-// « Séances exportées… ») ; le suivant attend son tour, seul le plus récent est gardé. Une erreur passe tout de suite.
+// « Séances exportées… »). 8.35 : les suivants attendent leur tour dans l'ordre (3 au plus, sans doublon) ; avant,
+// seul le plus récent était gardé et un message comme « … déjà présent(s) » pouvait être perdu. Une erreur passe tout de suite.
 let toastAt = 0;
+const toastQ = [];
+function nextToast() { toast.q = 0; const x = toastQ.shift(); if (x) toast(...x); }
+/** Changement de compte : aucun message en attente de l'autre compte ne s'affiche. */
+export function clearToasts() { clearTimeout(toast.q); toast.q = 0; toastQ.length = 0; }
 export function toast(msg, ms = 2800, kind = '') {
   const t = $('#toast'); if (!t) return;
   const wait = t.classList.contains('show') && kind !== 'bad' ? toastAt + 1800 - Date.now() : 0;
-  clearTimeout(toast.q);
-  if (wait > 0) { toast.q = setTimeout(() => toast(msg, ms, kind), wait); return; }
+  if (wait > 0) {
+    if (!toastQ.some((x) => x[0] === msg) && t.textContent !== msg) toastQ.push([msg, ms, kind]);
+    if (toastQ.length > 3) toastQ.shift();
+    if (!toast.q) toast.q = setTimeout(nextToast, wait);
+    return;
+  }
   t.textContent = msg; t.className = 'show ' + kind; toastAt = Date.now();
   clearTimeout(toast.t); toast.t = setTimeout(() => { t.className = ''; }, ms);
+  if (toastQ.length && !toast.q) toast.q = setTimeout(nextToast, 1800);
 }
 export const buzzOk = () => { try { if (navigator.vibrate && document.documentElement.dataset.haptics !== 'off') navigator.vibrate(12); } catch { /* rien */ } };
 let sheetStack = 0;
@@ -82,7 +92,7 @@ let sheetStack = 0;
 // Une fenêtre (#sheet) garde ses rubriques tant qu'elle est ouverte ; rouverte plus tard, elle repart de zéro.
 const userOpen = new Map();
 const detailText = (d) => (d.querySelector(':scope > summary')?.textContent || '').replace(/\d+/g, '#').replace(/\s+/g, ' ').trim().slice(0, 80);
-const scopeOf = (root) => (root.id === 'main' ? 'page:' + (location.hash || '#/').split('?')[0] : 'sheet:' + sheetTitle(root));
+const scopeOf = (root) => (root.id === 'main' ? 'page:' + (location.hash || '#/').split('?')[0] : root.id === 'player' ? 'player' : 'sheet:' + sheetTitle(root));
 function keyOf(root, target) {
   const seen = new Map();
   for (const d of root.querySelectorAll('details')) { const t = detailText(d), n = seen.get(t) || 0; seen.set(t, n + 1); if (d === target) return `${scopeOf(root)}|${t}|${n}`; }
@@ -91,7 +101,7 @@ function keyOf(root, target) {
 if (typeof document !== 'undefined' && typeof document.addEventListener === 'function') document.addEventListener('click', (e) => {
   const sm = e.target.closest?.('summary'), d = sm?.parentElement;
   if (!d || d.tagName !== 'DETAILS' || d.matches('.setsec,[data-free]') || sm.matches('[data-act]')) return;
-  const root = d.closest('#sheet > .panel') || d.closest('#main'); if (!root) return;
+  const root = d.closest('#sheet > .panel') || d.closest('#main') || d.closest('#player'); if (!root) return;
   // Écran redessiné entre-temps : c'est l'app qui a répondu au toucher, rien à retenir.
   setTimeout(() => { if (!d.isConnected) return; const k = keyOf(root, d); if (k) userOpen.set(k, d.open); }, 0);
 }, true);

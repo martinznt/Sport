@@ -26,7 +26,7 @@ ok('durées : la somme fait exactement le total ; une durée verrouillée ne bou
     const r = fitDurations(ph, T); assert.ok(r.ok, `total ${T}`); assert.equal(totalMinutes(r.phases), T);
     assert.equal(r.phases[1].minutes, 120, 'verrouillée'); assert.ok(r.phases.every((p) => p.minutes >= 5));
   }
-  const bad = fitDurations(ph, 125); assert.equal(bad.ok, false); assert.match(bad.error, /verrouillées/);
+  const bad = fitDurations(ph, 125); assert.equal(bad.ok, false); assert.match(bad.error, /durées réglées par toi|réglé toi-même toutes les durées/);
 });
 ok('modifier une phase ne casse pas les autres ; ses verrous sont gardés', () => {
   const ph = normalizePhases([{ id: 'a', type: 'climb', kind: 'bloc', minutes: 60, locks: { minutes: 'user' } }, { id: 'b', type: 'cool', minutes: 10 }]);

@@ -59,7 +59,7 @@ export function shotsView(ids, kind, refId, context = '') {
 /** Ouvre l'assistant du site avec la demande et les captures prêtes à partir (l'administrateur relit puis envoie). */
 ACT.shotAsk = (el) => {
   const ids = String(el.dataset.ids || '').split(',').filter(Boolean).slice(0, MAX_SHOTS);
-  S.admin ||= {}; S.admin.asAttach = ids;
+  S.admin ||= {}; S.admin.asAttach = ids; S.admin.draftFor = S.user?.id || '';
   S.admin.chatDraft = `Regarde la capture jointe (${el.dataset.kind === 'bug' ? 'signalement' : 'proposition'}) : ${el.dataset.ctx || ''}\nQu’est-ce qui ne va pas sur cet écran, et que proposes-tu pour le corriger ?`.slice(0, 1500);
   closeSheet(); go('settings', 'assistant');
 };

@@ -9,7 +9,7 @@ import { agendaEvents, occurrenceChange } from './agenda.js';
 //  - temps actif   = durée réelle − temps de repos effectivement passé ;
 //  - temps de pause = somme des pauses (jamais compté comme temps actif) ;
 //  - une série chronométrée mise en pause ne compte pas le temps de pause dans sa durée.
-import { h, raw, $, toast, ask, fmtDur, mmss, rng, buzzOk, tag, openSheet, closeSheet, askText, chip } from './ui.js';
+import { h, raw, $, toast, ask, fmtDur, mmss, rng, buzzOk, tag, openSheet, closeSheet, askText, chip, restoreUserDetails } from './ui.js';
 import { S, ACT, CHG, INPUT, render, getSeance, saveSeance, addHistory, saveEvent, putItem, ctx, go, saveSettings, ls, item } from './state.js';
 import { normalizeSession, uid, exKey, parseKg, norm } from './shared.js';
 import { progressHint, applyPerformedBase, exMinutes, sessionMinutes } from './engine.js';
@@ -161,7 +161,7 @@ function closePlayer() { duoHook?.('close'); clearInterval(timer); unwake(); voi
 /* ───────── Affichage ───────── */
 function draw(anim = false) {
   const p = S.player; if (!ownsPlayer(p)) return; const root = $('#player');
-  if (p.phase === 'done') { root.innerHTML = vQuiz(p).s; duoHook?.('draw'); return; }
+  if (p.phase === 'done') { root.innerHTML = vQuiz(p).s; restoreUserDetails(root); duoHook?.('draw'); return; }
   const n = p.s.exercises.length, pct = Math.round((p.i / n) * 100);
   const big = !!S.settings.bigMode, warm = cur()?.block === 'warmup' && p.warmAdded;
   root.classList.toggle('redmode', !!S.settings.redMode);

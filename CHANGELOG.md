@@ -1,5 +1,25 @@
 # CHANGELOG — Séances entraînement
 
+## 8.35.0 — Phases, étirements, objectifs simples, sources, captures d'écran, une seule interface
+
+Livraison et étapes (dont Gemini) : [DELIVERY_8_35.md](DELIVERY_8_35.md) ; toutes les demandes et leur état : [docs/DEMANDES_8_35.md](docs/DEMANDES_8_35.md). Préparée sur la branche `claude/new-session-wi9olv`, non fusionnée, non déployée.
+
+- Phases : Profil › Mes phases (avant : Bibliothèque › Mes moments), proposées dans le créateur pour leur sport ; une phase peut n'avoir qu'un message à afficher, proposé par l'app et modifiable.
+- Créateur : cases « ce que je choisis moi-même » à l'étape 1 et en bas de chaque étape ; « ✏️ modifié par toi » à la place de modifiable / l'app choisit / bloqué ; retirer un exercice ou une phase après coup ; revenir en arrière garde tout ; « Tes objectifs » allégé.
+- Étirements : Bibliothèque › Étirements (séance, zones, lieu, matériel, délai, durée) ; proposés à la fin de la séance ; « dans X min » programme un rendez-vous dont le rappel lance la séance.
+- Objectifs : « ＋ Ajouter un objectif » en deux temps, cible proposée d'après la dernière valeur réelle, résumé en une phrase.
+- Lecteur : prochain exercice et nombre de séries en bas, même pendant l'effort.
+- Sources : repère « 📚 Sources » avec l'icône du site ; liste des liens ; « 🎯 Voir le passage » mène à la phrase exacte, lue par le serveur dans le résumé PubMed ; sur chaque exercice, la part de pratique et les études qui appuient ses règles.
+- Captures d'écran : jointes aux signalements et aux propositions (vérifiées, visibles par les administrateurs du bon rôle, effacées avec le compte et au bout d'un an) ; analysées par l'assistant du site (Gemini).
+- Assistant : plus de nom de fournisseur ni du mot « IA » pour les membres ; demandes courtes des administrateurs traitées directement.
+- Clarté : une seule interface (simple) ; mesures expliquées ; doublons retirés (Progrès, Mes sports, À mesurer, poids, noms des rubriques) ; petits messages « va dans … » cliquables avec « ‹ Retour » ; fenêtres sans clignotement.
+- Corrections : titre de séance et listes qui débordaient à 320 px ; focus rendu tout de suite après Échap ; un bouton long des étirements qui débordait à 320 px ; « Qui reçoit ta demande ? » restait sur « pas encore connu » une fois le service connu ; Mes phases et le Carnet (pour les grimpeurs) manquaient à l'accueil du Profil depuis le retrait de l'interface avancée.
+- Créateur : un sport, un lieu ou des objectifs choisis toi-même pour une phase restaient grisés ensuite ; ils restent modifiables (et gardés quand l'app recalcule). Le champ « ✍️ Avec tes mots » manquait quand « Mes objectifs » n'était pas coché ; il est à l'étape 1. « ＋ » sur une de tes phases était refusé sur une séance courte (« Déverrouille… ») : la phase est ajoutée et la séance s'allonge d'autant, le message le dit. La rubrique vide « Ce que l'app décide » est retirée du panneau d'une phase ; les messages ne parlent plus de réglages « verrouillés » mais de réglages « faits par toi ».
+- Accueil : un programme en cours n'apparaissait plus sur l'accueil depuis le retrait de l'interface avancée (seulement dans le calendrier) ; il y est, avec « ▶ C'est parti » le jour d'une séance.
+- Administration : « 🔎 Analyser avec l'assistant » ouvrait un message vide si l'assistant n'avait pas encore été ouvert ; la demande préparée est gardée (seulement pour le même compte).
+- Sources : le lien « Voir le passage » renvoyé par le serveur est vérifié (https ou http) avant d'être affiché.
+- Base de données : une table ajoutée (captures), créée seule ; rien de supprimé.
+
 ## 8.34.2 — Audit Playwright complet : défauts corrigés et petites gênes en moins
 
 Rapport complet (scénarios, résultats, défauts par gravité, limites) : [docs/AUDIT_PLAYWRIGHT_2026-10-09.md](docs/AUDIT_PLAYWRIGHT_2026-10-09.md) ; livraison : [DELIVERY_8_34_2.md](DELIVERY_8_34_2.md). Préparée sur la branche `claude/new-session-wi9olv`, **non fusionnée, non déployée**.

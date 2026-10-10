@@ -40,12 +40,15 @@ const provider = () => ['cloudflare', 'gemini'].includes(S.coachStatus?.provider
 const shareKey = () => 'sea:coach-profile:' + S.user.id + ':' + provider();
 const profileShared = () => provider() !== 'unknown' && ls.get(shareKey(), provider() === 'cloudflare') === true;
 const modelLabel = () => S.coachStatus === undefined ? 'Connexion au coach…' : S.coachStatus?.available === false || S.coachStatus === null ? 'Le coach répond dès que la connexion est rétablie.' : 'Pose ta question, le coach répond en quelques secondes.';
+// Transparence : le destinataire réel est nommé ici (un toucher), sans apparaître ailleurs dans l'app.
+const recipient = () => provider() === 'gemini' ? 'Tes messages (et le résumé de ton profil si tu le coches) sont transmis à Google, qui fait fonctionner l’assistant de ce site. Rien n’est envoyé tant que tu n’écris pas.' : provider() === 'cloudflare' ? 'Tes messages (et le résumé de ton profil si tu le coches) sont traités par Cloudflare, l’hébergeur du site, qui fait fonctionner l’assistant. Rien n’est envoyé tant que tu n’écris pas.' : 'Le service qui fait fonctionner l’assistant n’est pas encore connu (connexion en cours).';
 const shareNote = 'Ta demande et les derniers messages sont transmis au service externe qui fait fonctionner le coach. Le résumé ci-dessous est ajouté si tu coches cette option.';
 function updateCoachStatus() {
   const chat = $('#sheet.open .chat'); if (!chat) return;
   const model = chat.querySelector('[data-coach-model]'); if (model) { model.textContent = modelLabel(); model.title = modelLabel(); }
   const choice = chat.querySelector('[data-change=chatProfile]'); if (choice) { choice.disabled = provider() === 'unknown' || !!S.chatBusy; choice.checked = profileShared(); }
   const note = chat.querySelector('[data-coach-share-note]'); if (note) { note.textContent = shareNote; note.hidden = provider() !== 'gemini'; }
+  const who = chat.querySelector('[data-coach-recipient]'); if (who) who.textContent = recipient();
 }
 let statusRequest = 0;
 async function loadCoachStatus() {
@@ -67,7 +70,8 @@ function body() {
     <div class="row wrapf"><button class="btn sm" data-act="aiOpen">✍️ Créer un exercice avec mes mots</button><button class="btn sm" data-act="cpNew">✨ Créer une séance</button></div>
     <label class="chk tiny"><input type="checkbox" data-change="chatProfile" ${profileShared() ? 'checked' : ''} ${provider() === 'unknown' || S.chatBusy ? 'disabled' : ''}> Envoyer au coach le résumé de mon profil</label>
     <div class="tiny muted" style="height:4.5em;overflow:hidden"><p data-coach-share-note style="margin:0;line-height:1.4" ${provider() === 'gemini' ? '' : 'hidden'}>${shareNote}</p></div>
-    <details class="how mini"><summary>Résumé de mon profil</summary><p class="tiny">${profileSummary()}</p><p class="tiny muted">Ce résumé est joint seulement si tu choisis de le partager. Ses réponses sont des conseils généraux, pas un avis médical.</p></details></div>`;
+    <details class="how mini"><summary>Résumé de mon profil</summary><p class="tiny">${profileSummary()}</p><p class="tiny muted">Ce résumé est joint seulement si tu choisis de le partager. Ses réponses sont des conseils généraux, pas un avis médical.</p></details>
+    <details class="how mini"><summary>Qui reçoit ta demande ?</summary><p class="tiny muted" data-coach-recipient>${recipient()}</p></details></div>`;
 }
 const draw = ({ keepInput = false } = {}) => { if (!keepInput) S.chatDraft = ''; openSheet(body(), { wide: true }); const input = $('.chat-in input'); if (input) input.value = S.chatDraft || ''; const l = $('#chatlog'); if (l) l.scrollTop = l.scrollHeight; setTimeout(() => $('.chat-in input')?.focus(), 50); };
 ACT.coachOpen = () => {

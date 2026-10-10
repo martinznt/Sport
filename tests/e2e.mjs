@@ -52,8 +52,7 @@ const controllerBuild = (page) => page.evaluate(() => new Promise((resolve) => {
 const confirm2 = async (P) => { await P.click('#dialog.open [data-dlg="1"]'); await P.waitForFunction(() => /sûr|Vraiment/.test(document.querySelector('#dialog.open')?.textContent || '')); await P.click('#dialog.open [data-dlg="1"]'); await P.waitForSelector('#dialog:not(.open)', { state: 'attached' }); };
 const step = async (name, fn) => {
   try { await fn();
-    // Cette suite couvre les options avancées ; le parcours simple possède sa propre suite.
-    if (cur && !cur.isClosed() && cur.url().startsWith(BASE)) await cur.evaluate(async () => { const {S,saveSettings,render}=await import('/state.js'); if(S.user && S.loaded && S.settings.interfaceMode !== 'advanced') { S.settings.interfaceMode='advanced';saveSettings();render(); } });
+    // 8.35 : une seule interface (simple) ; cette suite suit les chemins de l'interface simple.
     n++; console.log('  ✓', name); }
   catch (e) {
     console.log('  ✗', name);
@@ -96,6 +95,8 @@ const H = (page) => ({
     // Page retirée des listes mais toujours accessible par son adresse (ex. le générateur « Sur mesure »).
     if (!(await page.locator(sel).count()) && root) { await page.evaluate((hsh) => { location.hash = hsh; }, `#/${{ libSub: 'library', progSub: 'progress', profSub: 'profile', setSub: 'settings' }[act]}/${id}`); await page.waitForTimeout(200); return; }
     if (act === 'setSub' && !(await page.locator(sel).first().isVisible()) && await page.locator('#settings-more > summary').isVisible()) await page.click('#settings-more > summary');
+    // Interface simple : les rubriques secondaires sont dans un bloc replié (« Préférences, capacités et autres détails ») ; on l'ouvre.
+    if (!(await page.locator(sel).first().isVisible())) { const d = page.locator('details:not([open])').filter({ has: page.locator(sel) }).first(); if (await d.count()) await d.locator(':scope > summary').click(); }
     await page.locator(sel).first().click(); await page.waitForTimeout(120);
   },
   noOverflow: async (where) => { const ok = await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1); assert.ok(ok, `défilement horizontal de page détecté (${where})`); },
@@ -184,7 +185,7 @@ await step('cotations (dans Mes sports) : système U1→U8 avec correspondance, 
   assert.ok(await a.count('text=Arête : U5') > 0, 'style personnalisé utilisé');
 });
 await step('carnet : ajout rapide, pyramide ; projet rangé avec les objectifs, suivi jusqu’à la réussite', async () => {
-  await a.tab('home'); await a.click('[data-act=goCarnet]'); await A.waitForSelector('[data-act=ascQuick]');
+  await a.tab('profile'); await a.sub('profSub', 'climbing'); await A.waitForSelector('[data-act=ascQuick]');
   await a.click('[data-act=ascQuick]'); await A.waitForSelector('.aq [data-act=aqGrade]');
   await A.locator('.aq [data-act=aqGrade]', { hasText: /^6A$/ }).first().click(); await a.click('.aq [data-act=aqResult][data-v=flash]'); await a.click('.aq [data-act=aqSave]');
   await a.tab('profile'); await a.sub('profSub', 'perfs'); await A.waitForSelector('.pyr-row'); assert.match(await a.text('.pyr'), /6A\s*1/, 'la pyramide est dans Records et mesures');
@@ -205,7 +206,7 @@ await step('ma salle : cotation U1 → U8+, espaces et matériel ; bloc noté «
   await pickSel(A, '#sheet select[name=gradeSys]', sysId);
   await A.click('#sheet .garea:has-text("Espace entraînement") label.chip:has-text("Campus")');
   await a.click('#sheet button[type=submit]'); await A.waitForSelector('text=Arkose Test'); assert.match(await a.text('main'), /Montreuil/);
-  await a.tab('home'); await a.click('[data-act=goCarnet]'); await a.click('[data-act=ascQuick]'); await A.waitForSelector('.aq [data-act=aqEnv]');
+  await a.tab('profile'); await a.sub('profSub', 'climbing'); await a.click('[data-act=ascQuick]'); await A.waitForSelector('.aq [data-act=aqEnv]');
   await A.locator('.aq [data-act=aqEnv]', { hasText: 'Arkose Test' }).click();
   await A.locator('.aq [data-act=aqGrade]', { hasText: /^U7$/ }).click(); await a.click('.aq [data-act=aqNuance][data-v=dur]');
   await A.locator('.aq [data-act=aqStyle]', { hasText: 'Dévers' }).click(); await a.click('.aq [data-act=aqSave]');
@@ -245,9 +246,11 @@ await step('séances prêtes : filtres, tri pour toi, sources consultables, lanc
   await a.click('[data-act=catView][data-id=rank]'); await A.waitForSelector('.catcard'); // vue « Pour toi d’abord »
   await a.click('[data-act=catEq]'); // tout afficher, même sans le matériel
   await a.click('[data-act=catF][data-k=sport][data-v=running]'); assert.match(await a.text('main'), /Fractionné 4 × 4 min/);
-  await A.locator('.catcard', { hasText: 'Fractionné 4 × 4 min' }).click(); await A.waitForSelector('.catd .src');
-  assert.match(await a.text('.catd'), /VO2max/); await A.locator('.catd .src').first().click();
-  await A.waitForSelector('text=Ce qu’elle montre'); assert.match(await a.text('#sheet'), /Helgerud|Milanović/); assert.ok(await a.count('#sheet a[href^="http"]') === 1);
+  await A.locator('.catcard', { hasText: 'Fractionné 4 × 4 min' }).click(); await A.waitForSelector('.catd .srcbadge');
+  // 8.35 : un repère « 📚 Sources » (icônes des sites) ouvre la liste de toutes les sources, chacune avec son lien.
+  assert.match(await a.text('.catd'), /VO2max/); await A.locator('.catd .srcbadge').first().click();
+  await A.waitForSelector('text=Ce qu’elle montre'); assert.match(await a.text('#sheet'), /Helgerud|Milanović/);
+  { const cards = await a.count('#sheet .card.flat'), links = await a.count('#sheet a[href^="https://"]'); assert.ok(cards >= 1 && links >= cards, `${cards} sources, ${links} liens`); }
   await A.keyboard.press('Escape'); await a.click('[data-act=catF][data-k=sport][data-v=running]');
   await A.locator('.catcard', { hasText: 'Renfo maison sans matériel' }).click(); await a.click('.catd [data-act=catSave]');
   await poll(async () => (await a.api('GET', '/api/sync')).data.items.some((x) => x.name === 'Renfo maison sans matériel'), 12000, 'séance gardée');
@@ -344,7 +347,10 @@ await step('mode séance : séries, chrono, pause (non comptée), repos, fin', a
   assert.match(await a.text('#player'), /de pause \(non comptée\)/);
 });
 await step('questionnaire adaptatif puis enregistrement', async () => {
+  // Interface simple : les questions détaillées sont dans « Plus de détails sur ma séance », qui reste ouvert après un choix.
+  if (!(await A.locator('#player [data-act=qFelt]').first().isVisible())) await A.locator('#player details:has([data-act=qFelt]) > summary').click();
   await A.locator('#player [data-act=qFelt]').first().click();
+  assert.equal(await A.locator('#player details:has([data-act=qFelt])').evaluate((d) => d.open), true, 'la rubrique ouverte reste ouverte après un choix');
   await A.locator('#player [data-act=qPick][data-k=hardest]').first().click();
   await a.click('#player [data-act=qDiff][data-v="3"]');
   await A.fill('#player [data-input=qComment]', 'Bonne séance, commentaire conservé');
@@ -401,7 +407,9 @@ await step('commande naturelle : « je n’ai que 12 minutes » reconstruit la s
       const button = A.locator('.chat-in button[type=submit]'); await button.scrollIntoViewIfNeeded();
       const box = await button.boundingBox(); assert.ok(box);
       await A.mouse.move(box.x + box.width / 2, box.y + box.height / 2); await A.mouse.down(); releaseStatus();
-      await A.waitForSelector('#sheet .chat p:text-is("Modèle disponible · test clic conservé")'); await A.mouse.up();
+      // 8.35 : le nom du modèle n'est plus montré aux membres ; on attend que l'état du coach ait bien été mis à jour.
+      await A.waitForFunction(async () => (await import('/state.js')).S.coachStatus?.label === 'Modèle disponible · test clic conservé');
+      assert.doesNotMatch(await a.text('#sheet .chat [data-coach-model]'), /Modèle|IA|Gemini/, 'aucun nom de modèle affiché'); await A.mouse.up();
     } else await a.click('.chat-in button[type=submit]');
     return replies;
   };
@@ -436,7 +444,9 @@ await step('« Que faire aujourd’hui ? » et tableau de bord personnalisé', a
   assert.match(await a.text('.editbar'), /Grand[\s\S]*Icône[\s\S]*Masqué/); assert.equal(await a.count('header [data-act=layQuit], .topicons [data-act=layQuit], [data-act=layQuit]') >= 1, true);
   await a.click('[data-act=layAs][data-id=records][data-v=big]'); await a.click('[data-act=layAs][data-id=timer][data-v=icon]');
   await a.click('[data-act=layPick][data-id=gen]'); await a.click('[data-act=layColor][data-id=gen][data-v="#5fa8d3"]');
-  await A.locator('[data-act=layQuit]').first().click(); await a.confirm(); await A.waitForSelector('.quick [data-act=timerOpen]'); assert.equal(await a.count('h3:has-text("Records")'), 0, 'quitté : rien n’a changé');
+  await A.locator('[data-act=layQuit]').first().click(); await a.confirm();
+  // 8.35 : sans mise en page enregistrée, l'accueil est l'accueil simple (plus de tableau de bord « avancé » par défaut).
+  await A.waitForSelector('.edlist', { state: 'detached' }); assert.match(await a.text('main'), /Que faire aujourd’hui/); assert.equal(await a.count('h3:has-text("Records")'), 0, 'quitté : rien n’a changé');
   await a.click('.topicons [data-act=layEdit]'); await a.click('[data-act=layAs][data-id=records][data-v=big]'); await a.click('[data-act=layAs][data-id=timer][data-v=icon]');
   await a.click('[data-act=layPick][data-id=gen]'); await a.click('[data-act=layColor][data-id=gen][data-v="#5fa8d3"]');
   await a.click('.editdock [data-act=layPreview]'); await A.waitForSelector('h3:has-text("Records")'); assert.equal(await a.count('.topicons [data-act=timerOpen]'), 1, 'aperçu : minuteur en icône');
@@ -449,7 +459,9 @@ await step('« Que faire aujourd’hui ? » et tableau de bord personnalisé', a
   await poll(async () => (await a.api('GET', '/api/items?since=0')).data.items.some((i) => i.c === 'config' && i.id === 'layout' && /records/.test(i.d.lay)), 12000, 'mise en page liée au compte');
   // Retour à la base (deux validations)
   await a.tab('settings'); await a.sub('setSub', 'display'); await a.click('[data-act=layReset][data-scope=all]'); await confirm2(A);
-  await a.tab('home'); await A.waitForSelector('.quick [data-act=timerOpen]'); assert.equal(await a.count('h3:has-text("Records")'), 0);
+  // 8.35 : la mise en page de base est l'accueil simple.
+  await a.tab('home'); await A.waitForFunction(() => /Que faire aujourd’hui/.test(document.querySelector('main')?.innerText || '')); assert.equal(await a.count('h3:has-text("Records")'), 0);
+  assert.equal(await a.count('.topicons [data-act=timerOpen]'), 0, 'le minuteur n’est plus en icône après le retour à la base');
 });
 await step('recherche intelligente et classique', async () => {
   await a.tab('library'); await a.sub('libSub', 'search');
@@ -473,7 +485,9 @@ await step('export JSON', async () => {
 });
 await step('calendrier : planifier une séance, prévu visible, enregistré sur le serveur', async () => {
   await a.tab('home'); await a.click('.topicons [data-act=topCal]'); await A.waitForSelector('[data-act=calDay].today');
-  await a.click('[data-act=calDay].today'); await A.waitForSelector('#sheet form[data-submit=addEvent]');
+  await a.click('[data-act=calDay].today'); await A.waitForSelector('#sheet form[data-submit=addEvent]', { state: 'attached' });
+  // Interface simple : « Associer une séance détaillée » est replié sous « Planifier une activité ».
+  if (!(await A.locator('#sheet form[data-submit=addEvent]').isVisible())) await A.locator('#sheet details:has(form[data-submit=addEvent]) > summary').click();
   await a.click('#sheet form[data-submit=addEvent] button[type=submit]'); await A.waitForSelector('#sheet >> text=Prévu');
   await a.click('#sheet [data-act=closeSheet].btn');
   await A.waitForSelector('[data-act=calDay].today i.plan');
@@ -575,9 +589,12 @@ const cpTo = async (n) => {
 };
 // Les exercices ne sont générés qu'après la dernière validation (étape 6).
 const cpFinish = async () => { await cpTo(6); if(await a.count('[data-act=cpKeepTotal]')) await a.click('[data-act=cpKeepTotal]'); await a.click('[data-act=cpGenerate]'); await A.waitForSelector('#cpresult [data-act=cpSave]'); };
-// « Plus de contrôle » (qui choisit, niveau de structure) est replié dans « L'essentiel » : on l'ouvre avant d'y toucher.
-const cpMore = async () => { if (!(await A.evaluate(() => document.querySelector('details:has([data-act=cpHelp])')?.open))) await a.click('details:has([data-act=cpHelp]) > summary'); };
-const cpFresh = async (help = 'auto') => { await a.tab('library'); await a.sub('libSub', 'climbplan'); await A.waitForSelector('.steps'); if (await a.count('[data-act=cpRestart]')) await a.click('[data-act=cpRestart]'); await cpMore(); await a.click(`[data-act=cpHelp][data-id=${help}]`); };
+// 8.35 : « Plus de contrôle » n'existe plus. À l'étape 1, des cases « ce que je choisis moi-même » montrent les étapes
+// correspondantes ; ces parcours cochent les cinq cases pour garder les 6 étapes qu'ils parcourent.
+const cpMore = async () => {};
+const cpChooseAll = async (on = true) => { for (const k of ['aims', 'phases', 'durations', 'exercises', 'improve']) { const box = A.locator(`input[data-change=cpChoose][data-id=${k}]`); if (await box.count() && (await box.isChecked()) !== on) { await box.click(); await A.waitForTimeout(80); } } };
+const cpExMode = async (m) => { if (await a.count(`[data-act=cpExMode][data-id=${m}]`)) await a.click(`[data-act=cpExMode][data-id=${m}]`); };
+const cpFresh = async (help = 'auto') => { await a.tab('library'); await a.sub('libSub', 'climbplan'); await A.waitForSelector('.steps'); if (await a.count('[data-act=cpRestart]')) await a.click('[data-act=cpRestart]'); await cpChooseAll(true); await cpExMode(help === 'free' ? 'free' : 'guide'); };
 await step('créer une séance (assistant en 6 étapes) : sport, lieu, cotation à réussir, format modifiable, surprise', async () => {
   await cpFresh(); await cpTo(1); await a.click('[data-act=cpSport][data-id=climbing_boulder]'); await a.click('[data-act=cpMin][data-id="150"]');
   assert.match(await a.text('#main'), /Matériel/);
@@ -607,20 +624,20 @@ await step('créer une séance (assistant en 6 étapes) : sport, lieu, cotation 
   await A.waitForSelector('#cpresult:has-text("Pourquoi cette surprise")'); assert.match(await a.text('#cpresult'), /jamais|peu/);
   await a.click('[data-act=cpAgain]'); await A.waitForSelector('#cpresult');
 });
-await step('trois niveaux d’aide : l’app choisit (puis on ajuste), l’app guide (options expliquées), je compose ; 🧭 dans une séance', async () => {
-  await cpFresh('auto'); await cpTo(1); await a.click('[data-act=cpSport][data-id=climbing_boulder]'); await cpTo(2); await a.click('[data-act=cpAim][data-id=none]');
-  await cpTo(3); await a.click('[data-act=cpAdd][data-id=fingers]'); await cpTo(4); await A.waitForSelector('#cpresult');
-  const before = await A.locator('#cpresult .rpart').last().innerText();
-  await A.locator('#cpresult [data-act=cpOpts]').last().click(); await A.waitForSelector('#sheet .optrow');
-  assert.match(await a.text('#sheet'), /Travaille :/); assert.ok(await a.count('#sheet .optrow') >= 1);
-  const wasOn = await A.locator('#sheet .optrow').first().evaluate((x) => x.classList.contains('on'));
-  await A.locator('#sheet .optrow [data-act=cpPick].ck').first().click();
-  await A.waitForFunction((w) => document.querySelector('#sheet .optrow')?.classList.contains('on') !== w, wasOn); await a.click('#sheet [data-act=cpOptsDone]');
-  assert.notEqual(await A.locator('#cpresult .rpart').last().innerText(), before, 'les exercices de la partie ont changé');
-  await A.locator('#cpresult input[data-change=cpBMin]').first().fill('25'); await A.locator('#cpresult input[data-change=cpBMin]').first().press('Tab');
-  await cpTo(1); await cpMore(); await a.click('[data-act=cpHelp][data-id=guide]'); await cpTo(4); await A.waitForSelector('#cpresult details.guide[open] .optrow');
-  assert.match(await a.text('#cpresult details.guide[open]'), /conseillé[\s\S]*💡/);
-  await cpTo(1); await cpMore(); await a.click('[data-act=cpHelp][data-id=free]'); await cpTo(4); await A.waitForSelector('#cpresult');
+await step('8.35 — trois façons de choisir les exercices : l’app choisit tout, l’app propose et je coche, je pars de zéro ; 🧭 dans une séance', async () => {
+  // 1. L'app choisit tout : « ⚡ Proposer ma séance » donne la séance entière, prête à modifier (✕ sur un exercice).
+  await a.tab('library'); await a.sub('libSub', 'climbplan'); await A.waitForSelector('.steps'); if (await a.count('[data-act=cpRestart]')) await a.click('[data-act=cpRestart]');
+  await cpChooseAll(false); await a.click('[data-act=cpSport][data-id=climbing_boulder]'); await a.click('[data-act=cpQuick]');
+  await A.waitForSelector('#cpresult [data-act=cpExDrop]'); const nEx = await a.count('#cpresult [data-act=cpExDrop]');
+  await A.locator('#cpresult [data-act=cpExDrop]').first().click(); await A.waitForFunction((n) => document.querySelectorAll('#cpresult [data-act=cpExDrop]').length === n - 1, nEx);
+  // 2. « L'app propose, je coche » : propositions expliquées à cocher dans chaque partie.
+  await cpFresh('guide'); await cpTo(1); await a.click('[data-act=cpSport][data-id=climbing_boulder]'); await cpTo(2); await a.click('[data-act=cpAim][data-id=none]');
+  await cpTo(3); await a.click('[data-act=cpAdd][data-id=fingers]'); await cpTo(4); await A.waitForSelector('#cpresult details.guide[open] .optrow');
+  // Le premier bloc ouvert est maintenant l'échauffement (exercices sans astuce) : on vérifie les listes guidées de la séance.
+  assert.match(await a.text('#cpresult details.guide[open]'), /conseillé/);
+  assert.ok((await A.locator('#cpresult details.guide').evaluateAll((l) => l.map((d) => d.textContent))).some((t) => /conseillé[\s\S]*💡/.test(t)), 'une liste guidée explique ses options (💡)');
+  // 3. « Je pars de zéro » : les parties sont vides, je choisis moi-même.
+  await cpTo(1); await cpExMode('free'); await cpTo(4); await A.waitForSelector('#cpresult');
   assert.match(await A.locator('#cpresult .rpart').last().innerText(), /Rien pour l’instant/);
   await A.locator('#cpresult [data-act=cpOpts]').last().click(); await A.waitForSelector('#sheet input[data-input=cpQ]');
   await A.locator('#sheet .optrow [data-act=cpPick].ck').first().click(); await a.click('#sheet [data-act=cpOptsDone]');
@@ -671,7 +688,8 @@ await step('8.29 : plusieurs sports, objectifs classés ; n°1 « Performer · V
   assert.match(t3, /toute la séance est organisée pour que tu y arrives frais/); assert.match(t3, /« Force · Bloc » reste modérée/);
   // Chaîne de réglages de la phase n°1 : 8 maillons numérotés, lieu propre à la phase avec déplacement.
   await A.locator('[data-act=cpEdit]').nth(tags2.indexOf(true)).click(); await A.waitForSelector('#sheet .chainlink');
-  assert.equal(await a.count('#sheet .chainlink'), 8); assert.match(await a.text('#sheet'), /1 · Type de phase[\s\S]*3 · Précisément[\s\S]*6 · Lieu[\s\S]*8 · Ce que l’app décide/);
+  // 8.35 : la rubrique vide « 8 · Ce que l’app décide » (verrous) est retirée : 7 rubriques.
+  assert.equal(await a.count('#sheet .chainlink'), 7); assert.match(await a.text('#sheet'), /1 · Type de phase[\s\S]*3 · Précisément[\s\S]*6 · Lieu[\s\S]*7 · /); assert.doesNotMatch(await a.text('#sheet'), /Ce que l’app décide/);
   await a.click('#sheet [data-act=cpPhPlace][data-id=other]'); await A.waitForSelector('#sheet select[data-change=cpPhEnv]');
   const other = await A.evaluate(async () => { const st = await import('/state.js'), def = st.S.cp.envId || st.ctx().defEnv?.id || ''; return [...document.querySelectorAll('#sheet select[data-change=cpPhEnv] option')].map((o) => o.value).find((v) => v && v !== def && st.ctx().envs.find((env)=>env.id===v)?.equipment?.includes('leadwall')); });
   assert.ok(other, 'un autre lieu que celui de la séance'); await A.selectOption('#sheet select[data-change=cpPhEnv]', other); await A.waitForTimeout(150);
@@ -789,17 +807,16 @@ await step('8.28 : « L’essentiel » puis ⚡ Proposer ma séance ; envies →
 await step('V1 : séance structurée (bloc → pause → voie), but ponctuel, propositions expliquées, amélioration appliquée, génération, séance faite, journal', async () => {
   const goalsN = async () => (await a.api('GET', '/api/items?since=0')).data.items.filter((i) => i.c === 'goal' && !i.deleted).length;
   const g0 = await goalsN();
-  await cpFresh('auto'); await cpMore();
-  // La fin d'une vraie synchro refait l'écran : les options ouvertes restent utilisables, même en mode par défaut.
+  await cpFresh('auto');
+  // La fin d'une vraie synchro refait l'écran : les choix de l'étape 1 restent ceux de la personne.
   const syncCreator = async () => {
     await A.waitForFunction(async () => !(await import('/state.js')).S.syncing);
     await A.evaluate(async () => { await (await import('/state.js')).syncAll(); });
   };
-  await syncCreator(); assert.equal(await A.locator('#cp-controls').evaluate((el) => el.open), true, 'options du créateur ouvertes conservées après synchronisation');
-  await a.click('[data-act=cpHelp][data-id=auto]'); await a.click('[data-act=cpLevel][data-id=precis]');
-  await a.click('#cp-controls > summary'); await syncCreator();
-  assert.equal(await A.locator('#cp-controls').evaluate((el) => el.open), false, 'options repliées conservées même avec un niveau précis');
-  await cpMore(); await cpTo(1);
+  await syncCreator(); assert.equal(await A.locator('input[data-change=cpChoose][data-id=phases]').isChecked(), true, 'choix du créateur conservés après synchronisation');
+  await A.locator('input[data-change=cpChoose][data-id=improve]').click(); await syncCreator();
+  assert.equal(await A.locator('input[data-change=cpChoose][data-id=improve]').isChecked(), false, 'un choix retiré le reste après synchronisation');
+  await A.locator('input[data-change=cpChoose][data-id=improve]').click(); await cpTo(1);
   await a.click('[data-act=cpSport][data-id=climbing_boulder]'); await a.click('[data-act=cpMin][data-id="45"]');
   await cpTo(2); await a.click('[data-act=cpAim][data-id=none]');
   await A.fill('textarea[data-input=cpWords]', 'Préparer puis performer en voie'); await A.press('textarea[data-input=cpWords]', 'Tab');

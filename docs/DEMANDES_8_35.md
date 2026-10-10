@@ -7,9 +7,9 @@ Chaque demande est recopiée telle quelle (résumée quand elle est longue), ave
 
 | Demande | État | Où le voir |
 |---|---|---|
-| Ajouter des phases très simplement dans mon profil | 🟡 | Profil › Mes phases › « ＋ Ajouter une phase » |
-| Quand je crée une séance du sport de la phase, l'app me propose toutes mes phases | 🟡 | Créer une séance › Ta structure › « 🧩 Mes phases » |
-| Simple à programmer | 🟡 | même endroit : un bouton ＋ par phase |
+| Ajouter des phases très simplement dans mon profil | ✅ | Profil › Mes phases › « ＋ Ajouter une phase » |
+| Quand je crée une séance du sport de la phase, l'app me propose toutes mes phases | ✅ | Créer une séance › Ta structure › « 🧩 Mes phases » |
+| Simple à programmer | ✅ | même endroit : un bouton ＋ par phase |
 | Supprimer des exercices ou des phases après coup, sans revenir en arrière | ✅ | Structure finale et séance proposée : ✕ sur un exercice, « Retirer cette phase » |
 | Revenir en arrière garde exactement la même organisation | ✅ | boutons ‹ / › du créateur |
 | Une phase sans exercices, avec un message proposé par l'app et modifiable (ex. spray wall) | ✅ | « Pas d'exercices pour cette phase » sur chaque phase |
@@ -33,10 +33,10 @@ Chaque demande est recopiée telle quelle (résumée quand elle est longue), ave
 | Demande | État | Où le voir |
 |---|---|---|
 | Métriques : expliquer ce que c'est | ✅ | Profil › Records et mesures (texte d'aide), formulaire « Nouvelle mesure » |
-| Aucun doublon dans l'app | ⏳ | Progrès, Mes sports, À mesurer, poids, Bibliothèque : faits ; passe complète à finir |
-| Petits messages en italique « si tu as besoin de …, va dans … » avec le chemin, cliquables | ⏳ | une quinzaine d'endroits ; « ‹ Retour » ramène à la page de départ |
-| Les mettre à tous les endroits liés | ⏳ | — |
-| App bien organisée, boutons rangés, petits messages pour les choses pas évidentes | ⏳ | — |
+| Aucun doublon dans l'app | ✅ | Progrès, Mes sports, À mesurer, poids et mensurations, noms des rubriques de la Bibliothèque ; les raccourcis de l'accueil restent des raccourcis |
+| Petits messages en italique « si tu as besoin de …, va dans … » avec le chemin, cliquables | ✅ | une vingtaine d'endroits ; « ‹ Retour » ramène à la page de départ ; un test vérifie que chaque chemin mène à la bonne page |
+| Les mettre à tous les endroits liés | 🟡 | lieux, objectifs, phases, étirements, mesures, poids, bilan, exercices, zones à ménager, Progrès ; à compléter selon ton retour |
+| App bien organisée, boutons rangés, petits messages pour les choses pas évidentes | 🟡 | boutons longs qui passent à la ligne, réglages fins repliés, explications ajoutées ; à juger sur ton téléphone |
 
 ## Créateur de séance
 
@@ -45,8 +45,8 @@ Chaque demande est recopiée telle quelle (résumée quand elle est longue), ave
 | À l'étape 1, plus de « précis / très précis » : des cases à cocher (durées des phases, phases, objectifs…) | ✅ | Créer une séance, étape 1 |
 | Ces cases en bas de chaque étape, pour changer mes choix | ✅ | bas de chaque étape |
 | « Modifiable / l'app choisit / bloqué » remplacé par quelque chose de clair | ✅ | tout se modifie ; « ✏️ modifié par toi » |
-| « Faire avec l'app » : l'app propose, je modifie tout simplement | 🟡 | — |
-| Objectifs beaucoup mieux faits et beaucoup plus simples à paramétrer | ⏳ | Profil › Objectifs et étape « Tes objectifs » |
+| « Faire avec l'app » : l'app propose, je modifie tout simplement | ✅ | « ⚡ Proposer ma séance » donne la séance entière, prête à modifier (✕) ; « ↺ » rend un réglage à l'app |
+| Objectifs beaucoup mieux faits et beaucoup plus simples à paramétrer | ✅ | Profil › Objectifs › « ＋ Ajouter un objectif » (en deux temps) ; étape « Tes objectifs » allégée |
 
 ## Séance en cours
 
@@ -58,19 +58,19 @@ Chaque demande est recopiée telle quelle (résumée quand elle est longue), ave
 
 | Demande | État | Où le voir |
 |---|---|---|
-| Qu'on ne voie pas que c'est une IA ni que c'est Gemini (côté membres) | 🟡 | textes de l'assistant ; l'assistant ne prétend jamais être une personne |
-| Étapes pour relier Gemini, à faire moi-même | 🟡 | DELIVERY (livraison) et message final |
-| Assistant admin aussi efficace qu'une vraie conversation (« rends ça plus clair », « ajoute ça ») | ⏳ | Paramètres › Administration › Assistant du site |
-| Joindre une capture d'écran à l'assistant admin, analysée | ⏳ | même endroit (demande le modèle Gemini) |
-| Capture d'écran jointe aux signalements de bug et aux propositions | ⏳ | Paramètres › Signaler un bug ; « Proposer une amélioration » |
+| Qu'on ne voie pas que c'est une IA ni que c'est Gemini (côté membres) | ✅ (sauf une ligne) | « l'assistant » partout ; le destinataire des données (Google ou Cloudflare) reste nommé dans « Qui reçoit ta demande ? », replié : c'est une obligation de transparence ; l'assistant ne prétend jamais être une personne |
+| Étapes pour relier Gemini, à faire moi-même | ✅ | DELIVERY_8_35.md et message final |
+| Assistant admin aussi efficace qu'une vraie conversation (« rends ça plus clair », « ajoute ça ») | 🟡 | Paramètres › Administration › Assistant du site (consignes revues ; à essayer avec la vraie clé Gemini) |
+| Joindre une capture d'écran à l'assistant admin, analysée | ✅ (avec Gemini) | même endroit ; vérifié avec une réponse Gemini simulée, pas avec la vraie |
+| Capture d'écran jointe aux signalements de bug et aux propositions | ✅ | Paramètres › Signaler un bug ; « Proposer une amélioration » ; chez les admins : 📎 et « 🔎 Analyser avec l'assistant » |
 
 ## Ajoutées ensuite
 
 | Demande | État | Où le voir |
 |---|---|---|
-| Ne rien oublier de tout ce que j'ai dit | ⏳ | cette liste |
-| Sources fiables pour les exercices, l'assistant…, citées dans l'app : repère « Sources » avec les icônes des sources ; un clic montre tous les liens ; un lien mène directement à l'endroit de l'info | ⏳ | — |
-| Supprimer le choix interface simple / avancée : garder seulement l'interface simple | ⏳ | — |
+| Ne rien oublier de tout ce que j'ai dit | ✅ | cette liste |
+| Sources fiables pour les exercices, l'assistant…, citées dans l'app : repère « Sources » avec les icônes des sources ; un clic montre tous les liens ; un lien mène directement à l'endroit de l'info | ✅ / ⚠️ | « 📚 Sources » partout où une source est citée, et sur chaque exercice ; « 🎯 Voir le passage » mène à la phrase exacte lue par le serveur sur PubMed. Limite : PubMed est bloqué depuis l'environnement de travail, donc c'est vérifié avec un faux résumé, et la vraie phrase n'apparaîtra qu'en ligne. Pour 102 exercices sur 315 (technique pure), aucune étude n'est citée, et l'app le dit au lieu d'en inventer une |
+| Supprimer le choix interface simple / avancée : garder seulement l'interface simple | ✅ | plus aucun choix dans les Paramètres ; un ancien réglage « Avancée » est sans effet |
 
 ## Toujours valables
 

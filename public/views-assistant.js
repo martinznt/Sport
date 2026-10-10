@@ -35,7 +35,11 @@ export const EXAMPLES = [
 ];
 const C = () => {
   const owner = key();
-  if (S.admin.chatOwner !== owner) { S.admin.chatOwner = owner; S.admin.chat = null; S.admin.chatBusy = false; S.admin.chatDraft = ''; S.admin.ai = undefined; S.admin.aiErr = ''; S.admin.aiTesting = false; S.admin.aiTest = null; S.admin.aiPanelOpen = false; }
+  if (S.admin.chatOwner !== owner) {
+    // Une demande préparée par ce même compte (« 🔎 Analyser avec l'assistant ») est gardée ; celle d'un autre compte, jamais.
+    const mine = S.admin.draftFor && S.admin.draftFor === S.user?.id ? { d: S.admin.chatDraft || '', a: S.admin.asAttach || [] } : { d: '', a: [] };
+    S.admin.chatOwner = owner; S.admin.chat = null; S.admin.chatBusy = false; S.admin.chatDraft = mine.d; S.admin.asAttach = mine.a; S.admin.draftFor = ''; S.admin.ai = undefined; S.admin.aiErr = ''; S.admin.aiTesting = false; S.admin.aiTest = null; S.admin.aiPanelOpen = false;
+  }
   return (S.admin.chat ||= (() => { try { const x = ls.get(owner, null); return x && Array.isArray(x.messages) ? { ...x, messages: x.messages.filter((m) => ['user','assistant'].includes(m?.role) && typeof m.content === 'string').slice(-40).map((m) => ({ ...m, meta: { ...(m.meta || {}), ...responseInfo(m.meta) } })) } : { messages: [], draftId: '' }; } catch { return { messages: [], draftId: '' }; } })());
 };
 const save = () => { const c = C(); ls.set(key(), { messages: c.messages.slice(-40), draftId: c.draftId || '' }); };

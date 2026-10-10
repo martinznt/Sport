@@ -122,8 +122,8 @@ export function fitDurations(phases, total) {
   const T = Math.round(Number(total)); const list = phases.map((p) => ({ ...p }));
   const locked = list.filter((p) => p.locks?.minutes === 'user'), free = list.filter((p) => p.locks?.minutes !== 'user');
   const fixed = totalMinutes(locked), room = T - fixed;
-  if (!free.length) return { phases: list, ok: fixed === T, error: fixed === T ? '' : `Toutes les durées sont verrouillées : ${fixed} min au lieu de ${T} min.` };
-  if (room < free.length * 5) return { phases: list, ok: false, error: `Les phases verrouillées prennent déjà ${fixed} min : il ne reste pas assez de temps (${Math.max(0, room)} min) pour les autres.` };
+  if (!free.length) return { phases: list, ok: fixed === T, error: fixed === T ? '' : `Tu as réglé toi-même toutes les durées : ${fixed} min au lieu de ${T} min.` };
+  if (room < free.length * 5) return { phases: list, ok: false, error: `Les durées réglées par toi prennent déjà ${fixed} min : il ne reste pas assez de temps (${Math.max(0, room)} min) pour les autres.` };
   const cur = totalMinutes(free) || free.length;
   let acc = 0;
   free.forEach((p, k) => {

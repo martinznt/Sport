@@ -92,17 +92,19 @@ export function suggestRoutines(routines = [], phases = [], o = {}) {
 }
 
 /** Ajoute un moment à la structure ; le temps est pris sur la plus longue phase modifiable (jamais sous 10 min). */
-export function insertRoutine(phases = [], sug) {
+/** extend : sans temps à prendre ailleurs (séance courte), la phase est ajoutée et la séance s'allonge d'autant
+ *  (seulement hors créneau horaire d'un lieu, qui, lui, ne s'allonge pas). */
+export function insertRoutine(phases = [], sug, { extend = false } = {}) {
   const list = phases.map((p) => ({ ...p })), m = sug.phase.minutes;
   const at=Math.min(sug.at,list.length), near=list[at]?.window?list[at]:list[at-1]?.window?list[at-1]:list[at]||list.at(-1);
   const windowKey=p=>p?.window?`${p.window.envId}:${p.window.from}:${p.window.to}`:'';
   const donor = list.filter((p) => p.type !== 'pause' && p.type !== 'routine' && p.locks?.minutes !== 'user' && p.role !== 'warmup' && p.role !== 'cool' && windowKey(p)===windowKey(near) && (p.minutes || 0) - m >= 10).sort((a, b) => b.minutes - a.minutes)[0];
-  if (!donor) return {phases,took:null,blocked:'Ce moment ne tient pas dans le temps modifiable de ce créneau. Déverrouille ou allonge un bloc de ce lieu.'};
-  donor.minutes -= m;
+  if (!donor && !(extend && !windowKey(near))) return {phases,took:null,blocked:near?.window?'Pas assez de temps libre dans ce créneau du lieu : allonge ce créneau ou raccourcis une autre phase.':'Pas assez de temps à prendre sur les autres phases : allonge la séance ou raccourcis une autre phase.'};
+  if (donor) donor.minutes -= m;
   const phase={...sug.phase,...(near?.window?{window:{...near.window}}:{})};
   if(list[at]?.place?.mode==='other'){phase.place={...list[at].place};list[at].place={mode:'same'};}
   list.splice(at,0,phase);
-  return { phases: list, took: donor ? { name: pname(donor), minutes: m } : null };
+  return { phases: list, took: donor ? { name: pname(donor), minutes: m } : null, extended: donor ? 0 : m };
 }
 
 /**

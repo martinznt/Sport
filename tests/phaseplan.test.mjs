@@ -38,7 +38,7 @@ ok('analyse globale : fatigue avant la performance, pause, verrous respectés', 
   const ids = s.map((x) => x.id); assert.ok(ids.includes('fatigue-intensity') && ids.includes('fatigue-minutes'), ids.join());
   for (const x of s) assert.ok(x.why.length && x.why.every((w) => REASON[w.cat]));
   const lockd = normalizePhases(ph.map((p) => (p.id === 'b' ? { ...p, locks: { minutes: 'user' } } : p)));
-  const blocked = analyzeSession(lockd, ctx, {}).find((x) => x.id === 'fatigue-minutes'); assert.match(blocked.blocked, /verrouillé/);
+  const blocked = analyzeSession(lockd, ctx, {}).find((x) => x.id === 'fatigue-minutes'); assert.match(blocked.blocked, /réglé ça toi-même/);
   assert.equal(applySuggestion(lockd, blocked).applied, false, 'jamais appliquée sur un réglage verrouillé');
 });
 ok('appliquer une suggestion : le total ne change pas ; refuser = ne rien appliquer', () => {

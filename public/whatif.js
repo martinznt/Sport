@@ -43,11 +43,11 @@ const locked = (p, k) => p?.locks?.[k] === 'user';
 export function applyChange(phasesIn, ch) {
   const phases = phasesIn.map((p) => ({ ...p })), i = phases.findIndex((p) => p.id === ch.id), p = phases[i];
   if (ch.type !== 'add' && ch.type !== 'replace' && !p) return { blocked: 'Phase introuvable.' };
-  if (ch.type === 'minutes') { if (locked(p, 'minutes')) return { blocked: `La durée de « ${phaseName(p)} » est verrouillée.` }; p.minutes = Math.max(p.type === 'pause' ? 1 : 5, p.minutes + Math.round(Number(ch.delta) || 0)); }
-  else if (ch.type === 'intensity') { if (locked(p, 'intensity')) return { blocked: `L’intensité de « ${phaseName(p)} » est verrouillée.` }; p.intensity = INT_W[ch.value] ? ch.value : p.intensity; }
-  else if (ch.type === 'remove') { if (Object.values(p.locks || {}).includes('user')) return { blocked: `« ${phaseName(p)} » a des réglages verrouillés : elle ne peut pas être retirée.` }; phases.splice(i, 1); }
+  if (ch.type === 'minutes') { if (locked(p, 'minutes')) return { blocked: `La durée de « ${phaseName(p)} » a été réglée par toi : l’app n’y touche pas.` }; p.minutes = Math.max(p.type === 'pause' ? 1 : 5, p.minutes + Math.round(Number(ch.delta) || 0)); }
+  else if (ch.type === 'intensity') { if (locked(p, 'intensity')) return { blocked: `L’intensité de « ${phaseName(p)} » a été réglée par toi : l’app n’y touche pas.` }; p.intensity = INT_W[ch.value] ? ch.value : p.intensity; }
+  else if (ch.type === 'remove') { if (Object.values(p.locks || {}).includes('user')) return { blocked: `« ${phaseName(p)} » a des réglages faits par toi : l’app ne la retire pas (retire-la toi-même avec ✕ si tu veux).` }; phases.splice(i, 1); }
   else if (ch.type === 'add') phases.splice(Math.max(0, Math.min(phases.length, ch.at ?? phases.length)), 0, normalizePhase({ ...ch.phase, id: ch.phase?.id || `sim-${phases.length + 1}` }, phases.length));
-  else if (ch.type === 'place') { if (locked(p, 'place')) return { blocked: `Le lieu de « ${phaseName(p)} » est verrouillé.` }; p.place = { mode: ch.envId ? 'other' : 'same', envId: ch.envId || '', travelMin: ch.travelMin ?? null }; }
+  else if (ch.type === 'place') { if (locked(p, 'place')) return { blocked: `Le lieu de « ${phaseName(p)} » a été choisi par toi : l’app n’y touche pas.` }; p.place = { mode: ch.envId ? 'other' : 'same', envId: ch.envId || '', travelMin: ch.travelMin ?? null }; }
   else if (ch.type === 'replace') return { phases, exercises: (ch.exercises || []).map((e) => (e.id === ch.from ? { ...e, ...ch.to, id: e.id } : e)) };
   else return { blocked: 'Changement inconnu.' };
   return { phases };

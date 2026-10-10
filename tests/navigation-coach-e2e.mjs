@@ -30,8 +30,8 @@ const open = async (tab, sub, param) => { await p.evaluate(async (args) => { con
 const routes = {
   home: ['dash', 'cal'],
   progress: ['summary', 'journal', 'analyses', 'lab', 'records', 'timeline', 'history'],
-  library: ['home', 'seances', 'climbplan', 'generate', 'gym', 'moments', 'catalog', 'best', 'exercises', 'common', 'search', 'import', 'seance/nav-session'],
-  profile: ['home', 'memory', 'bilan', 'analyse', 'body', 'understand', 'map', 'activities', 'perfs', 'climbing', 'goals', 'equipment', 'prefs', 'public'],
+  library: ['home', 'seances', 'climbplan', 'generate', 'gym', 'stretch', 'catalog', 'best', 'exercises', 'common', 'search', 'import', 'seance/nav-session'],
+  profile: ['home', 'memory', 'bilan', 'analyse', 'body', 'understand', 'map', 'activities', 'perfs', 'climbing', 'goals', 'phases', 'equipment', 'prefs', 'public'],
   settings: ['main', 'display', 'session', 'notifs', 'help', 'data', 'sync', 'updates', 'bug', 'admin'],
 };
 try {
@@ -46,7 +46,7 @@ try {
     saveSeance({ id: 'nav-session', name: 'Séance de vérification', exercises: [{ id: 'nav-push', name: 'Pompes', mode: 'reps', sets: 3, repsMin: 8, repsMax: 8, rest: 60 }] });
     S.setup = null; closeSheet(); render();
   });
-  for (const mode of ['simple', 'advanced']) {
+  for (const mode of ['simple']) { // 8.35 : une seule interface
     await step(`Organiser sur les 46 pages et sous-pages en mode ${mode} : aperçu, continuer, quitter`, async () => {
       await p.evaluate(async (mode) => { const { S, render } = await import('/state.js'); S.settings.interfaceMode = mode; render(); }, mode);
       for (const [tab, subs] of Object.entries(routes)) for (const path of subs) {
@@ -111,7 +111,7 @@ try {
     assert.equal((await ctx.request.post(srv.base + '/api/admin/activate', { headers: { Origin: srv.base }, data: { password: 'secret-admin-de-test' } })).status(), 200);
     await p.evaluate(async () => { const { S, api } = await import('/state.js'); S.user = (await api('GET', '/api/auth/me')).user; });
     const adminPages = ['admin', 'assistant', 'content', 'look', 'changes', 'members', 'bugs', 'users', 'push', 'studio', 'audit', 'lab', 'health', 'maint', 'code'];
-    for (const mode of ['simple', 'advanced']) {
+    for (const mode of ['simple']) { // 8.35 : une seule interface
       await p.evaluate(async (mode) => { const { S, render } = await import('/state.js'); S.settings.interfaceMode = mode; render(); }, mode);
       for (const sub of adminPages) {
         await open('settings', sub); const origin = p.url();

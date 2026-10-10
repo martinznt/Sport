@@ -40,7 +40,8 @@ try {
     }
   });
   await step('réglage de phase : aucune cotation préremplie, plage choisie et retour au ressenti', async () => {
-    await p.click('[data-act=cpStep][data-d="-1"]'); await p.waitForSelector('[data-act=cpEdit]');
+    // 8.35 : « Proposer ma séance » saute les étapes non cochées ; « ✏️ Modifier encore » puis « ✏️ Changer la structure » y ramènent.
+    await p.click('[data-act=cpUngen]'); await p.click('[data-act=cpStepTo][data-id="3"]'); await p.waitForSelector('[data-act=cpEdit]');
     const index = await p.evaluate(async () => (await import('/state.js')).S.cp.parts.findIndex((x) => x.type === 'climb'));
     await p.click(`[data-act=cpEdit][data-i="${index}"]`); await p.waitForSelector('[data-change=cpPartLv]', { state: 'attached' });
     assert.equal(await p.inputValue('#sheet [data-change=cpPartLv][data-k=from]'), '');
@@ -59,6 +60,8 @@ try {
   });
   await step('objectif de cotation : aucun objectif implicite, choix requis puis respecté', async () => {
     await p.click('[data-act=cpRestart]'); await p.waitForSelector('[data-act=cpQuick]');
+    // 8.35 : « Tes objectifs » et « Ta structure » se montrent quand on coche « Mes objectifs » et « Les phases ».
+    for (const k of ['aims', 'phases']) { const box = p.locator(`input[data-change=cpChoose][data-id=${k}]`); if (!(await box.isChecked())) await box.click(); }
     await p.click('[data-act=cpStep][data-d="1"]'); await p.waitForSelector('[data-act=cpAim][data-id=grade]');
     await p.click('[data-act=cpAim][data-id=grade]'); await p.waitForSelector('[data-change=cpTargetSel]', { state: 'attached' });
     assert.equal(await p.inputValue('[data-change=cpTargetSel]'), '');

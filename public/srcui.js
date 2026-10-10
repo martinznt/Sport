@@ -43,7 +43,7 @@ const fragment = (text) => { const w = String(text || '').trim().replace(/[.!?]+
 const safeUrl = (u) => { try { const x = new URL(u); return x.protocol === 'https:' || x.protocol === 'http:' ? x.href : ''; } catch { return ''; } };
 function linksOf(id) {
   const s = SOURCES[id] || {}, p = passages.get(id), base = safeUrl(s.url), pub = /^https:\/\/pubmed\.ncbi\.nlm\.nih\.gov\/\d+\/?$/.test(base);
-  if (p?.url) return { passage: p.url, quote: p.passage || '', page: base };
+  if (p?.url && safeUrl(p.url)) return { passage: safeUrl(p.url), quote: String(p.passage || '').slice(0, 600), page: base };
   if (s.passage && base) return { passage: base.split('#')[0] + fragment(s.passage), quote: s.passage, page: base }; // passage copié par un administrateur
   return { passage: '', quote: '', page: pub ? base + '#abstract' : base };
 }

@@ -37,7 +37,7 @@ import { searchAdmin } from './server/admin-search.js';
 import { cleanExternal, externalOf } from './public/external.js';
 import { stravaRoute } from './server/strava.js';
 
-const APP_VERSION = '8.34.2';
+const APP_VERSION = '8.35.0';
 const SESSION_DAYS = 365;           // on reste connecté 1 an (renouvelé à l'usage)
 const PBKDF2_ITERATIONS = 100000;   // maximum autorisé sur Workers
 const DAY = 86400000;
@@ -1802,6 +1802,7 @@ async function studioRoute(request, env, u, url, p, m) {
 async function proposalCreate(request, env, u) {
   const b = await readJson(request, MAX_BODY); // 8.35 : jusqu'à 2 captures d'écran
   const shots = cleanImages(b?.images); if (shots.error) return fail(shots.error, 413);
+  if (textSize(b) > 60000) return fail('Données trop volumineuses.', 413); // hors captures, la limite d'avant reste
   const kind = ['intent', 'category', 'idea', ...GLOBAL_KINDS].includes(b?.kind) ? b.kind : 'idea', label = str(b?.label, 80), detail = str(b?.detail, 1000);
   if (label.length < 2) return fail('Donne au moins un nom à ta proposition.');
   // Proposition d'un élément complet (système de cotation, style, exercice, séance, format) : validé comme s'il était publié.
@@ -1861,9 +1862,12 @@ async function aiChatRoute(request, env, u) {
   }
   catch (e) { console.error('ai-chat', e?.message); const err = aiError(e, 'Le coach n’a pas pu répondre. Réessaie dans un instant.'); return json({ error: err.error, quota: err.quota }, err.status); }
 }
+/** Taille d'une demande sans ses captures d'écran (les captures ont leurs propres limites). */
+const textSize = (b) => (b && typeof b === 'object' ? JSON.stringify({ ...b, images: undefined }).length : 0);
 async function bugCreate(request, env, u) {
   const b = await readJson(request, MAX_BODY); // 8.35 : jusqu'à 2 captures d'écran
   const shots = cleanImages(b?.images); if (shots.error) return fail(shots.error, 413);
+  if (textSize(b) > 30000) return fail('Données trop volumineuses.', 413); // hors captures, la limite d'avant reste
   if (!b) return fail('Données invalides.');
   const description = str(b.description, 5000), title = str(b.title, 120) || description.slice(0, 120);
   if (description.length < 5) return fail('Décris le problème en quelques mots.');

@@ -38,7 +38,7 @@ export function vStretch() {
       <div class="chips">${DELAYS.map(([m, l]) => chip(v.delay === m, l, `data-act="stDelay" data-id="${m}"`))}</div>
       <b class="small">5. Pendant combien de temps ?</b>
       <div class="chips">${LENGTHS.map((m) => chip(v.minutes === m, `${m} min`, `data-act="stLen" data-id="${m}"`))}</div>
-      <button class="btn pri big" data-act="stMake">🧘 Préparer mes étirements</button>
+      <button class="btn wrapbtn pri big" data-act="stMake">🧘 Préparer mes étirements</button>
     </div>
     ${v.plan ? planCard(v.plan, base) : ''}
     ${mine.length ? h`<span class="kicker">Mes séances d’étirement</span><div class="setmenu">${mine.map((s) => { const b = getSeance(s.stretch?.forId); return h`<div class="setrow"><span class="sic">🧘</span><span class="grow"><b>${s.name}</b><small>${s.exercises.length} étirements · ~${Math.round(s.durationMin || 0) || '?'} min${b ? ` · après « ${b.name} »${(b.stretchIds || []).includes(s.id) ? ' ✓' : ''}` : ''}</small></span><button class="btn sm pri" data-act="stPlay" data-id="${s.id}" aria-label="Lancer ${s.name}">▶</button></div>`; })}</div>` : ''}
@@ -50,7 +50,7 @@ function planCard(p, base) {
     ${p.notes.length ? h`<p class="tiny warn-t">${p.notes.join(' ')}</p>` : ''}
     <ul class="clean tight tiny muted">${p.tips.map((t) => h`<li>${t}</li>`)}</ul>
     ${sourcesLine(['behm2016'], { claim: 'Étirements : effets sur l’amplitude et la performance' })}
-    <div class="row wrapf"><button class="btn pri" data-act="stPlayPlan">▶ Lancer maintenant</button><button class="btn" data-act="stSave">💾 Enregistrer</button>${base ? h`<button class="btn" data-act="stSave" data-link="1">📌 Me la proposer après « ${base.name} »</button>` : ''}</div></div>`;
+    <div class="row wrapf"><button class="btn wrapbtn pri" data-act="stPlayPlan">▶ Lancer maintenant</button><button class="btn wrapbtn" data-act="stSave">💾 Enregistrer</button>${base ? h`<button class="btn wrapbtn" data-act="stSave" data-link="1">📌 Me la proposer après « ${base.name} »</button>` : ''}</div></div>`;
 }
 const tog = (k) => (el) => { const v = st(), id = el.dataset.id; v[k] = v[k].includes(id) ? v[k].filter((x) => x !== id) : [...v[k], id]; v.plan = null; render(); };
 ACT.stZone = tog('zones');
@@ -91,10 +91,10 @@ export function seanceStretches(s) {
   if (!s || isStretch(s)) return '';
   const l = stretchesFor(s.id);
   return h`<section class="card stack"><h3 style="margin:0">🧘 Étirements après cette séance</h3>
-    ${l.length ? h`<div class="setmenu">${l.map((x) => h`<div class="setrow"><span class="sic">🧘</span><span class="grow"><b>${x.name}</b><small>${x.exercises.length} étirements · ~${x.durationMin || '?'} min${x.stretch?.delayMin ? ` · ${x.stretch.delayMin} min après` : ' · juste après'}</small></span><button class="btn sm pri" data-act="stPlay" data-id="${x.id}" aria-label="Lancer ${x.name}">▶</button><button class="btn sm ghost" data-act="stUnlink" data-id="${x.id}" data-base="${s.id}" aria-label="Ne plus proposer ${x.name}">✕</button></div>`)}</div>
+    ${l.length ? h`<div class="setmenu">${l.map((x) => h`<div class="setrow"><span class="sic">🧘</span><span class="grow"><b>${x.name}</b><small>${x.exercises.length} étirements · ~${x.durationMin || '?'} min${x.stretch?.delayMin ? ` · ${x.stretch.delayMin} min après` : ' · juste après'}</small></span><button class="btn sm pri" data-act="stPlay" data-id="${x.id}" aria-label="Lancer ${x.name}">▶</button><button class="btn wrapbtn sm ghost" data-act="stUnlink" data-id="${x.id}" data-base="${s.id}" aria-label="Ne plus proposer ${x.name}">✕</button></div>`)}</div>
       <p class="tiny muted"><em>À la fin de cette séance, l’app te demandera quand les faire : tout de suite ou plus tard (avec un rappel).</em></p>`
       : h`<p class="tiny muted"><em>Aucune pour l’instant.</em></p>`}
-    <button class="btn sm" data-act="stPrepare" data-id="${s.id}">＋ Préparer des étirements pour cette séance</button></section>`;
+    <button class="btn wrapbtn sm" data-act="stPrepare" data-id="${s.id}">＋ Préparer des étirements pour cette séance</button></section>`;
 }
 
 /* ───────── Fin de séance : « dans X minutes » ───────── */

@@ -17,9 +17,9 @@ import { cleanItem, itemKey } from './items.js';
 import { decideOutboxError, newOpId, describeOp } from './outbox.js';
 import { buildContext } from './brain.js';
 import { registerMine } from './choices.js';
-import { toast, tz, $, closeSheet, sheetOpen } from './ui.js';
+import { toast, tz, $, closeSheet, sheetOpen, clearToasts } from './ui.js';
 
-export const APP_VERSION = '8.34.2';
+export const APP_VERSION = '8.35.0';
 export const ACT = {}, SUBMIT = {}, CHG = {}, INPUT = {};
 export const DEFAULT_SETTINGS = { sound: true, vibration: true, voice: false, keepAwake: true, handsFree: false, defaultRest: 60, defaultMinutes: 30, onboarded: false, autoBase: false, avoid: {}, bigMode: false, autoWarm: true, season: false, soundStyle: 'bip', volume: 60, lang: 'fr', notifSound: 'doux', redMode: false, interfaceMode: 'simple' };
 const initialAccountState = () => ({
@@ -98,7 +98,7 @@ function ensureAccount() {
   if (typeof document !== 'undefined') {
     document.querySelector('#dialog [data-dlg="0"]')?.click();
     for (const selector of ['#sheet', '#dialog', '#player', '#grp']) { const panel = document.querySelector(selector); if (panel) { panel.classList.remove('open'); panel.replaceChildren(); } }
-    clearTimeout(toast.q); // un message en attente de l'autre compte ne s'affiche pas
+    clearToasts(); // un message en attente de l'autre compte ne s'affiche pas
     const message = document.querySelector('#toast'); if (message) { message.className = ''; message.replaceChildren(); }
     document.body?.classList.remove('grp-open', 'noscroll');
   }

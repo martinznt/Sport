@@ -213,8 +213,11 @@ const shownSteps = (c = CP()) => STEPS.map((_, k) => k + 1).filter((n) => stepOn
 function chooseCard() {
   const ch = chooseOf();
   return h`<div class="card stack"><b class="small">✋ Ce que je veux choisir moi-même</b><p class="tiny muted"><em>Coche ce que tu veux régler ; pour le reste, l’app propose. À la dernière étape, tu peux encore tout modifier ou retirer.</em></p>
-    <div class="setmenu">${Object.entries(CHOOSE).map(([k, [ic, l, d]]) => h`<label class="setrow chkrow"><span class="sic">${ic}</span><span class="grow"><b>${l}</b><small>${d}</small></span><input type="checkbox" data-change="cpChoose" data-id="${k}" ${ch[k] ? 'checked' : ''} aria-label="${l}"></label>`)}</div></div>`;
+    <div class="setmenu">${Object.entries(CHOOSE).map(([k, [ic, l, d]]) => h`<label class="setrow chkrow"><span class="sic">${ic}</span><span class="grow"><b>${l}</b><small>${d}</small></span><input type="checkbox" data-change="cpChoose" data-id="${k}" ${ch[k] ? 'checked' : ''} aria-label="${l}"></label>`)}</div>
+    ${ch.exercises ? h`<div class="stack tight"><span class="tiny muted">Pour les exercices :</span><div class="chips">${[['guide', '✅ L’app propose, je coche'], ['free', '✍️ Je pars de zéro']].map(([k, l]) => chip((CP().help === 'free' ? 'free' : 'guide') === k, l, `data-act="cpExMode" data-id="${k}"`))}</div></div>` : ''}</div>`;
 }
+// Avec « Les exercices » coché : propositions à cocher (guide) ou phases vides que tu remplis (je compose).
+ACT.cpExMode = (el) => { const c = CP(), free = el.dataset.id === 'free'; c.help = free ? 'free' : 'guide'; for (const p of c.built || []) if (p.type !== 'pause') delete p.pick; if (c.built) rebuild(); c.result = null; keep(); render(); };
 /** Bas de chaque étape : les mêmes choix, en court, pour revenir sur une décision sans revenir en arrière. */
 function chooseBar() {
   const ch = chooseOf();
@@ -222,7 +225,7 @@ function chooseBar() {
 }
 function setChoice(k, on) {
   const c = CP(), ch = chooseOf(c); if (!CHOOSE[k]) return;
-  ch[k] = !!on; c.level = 'modere'; c.help = ch.exercises ? 'guide' : 'auto';
+  ch[k] = !!on; c.level = 'modere'; c.help = ch.exercises ? (c.help === 'free' ? 'free' : 'guide') : 'auto';
   if (k === 'exercises') { for (const p of c.built || []) if (!on && p.type !== 'work') delete p.pick; if (c.built) rebuild(); }
   // L'étape où l'on est n'est plus choisie : on va à la suivante montrée (rien n'est perdu).
   if (!stepOn(c.step, c)) c.step = shownSteps(c).find((n) => n > c.step) || NSTEPS;
@@ -364,7 +367,7 @@ function vWhy() {
       <div class="chips">${AVOID_ZONES.map(([k, l]) => chip((c.zones || []).includes(k), l, `data-act="cpZone" data-id="${k}"`))}${addField('zone', 'cpZone')}</div>
       ${(c.painZones || []).filter((z) => (c.zones || []).includes(z)).length ? h`<p class="tiny warn-t">🩹 Pré-coché d’après tes douleurs notées (${c.painZones.filter((z) => (c.zones || []).includes(z)).map((z) => ZONE_LABEL[z]).join(', ')}). Décoche si c’est passé.</p>` : ''}
       <p class="tiny muted">Les exercices qui les chargent fort sont écartés de cette séance.${(c.zones || []).some(isMine) ? ' Tes zones ajoutées sont rappelées sur chaque exercice : l’app ne sait pas lesquels les chargent.' : ''}</p>${goHint('Pour toutes tes séances, règle-les une fois dans', 'Profil › Mon corps et mes préférences', 'profile/body')}</div>
-    ${aim === 'goals' ? '' : h`<div class="card stack">${wordsField(false)}</div>`}`;
+    ${aim === 'goals' && stepOn(SI.why, c) ? '' : h`<div class="card stack">${wordsField(false)}</div>`}`;
 }
 function aimsCard() {
   const c = CP(), l = c.aims || [], n = l.length, eq = !!c.equal && n > 1, T = tiers(l), tieN = (i) => T.filter((x) => x === T[i]).length;
@@ -545,7 +548,7 @@ function momentsCard() {
     ${l.length ? h`<div class="aimlist">${l.map((a, i) => h`<div class="momrow"><span class="rank">${c.equal && l.length > 1 ? '•' : tiers(l)[i] + 1}</span><span class="grow small aimtxt">${a.emoji} ${a.label}</span><select data-change="cpAimWhen" data-i="${i}" aria-label="Moment de ${a.label}">${Object.entries(MOMENTS).map(([k, t]) => h`<option value="${k}" ${(a.when || 'auto') === k ? 'selected' : ''}>${t}</option>`)}</select></div>`)}</div>
       <ul class="clean tight tiny muted">${Object.entries(MOMENT_HELP).map(([k, t]) => h`<li><b>${MOMENTS[k]}</b> — ${t}</li>`)}</ul>`
       : h`<p class="small muted">Pas d’objectif classé : une partie équilibrée pour chaque sport. Ajoute des objectifs à l’étape 2 pour une séance sur mesure.</p>`}
-    ${c.partsTouched ? h`<p class="tiny warn-t">Tes phases et leurs verrous sont conservés. Si tu changes le moment d’un objectif, ajuste toi-même ses phases ou choisis « Structure proposée » pour recalculer.</p>`
+    ${c.partsTouched ? h`<p class="tiny warn-t">Tes phases et tes choix sont conservés. Si tu changes le moment d’un objectif, ajuste toi-même ses phases ou choisis « Structure proposée » pour recalculer.</p>`
       : (c.planNotes || []).length ? h`<div class="card flat acc-b"><b class="small">🧠 Comment la séance s’adapte</b><ul class="clean tight small">${c.planNotes.map((t) => h`<li>${t}</li>`)}</ul></div>` : ''}</div>`;
 }
 ACT.cpAimTie = (el) => { const c = CP(), a = c.aims?.[Number(el.dataset.i)]; if (!a || !Number(el.dataset.i)) return; a.tie = !a.tie; c.result = null; c.builtFor = ''; keep(); render(); toast(a.tie ? `« ${a.label} » : même importance que l’objectif au-dessus.` : `« ${a.label} » : séparé, un rang en dessous.`); };
@@ -553,7 +556,7 @@ ACT.cpEqual = (el) => { const c = CP(); c.equal = el.dataset.id === 'equal'; c.r
 CHG.cpAimWhen = (el) => {
   const c = CP(), a = c.aims?.[Number(el.dataset.i)]; if (!a || !MOMENTS[el.value]) return;
   const touched = c.partsTouched; a.when = el.value;
-  if (touched) { c.result = null; c.builtFor = ''; c.generated = false; keep(); render(); toast('Moment enregistré. Tes phases et leurs verrous sont conservés ; ajuste leur ordre si nécessaire.', 4500); return; }
+  if (touched) { c.result = null; c.builtFor = ''; c.generated = false; keep(); render(); toast('Moment enregistré. Tes phases et tes choix sont conservés ; ajuste leur ordre si nécessaire.', 4500); return; }
   c.parts = proposedPhases(); c.partsFor = partsKey(); c.partsTouched = false; c.hist = []; c.changes = []; c.ignored = []; c.result = null; c.builtFor = ''; c.generated = false;
   keep(); render(); toast(touched ? 'Structure recalculée selon les moments (tes réglages de phases ont été remplacés).' : 'Structure recalculée : regarde « Comment la séance s’adapte ».', 3500);
 };
@@ -764,8 +767,8 @@ function routinesCard() {
 ACT.cpRoManage = () => { keep(); setReturn('Retour à ma séance', 'library/climbplan'); go('profile', 'phases'); };
 ACT.cpRoAdd = (el) => {
   const c = CP(), sg = roSugs().find((x) => x.r.id === el.dataset.id); if (!sg) return;
-  const r = insertRoutine(c.parts, sg); if(r.blocked)return toast(r.blocked,4500); pushHist(); c.parts = normalizePhases(r.phases, c.sport); c.partsTouched = true; c.generated = false; ensureBuilt(); keep(); render();
-  toast(`« ${sg.r.label} » ajoutée (${sg.minutes} min)${r.took ? `, prise sur « ${r.took.name} »` : ''}${sg.ok ? '' : ` — attention, il manque : ${sg.missing.join(', ').toLowerCase()}`}.`, 4500);
+  const r = insertRoutine(c.parts, sg, { extend: true }); if(r.blocked)return toast(r.blocked,4500); pushHist(); c.parts = normalizePhases(r.phases, c.sport); if (r.extended) c.minutes = Math.min(300, (c.minutes || 0) + r.extended); c.partsTouched = true; c.generated = false; ensureBuilt(); keep(); render();
+  toast(`« ${sg.r.label} » ajoutée (${sg.minutes} min)${r.took ? `, prise sur « ${r.took.name} »` : r.extended ? ` : la séance passe à ${c.minutes} min` : ''}${sg.ok ? '' : ` — attention, il manque : ${sg.missing.join(', ').toLowerCase()}`}.`, 4500);
 };
 ACT.cpStep = (el) => {
   const c = CP(), d = Number(el.dataset.d), l = shownSteps(c);
@@ -793,10 +796,13 @@ function freshStructure() {
   c.parts = normalizePhases(c.parts, c.sport);
 }
 /** ⚡ Proposer ma séance : structure + exercices tout de suite, puis la première étape cochée (ou la structure finale). */
+// « ⚡ Proposer ma séance » : l'app propose tout de suite la séance entière, prête à modifier (✕ sur un exercice ou une
+// phase). Si tu as coché « Les exercices », elle s'arrête d'abord sur les propositions par phase.
 ACT.cpQuick = () => {
   if (!requireGradeTarget()) return;
   const c = CP(); freshStructure(); ensureBuilt(); c.quick = true; c.generated = false;
-  c.step = shownSteps(c).find((n) => n >= SI.content) || NSTEPS; keep(); render(); window.scrollTo(0, 0);
+  if (stepOn(SI.content, c)) { c.step = SI.content; keep(); render(); window.scrollTo(0, 0); return; }
+  c.step = NSTEPS; keep(); window.scrollTo(0, 0); ACT.cpGenerate();
 };
 ACT.cpQuickGo = () => { if (!requireGradeTarget()) return; const c = CP(); c.step = NSTEPS; keep(); window.scrollTo(0, 0); ACT.cpGenerate(); };
 ACT.cpEnvPick = (el) => { const c = CP(), sp = el.dataset.sp; if (sp && sp !== c.sport) c.places = { ...(c.places || {}), [sp]: el.dataset.id }; else { c.envId = el.dataset.id; c.envPicked = true; c.sys = {}; } c.result = null; c.builtFor = ''; keep(); render(); };
@@ -1110,12 +1116,13 @@ ACT.cpAdd = (el) => {
 ACT.cpExample = () => { CP().parts = proposedPhases(); CP().partsTouched = false; CP().partsFor = partsKey(); CP().result = null; keep(); render(); };
 ACT.cpLock = (el) => upd(Number(el.dataset.i), (p) => { const k = el.dataset.k, order = ['free', 'user', 'app'], cur = p.locks?.[k] || 'free'; p.locks = { ...p.locks, [k]: order[(order.indexOf(cur) + 1) % 3] }; });
 ACT.cpPhRole = (el) => upd(Number(el.dataset.i), (p) => { p.role = el.dataset.id; });
+// 8.35 : tes propres choix restent modifiables ; ils sont seulement gardés quand l'app recalcule (« ✏️ modifié par toi »).
 ACT.cpPhAim = (el) => upd(Number(el.dataset.i), (p) => {
-  if (p.locks?.goal === 'user') return;
   const links = phaseObjectives(p), key = el.dataset.id, aim = (CP().aims || []).find((a) => a.key === key);
   if (!aim) return;
   p.aimLinks = links.some((a) => a.key === key) ? links.filter((a) => a.key !== key) : normalizeAimLinks({ aimLinks: [...links, { key, contribution: ['warmup','prep'].includes(p.role) ? 'preparation' : ['cool','recup'].includes(p.role) ? 'support' : 'primary' }] }, CP().aims || []);
   const first = p.aimLinks.find((a) => a.contribution === 'primary'); p.aimKey = first?.key || ''; p.aimLabel = first?.label || ''; p.aimRank = first?.rank ?? null; p.prepFor = '';
+  mine(p, 'goal');
 });
 ACT.cpPhFat = (el) => upd(Number(el.dataset.i), (p) => { p.fatigue = el.dataset.id; });
 ACT.cpPhPrio = (el) => upd(Number(el.dataset.i), (p) => { const l = p.priorities || [], id = el.dataset.id; p.priorities = l.includes(id) ? l.filter((x) => x !== id) : [...l, id].slice(0, 6); });
@@ -1137,19 +1144,20 @@ const i0 = (p) => Math.max(0, CP().parts.indexOf(p));
  * Tout est facultatif : ce qui n'est pas réglé, l'app le décide. */
 const fieldHead = (label, p, i, k, note = '') => h`<div class="row between wrapf fhead"><span class="small"><b>${label}</b>${note ? h` <span class="tiny muted">${note}</span>` : ''}</span>${k ? lockBtn(p, i, k) : ''}</div>`;
 // 8.35 : plus de verrous à régler. Ce que tu changes toi-même est gardé quand l'app recalcule (« modifié par toi »).
-const lockBtn = (p, i, k) => p.locks?.[k] === 'user' ? h`<span class="tag">✏️ modifié par toi</span>` : '';
+const lockBtn = (p, i, k) => p.locks?.[k] === 'user' ? h`<span class="row tight" style="gap:4px"><span class="tag">✏️ modifié par toi</span><button type="button" class="btn sm ghost" data-act="cpUnmine" data-i="${i}" data-k="${k}" aria-label="Rendre ce réglage à l’app" title="Rendre ce réglage à l’app">↺</button></span>` : '';
+ACT.cpUnmine = (el) => upd(Number(el.dataset.i), (p) => { const k = el.dataset.k; if (p.locks?.[k]) { const l = { ...p.locks }; delete l[k]; p.locks = l; } });
 const mine = (p, k) => { p.locks = { ...(p.locks || {}), [k]: 'user' }; };
 const ROLE_FAMILY = { technique: ['technique'], endurance: ['endurance'], force: ['force'], puissance: ['puissance'], perf: ['performance'], mobilite: ['mobilite'], recup: ['mobilite'], prep: ['technique', 'endurance'] };
 function linkType(p, i) {
   const acts = [...new Set([...Object.keys(ctx().activities), ...Object.keys(ACTIVITIES)])];
-  return h`${fieldHead('Activité', p, i, 'activity')}<select data-change="cpPhAct" data-i="${i}" aria-label="Activité de la phase" ${p.locks?.activity === 'user' ? 'disabled' : ''}>${acts.map((a) => h`<option value="${a}" ${p.activity === a ? 'selected' : ''}>${actLabel(a)}</option>`)}<option value="pause" ${p.type === 'pause' ? 'selected' : ''}>⏸️ Pause</option></select>
+  return h`${fieldHead('Activité', p, i, 'activity')}<select data-change="cpPhAct" data-i="${i}" aria-label="Activité de la phase">${acts.map((a) => h`<option value="${a}" ${p.activity === a ? 'selected' : ''}>${actLabel(a)}</option>`)}<option value="pause" ${p.type === 'pause' ? 'selected' : ''}>⏸️ Pause</option></select>
     ${p.type === 'climb' ? h`<div class="chips">${[['bloc', '🪨 Bloc'], ['voie', '🧗 Voie']].map(([k, l]) => chip(p.kind === k, l, `data-act="cpPart" data-i="${i}" data-k="kind" data-v="${k}"`))}</div>` : ''}`;
 }
-const linkAims = (p,i) => (CP().aims || []).length && p.type !== 'pause' ? h`<span class="kicker">Objectifs auxquels ce bloc contribue</span><p class="tiny muted">Choisis plusieurs objectifs si leur travail est compatible. Tu peux associer le même objectif à plusieurs phases ; cela ne crée aucune nouvelle fiche.</p><div class="chips">${CP().aims.map((a) => chip(phaseObjectives(p).some((x) => x.key === a.key), a.label, `data-act="cpPhAim" data-i="${i}" data-id="${a.key}" ${p.locks?.goal === 'user' ? 'disabled' : ''}`))}</div>` : '';
+const linkAims = (p,i) => (CP().aims || []).length && p.type !== 'pause' ? h`<span class="kicker">Objectifs auxquels ce bloc contribue</span><p class="tiny muted">Choisis plusieurs objectifs si leur travail est compatible. Tu peux associer le même objectif à plusieurs phases ; cela ne crée aucune nouvelle fiche.</p><div class="chips">${CP().aims.map((a) => chip(phaseObjectives(p).some((x) => x.key === a.key), a.label, `data-act="cpPhAim" data-i="${i}" data-id="${a.key}"`))}</div>${p.locks?.goal === 'user' ? h`<p class="tiny muted"><em>Choisi par toi : l’app garde ces liens quand elle recalcule. Touche ↺ (en haut de ce réglage) pour qu’elle les règle à nouveau.</em></p>` : ''}` : '';
 function linkGoal(p, i) {
   return h`<div class="chips">${Object.entries(ROLES).filter(([k]) => k !== 'pause').map(([k, [e, l]]) => chip(p.role === k, `${e} ${l}`, `data-act="cpPhRole" data-i="${i}" data-id="${k}"`))}</div>
     ${p.role === 'custom' ? h`<input data-change="cpPhText" data-i="${i}" data-k="roleLabel" maxlength="40" value="${p.roleLabel || ''}" placeholder="Nom du rôle" aria-label="Nom du rôle">` : ''}
-    ${fieldHead('But de cette phase', p, i, 'goal', '(pour cette séance seulement)')}<textarea data-change="cpPhText" data-i="${i}" data-k="goal" maxlength="200" rows="2" aria-label="But de la phase" placeholder="Ex. « Me préparer à la voie sans trop me fatiguer »" ${p.locks?.goal === 'user' ? 'readonly' : ''}>${p.goal || ''}</textarea>
+    ${fieldHead('But de cette phase', p, i, 'goal', '(pour cette séance seulement)')}<textarea data-change="cpPhText" data-i="${i}" data-k="goal" maxlength="200" rows="2" aria-label="But de la phase" placeholder="Ex. « Me préparer à la voie sans trop me fatiguer »">${p.goal || ''}</textarea>
     ${linkAims(p,i)}`;
 }
 function linkSubs(p, i) {
@@ -1213,8 +1221,8 @@ function linkIntensity(p, i) {
 function linkPlace(p, i) {
   const envs = ctx().envs, pl = placesNow(CP().parts)[i], mode = p.place?.mode || 'same';
   return h`${fieldHead('Où ?', p, i, 'place', `→ ${pl?.name || ''}`)}
-    <div class="chips">${Object.entries(PLACE_MODES).map(([k, l]) => chip(mode === k, i === 0 ? { same: 'Lieu de la séance', other: 'Un lieu précis', free: 'Lieu libre' }[k] : l, `data-act="cpPhPlace" data-i="${i}" data-id="${k}" ${p.locks?.place === 'user' ? 'disabled' : ''}`))}</div>
-    ${mode === 'other' ? h`<select data-change="cpPhEnv" data-i="${i}" aria-label="Lieu de la phase" ${p.locks?.place === 'user' ? 'disabled' : ''}><option value="">Choisir un lieu…</option>${envs.map((e) => h`<option value="${e.id}" ${p.place?.envId === e.id ? 'selected' : ''}>${e.name}</option>`)}</select>
+    <div class="chips">${Object.entries(PLACE_MODES).map(([k, l]) => chip(mode === k, i === 0 ? { same: 'Lieu de la séance', other: 'Un lieu précis', free: 'Lieu libre' }[k] : l, `data-act="cpPhPlace" data-i="${i}" data-id="${k}"`))}</div>
+    ${mode === 'other' ? h`<select data-change="cpPhEnv" data-i="${i}" aria-label="Lieu de la phase"><option value="">Choisir un lieu…</option>${envs.map((e) => h`<option value="${e.id}" ${p.place?.envId === e.id ? 'selected' : ''}>${e.name}</option>`)}</select>
       ${i > 0 ? h`<label>Temps de déplacement depuis la phase d’avant<span class="unitbox"><input type="number" min="0" max="180" step="5" value="${p.place?.travelMin ?? ''}" data-change="cpPhTravel" data-i="${i}" placeholder="?" aria-label="Minutes de déplacement"><em>min</em></span></label>` : ''}` : ''}
     ${pl?.equipment ? h`<p class="tiny muted">🧰 ${[...pl.equipment].map((k) => EQUIPMENT[k] || k).join(', ').toLowerCase() || 'aucun matériel déclaré'}</p>` : ''}`;
 }
@@ -1252,7 +1260,7 @@ ACT.cpPhRuleAdd = (el) => upd(Number(el.dataset.i), (p) => {
 });
 ACT.cpPhRuleDel = (el) => upd(Number(el.dataset.i), (p) => { p.rules = (p.rules || []).filter((_, k) => k !== Number(el.dataset.id)); });
 CHG.cpPhTrade = (el) => upd(Number(el.dataset.i), (p) => { const v = Math.max(-2, Math.min(2, Math.round(Number(el.value) || 0))); p.tradeoffs = { ...(p.tradeoffs || {}), [el.dataset.k]: v }; if (!v) delete p.tradeoffs[el.dataset.k]; });
-ACT.cpPhPlace = (el) => upd(Number(el.dataset.i), (p) => { if (p.locks?.place === 'user') return; p.place = { ...(p.place || {}), mode: el.dataset.id }; });
+ACT.cpPhPlace = (el) => upd(Number(el.dataset.i), (p) => { mine(p, 'place'); p.place = { ...(p.place || {}), mode: el.dataset.id }; });
 CHG.cpPhEnv = (el) => upd(Number(el.dataset.i), (p) => { mine(p, 'place'); p.place = { ...(p.place || {}), mode: 'other', envId: el.value }; });
 CHG.cpPhTravel = (el) => upd(Number(el.dataset.i), (p) => { p.place = { ...(p.place || {}), travelMin: el.value === '' ? null : Math.max(0, Math.min(180, Math.round(Number(el.value) || 0))) }; });
 CHG.cpPhNoFail = (el) => upd(Number(el.dataset.i), (p) => { p.noFailure = el.checked; });

@@ -6,7 +6,7 @@ const srv=await startServer(), browser=await chromium.launch(process.env.PW_EXEC
 const errors=[]; let n=0, reference;
 const step=async(name,fn)=>{await fn();n++;console.log('  ✓',name);};
 try {
-  for(const mode of ['simple','advanced']) {
+  for(const mode of ['simple']) { // 8.35 : une seule interface
     const ctx=await browser.newContext({viewport:{width:mode==='simple'?320:390,height:844},serviceWorkers:'allow'});
     await ctx.addInitScript(()=>localStorage.setItem('sea:q-snooze',JSON.stringify(Object.fromEntries(['acts','climbPerWeek','place','minutes','perWeek','bloc','tractions','pompes','goal','avoid'].map(k=>[k,9e15])))));
     assert.equal((await ctx.request.post(srv.base+'/api/auth/register',{headers:{Origin:srv.base},data:{username:'Objectifs'+mode,password:'motdepasse1'}})).status(),200);
@@ -34,10 +34,15 @@ try {
       }
       await p.locator(selector).first().click();
     };
-    const to=async target=>{for(let k=0;k<12;k++){const current=Number((await p.locator('.steps b').innerText()).match(/Étape (\d)/)[1]);if(current===target)return;await click(`.stepdock [data-act=cpStep][data-d="${current<target?1:-1}"]`);await p.waitForFunction(c=>!document.querySelector('.steps b')?.textContent.includes(`Étape ${c}/`),current);}throw new Error('Étape inaccessible');};
+    // 8.35 : « Étape k/n » compte seulement les étapes montrées ; on se repère sur le vrai numéro d'étape (S.cp.step).
+    const to=async target=>{for(let k=0;k<12;k++){const current=(await state()).step;if(current===target)return;await click(`.stepdock [data-act=cpStep][data-d="${current<target?1:-1}"]`);await p.waitForFunction(async c=>(await import('/state.js')).S.cp.step!==c,current);}throw new Error('Étape inaccessible');};
     const foot='int:pieds@climbing_boulder', placement='int:placement@climbing_boulder';
     await step(`${mode} : deux résultats compatibles partagent un bloc et le même moteur`,async()=>{
+      // 8.35 : les étapes « Tes objectifs » et « Ta structure » se montrent quand on coche ce qu'on veut choisir soi-même.
+      for(const k of ['aims','phases','durations']){const b=p.locator(`input[data-change=cpChoose][data-id=${k}]`);if(!(await b.isChecked()))await b.click();}
       await click('[data-act=cpSport][data-id=climbing_boulder]');await click('[data-act=cpMin][data-id="60"]');await to(2);
+      // Les objectifs précis sont rangés dans « 2 · Ou plus précis » (replié) : on l'ouvre.
+      const precise=p.locator('details:has([data-act=cpAimAdd][data-k^="int:"])').first();if(!(await precise.evaluate(d=>d.open)))await precise.locator(':scope > summary').click();
       await click(`[data-act=cpAimAdd][data-k="${foot}"]`);await click(`[data-act=cpAimAdd][data-k="${placement}"]`);await to(3);
       assert.match(await p.locator('#main').innerText(),/Les objectifs disent ce que tu veux obtenir/);
       const c=await state(), main=c.parts.filter(ph=>ph.aimLinks?.some(a=>a.contribution==='primary'));
@@ -56,14 +61,15 @@ try {
       assert.ok(!(await state()).parts[0].aimLinks.some(a=>a.key===placement),'association retirée par le choix manuel');
       await click(`#sheet [data-act=cpPhAim][data-id="${placement}"]`);
       let c=await state();assert.ok(c.parts[0].aimLinks.some(a=>a.key===placement));
-      await click('#sheet [data-act=cpLock][data-k=goal]');
+      // 8.35 : plus de bouton de verrou. Le choix fait à la main est gardé (« ✏️ modifié par toi », ↺ pour le rendre à l'app) et reste modifiable.
       assert.equal((await state()).parts[0].locks.goal,'user');
-      assert.ok(await p.locator(`#sheet [data-act=cpPhAim][data-id="${placement}"]`).isDisabled());
+      assert.match(await p.locator('#sheet').innerText(),/modifié par toi/);
+      assert.ok(await p.locator(`#sheet [data-act=cpPhAim][data-id="${placement}"]`).isEnabled());
       await p.keyboard.press('Escape');await p.waitForSelector('#sheet.open',{state:'detached'});
       const before=(await state()).parts;
       await p.selectOption('[data-change=cpAimWhen][data-i="1"]','end');
       c=await state();assert.deepEqual(c.parts,before);assert.equal(c.aims[1].when,'end');
-      assert.match(await p.locator('#main').innerText(),/Tes phases et leurs verrous sont conservés/);
+      assert.match(await p.locator('#main').innerText(),/Tes phases et tes choix sont conservés/);
       // Le bouton principal reprend directement le brouillon, sans changer les choix ni l'interface.
       const preserved=await state();
       await p.locator(`nav.tabs [data-id=${mode==='simple'?'home':'library'}]`).click();

@@ -1,8 +1,10 @@
-# Séances entraînement — v8.34.2
+# Séances entraînement — v8.35.0
 
 Application web installable (PWA) pour planifier, générer, exécuter et analyser ses séances d'entraînement :
 escalade (bloc, voie), renforcement / préparation physique, musculation, course à pied, natation, et toute
 activité personnalisée. Les recommandations distinguent faits, estimations et données manquantes ; les réponses IA sont contrôlées avant de proposer des changements.
+
+La [version 8.35.0](DELIVERY_8_35.md) (préparée sur la branche `claude/new-session-wi9olv`, non fusionnée, non déployée ; [liste des demandes](docs/DEMANDES_8_35.md)) ajoute : Profil › Mes phases proposées dans le créateur (avec ou sans exercices), un espace Étirements adapté à chaque séance et programmable après elle, des objectifs en deux temps, le prochain exercice affiché pendant l'effort, des sources citées avec l'icône de chaque site et un lien vers le passage exact, des captures d'écran jointes aux signalements et analysées par l'assistant du site, une seule interface (simple), des mesures expliquées, des doublons retirés et des petits messages « va dans … » cliquables.
 
 La [version 8.34.2](DELIVERY_8_34_2.md) (préparée sur la branche `claude/new-session-wi9olv`, non fusionnée, non déployée) suit un audit Playwright complet du site ([rapport](docs/AUDIT_PLAYWRIGHT_2026-10-09.md)) : ressenti non donné qui n’est plus compté « 1 », virgule décimale comprise, fichier choisi pendant un redessin plus jamais perdu, calendrier et agenda du téléphone justes, en-têtes de sécurité partout, clavier dans les fenêtres, et une série de petites gênes en moins. La suite d’audit se lance avec `npm run test:audit` (voir `tests/audit/`).
 

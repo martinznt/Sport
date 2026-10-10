@@ -175,7 +175,7 @@ export function analyzeSession(phasesIn, ctx = {}, o = {}) {
     missing: ['Ton intention d’aujourd’hui est vraiment travaillée', 'La phase partage son temps avec une priorité de plus'],
     'too-long': ['Séance plus soutenable', 'Rien n’est retiré : à toi de voir'],
   };
-  const add = (s) => { const [benefit, compromise] = TRADE[s.id] || TRADE[s.id.replace(/-.*$/, '')] || ['', '']; s = { problem: s.why?.[0]?.text || '', benefit, compromise, ...s }; const blk = (s.patch || []).find((op) => op.op === 'set' && locked(phases.find((p) => p.id === op.id) || {}, op.field === 'minutes' ? 'minutes' : op.field)); out.push({ ...s, blocked: blk ? `Tu as verrouillé ce réglage (${blk.field === 'minutes' ? 'durée' : blk.field}).` : '' }); };
+  const add = (s) => { const [benefit, compromise] = TRADE[s.id] || TRADE[s.id.replace(/-.*$/, '')] || ['', '']; s = { problem: s.why?.[0]?.text || '', benefit, compromise, ...s }; const blk = (s.patch || []).find((op) => op.op === 'set' && locked(phases.find((p) => p.id === op.id) || {}, op.field === 'minutes' ? 'minutes' : op.field)); out.push({ ...s, blocked: blk ? `Tu as réglé ça toi-même (${blk.field === 'minutes' ? 'durée' : blk.field}) : l’app n’y touche pas.` : '' }); };
   const perfIdx = phases.findIndex((p) => p.role === 'perf');
   // 1. Trop de fatigue avant une phase de performance.
   if (perfIdx > 0) {
