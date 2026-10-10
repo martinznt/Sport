@@ -11,7 +11,8 @@ import { interpretAgenda } from './server/agenda.js';
 import { aiDraft, aiChat, aiGoal, aiIntent, cleanCaps, extractJson } from './server/ai.js';
 import { runAI, aiError, aiStatus, saveAIConfig, hasAI } from './server/ai-runtime.js';
 import { contextSources, proposalSources, proposalInstructions, requireProposalEvidence } from './server/ai-proposal-evidence.js';
-import { researchSources } from './server/ai-evidence.js';
+import { researchSources, sourcePassage } from './server/ai-evidence.js';
+import { SOURCES } from './public/sources.js';
 import { cleanOps } from './public/sessionedit.js';
 import { estimateLevel } from './public/estimate.js';
 import { sessionMeta } from './public/sessionmeta.js';
@@ -426,6 +427,22 @@ async function handleApi(request, env, url) {
   try { await ensureSchema(env); } catch (e) { console.error('schema', e); return fail('Initialisation de la base impossible.', 500); }
   // Contenu modifié par les administrateurs pour tous les comptes : lisible par tout le monde (même sans compte).
   if (p === '/api/global' && m === 'GET') return globalList(env);
+  // 8.35 : « Voir le passage » des sources (lisible sans compte, comme les sources elles-mêmes). Chaque passage est lu
+  // une fois sur PubMed puis gardé 30 jours ; un échec est retenu 1 jour (pas de relance en boucle).
+  if (p === '/api/sources/passages' && m === 'GET') {
+    const ids = [...new Set(String(url.searchParams.get('ids') || '').split(','))].filter((id) => /^[a-z0-9]{2,40}$/.test(id) && Object.hasOwn(SOURCES, id)).slice(0, 8);
+    if (!ids.length) return json({ ok: true, passages: {} });
+    if (await limited(env, 'srcp:' + clientIp(request), 120, 3600000)) return fail('Beaucoup de demandes : réessaie dans un moment.', 429);
+    const out = {}, now = Date.now();
+    for (const id of ids) {
+      const key = 'src:pass:' + id, row = await db(env, 'SELECT value FROM system_state WHERE key=?', key).first(), cached = safeParse(row?.value);
+      if (cached && now - (cached.at || 0) < (cached.url ? 30 : 1) * DAY) { if (cached.url) out[id] = { url: cached.url, passage: cached.passage || '' }; continue; }
+      let found = null; try { found = await sourcePassage(id); } catch (e) { console.error('source', id, e?.message); }
+      await db(env, 'INSERT INTO system_state(key,value) VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value', key, JSON.stringify(found ? { ...found, at: now } : { at: now })).run();
+      if (found) out[id] = { url: found.url, passage: found.passage };
+    }
+    return json({ ok: true, passages: out });
+  }
 
   const secure = url.protocol === 'https:';
   if (p === '/api/auth/register' && m === 'POST') {

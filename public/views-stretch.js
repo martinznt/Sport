@@ -9,6 +9,7 @@ import { EQUIPMENT } from './model.js';
 import { uid } from './shared.js';
 import { startPlayer, setQuizExtra, onSessionSaved, redrawPlayer } from './player.js';
 import { ZONES, STRETCH_GEAR, zonesFromSession, stretchPlan } from './stretch.js';
+import { sourcesLine } from './srcui.js';
 
 const DELAYS = [[0, 'Juste après'], [30, '30 min après'], [60, '1 h après'], [120, '2 h après'], [240, 'Le soir (4 h après)']];
 const LENGTHS = [5, 10, 15, 20, 30];
@@ -48,6 +49,7 @@ function planCard(p, base) {
     <ul class="clean tight small">${p.exercises.map((e) => h`<li><b>${e.emoji} ${e.name}</b> — ${e.sets > 1 ? `${e.sets} × ` : ''}${e.secMin} s${e.perSide ? ' de chaque côté' : ''}${e.note ? h` <span class="tiny muted">(${e.note})</span>` : ''}</li>`)}</ul>
     ${p.notes.length ? h`<p class="tiny warn-t">${p.notes.join(' ')}</p>` : ''}
     <ul class="clean tight tiny muted">${p.tips.map((t) => h`<li>${t}</li>`)}</ul>
+    ${sourcesLine(['behm2016'], { claim: 'Étirements : effets sur l’amplitude et la performance' })}
     <div class="row wrapf"><button class="btn pri" data-act="stPlayPlan">▶ Lancer maintenant</button><button class="btn" data-act="stSave">💾 Enregistrer</button>${base ? h`<button class="btn" data-act="stSave" data-link="1">📌 Me la proposer après « ${base.name} »</button>` : ''}</div></div>`;
 }
 const tog = (k) => (el) => { const v = st(), id = el.dataset.id; v[k] = v[k].includes(id) ? v[k].filter((x) => x !== id) : [...v[k], id]; v.plan = null; render(); };

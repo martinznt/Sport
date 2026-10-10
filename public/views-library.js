@@ -29,7 +29,7 @@ import { parseSessionText, exportSessionText, sessionMinutes, exMinutes, parseRe
 import { boostSession } from './program.js';
 import { vGenerateForm, genOptions } from './views-gen.js';
 import { vCatalog, vBest } from './views-catalog.js';
-import { sourcesLine } from './srcui.js';
+import { sourcesLine, exerciseSourcesBlock } from './srcui.js';
 import { CATALOG } from './catalog.js';
 import { exerciseEditButtons, isAdmin as contentAdmin, shareButton } from './content.js';
 import { planSession, generateFromPlan, adaptDuration, alternatives, replaceExercise, rebuildForEquipment, newPossibilities, estimateLevel, LEVEL_LABEL, levelFor, BODY_WORDS } from './generator.js';
@@ -680,6 +680,7 @@ export function exerciseSheet(ex, actions = '', session = null) {
     ${raw(anatomySvg({ primary: e.prim || [], secondary: e.sec || [] }))}
     <div class="chips">${g.muscles.prim.map((m) => h`<span class="chip static"><i class="lg p"></i>${m}</span>`)}${g.muscles.sec.map((m) => h`<span class="chip static"><i class="lg s"></i>${m}</span>`)}</div>
     ${g.caps.length ? h`<details class="how mini"><summary>💪 Ce que ça travaille (${g.caps.length})</summary>${g.caps.map((c) => h`<div class="cbar"><span>${c.label}</span><div class="track"><i class="cur" style="width:${Math.round(c.w * 100)}%"></i></div><b></b></div>${c.goals.length ? h`<p class="tiny muted">→ utile pour ${c.goals.map((x) => x.label).join(', ')}</p>` : ''}`)}</details>` : ''}
+    ${exerciseSourcesBlock(e)}
     ${actions}<button class="btn" data-act="closeSheet">Fermer</button>`;
 }
 ACT.libInfo = (el) => { const x = byId(el.dataset.id); if (!x) return; S.pickSrc = { kind: 'lib', id: x.id }; openSheet(exerciseSheet(x, h`<div class="row wrapf">${S.seances.items.length ? h`<select id="addTarget" aria-label="Séance cible">${S.seances.items.filter((s) => !s.archived).map((s) => h`<option value="${s.id}">${s.emoji} ${s.name}</option>`)}</select><button class="btn pri sm" data-act="addToSeance">＋ Ajouter</button>` : ''}<button class="btn sm" data-act="libKeep" data-id="${x.id}">Copier dans mes exercices</button></div>${exerciseEditButtons(x)}`), { wide: true }); };

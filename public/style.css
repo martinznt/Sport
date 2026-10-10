@@ -797,3 +797,9 @@ button.item.rowpick:last-child{border-bottom:0}
 .shotpick{align-self:flex-start;max-width:100%;white-space:normal}
 .brk{min-width:0;overflow-wrap:anywhere}/* texte long (titre d'un signalement…) : passe à la ligne au lieu d'élargir la page */
 .wrapbtn{white-space:normal;max-width:100%;text-align:left}
+
+/* 8.35 : repère « Sources » et icônes des sites (initiales, aucune image externe) */
+.srcbadge{display:inline-flex;align-items:center;gap:6px;min-height:32px;padding:3px 10px;border-radius:999px;border:1px solid var(--line);background:var(--card2);color:var(--text);font-size:.82rem;font-weight:600;cursor:pointer;max-width:100%;flex-wrap:wrap}
+.srcicos{display:inline-flex}.srcicos .srcico+.srcico{margin-left:-5px}
+.srcico{display:inline-grid;place-items:center;min-width:22px;height:22px;padding:0 4px;border-radius:7px;background:var(--c,#555);color:#fff;font-size:.62rem;font-weight:800;letter-spacing:-.02em;border:2px solid var(--card);flex:none}
+.srcquote{margin:0;padding:6px 10px;border-left:3px solid var(--acc);background:var(--card2);border-radius:6px;font-style:italic;overflow-wrap:anywhere}

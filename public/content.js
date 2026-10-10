@@ -450,11 +450,12 @@ ACT.srcEdit = (el) => {
     <label>Revue ou éditeur<input name="journal" maxlength="200" value="${s.journal || ''}"></label>
     <label>Lien (https://…)<input name="url" type="url" required pattern="https://.+" value="${s.url || ''}"></label>
     <label>Ce qu’elle montre (en une ou deux phrases)<textarea name="key" rows="3" maxlength="600">${s.key || ''}</textarea></label>
+    <label>Passage exact <span class="tiny muted">(facultatif : copie-colle la phrase telle qu’elle est écrite dans la source ; « 🎯 Voir le passage » y mènera)</span><textarea name="passage" rows="2" maxlength="400">${s.passage || ''}</textarea></label>
     <div class="grid2"><button class="btn pri">Enregistrer pour tout le monde</button>${id ? h`<button type="button" class="btn danger" data-act="srcHide" data-id="${id}">Retirer</button>` : ''}</div></form>`, { wide: true });
 };
 SUBMIT.srcSave = async (f) => {
   const d = Object.fromEntries(new FormData(f));
-  try { await putGlobal('source', d.id || 'g-' + uid().slice(0, 12), { data: { title: d.title.trim(), authors: d.authors, year: Number(d.year) || new Date().getFullYear(), journal: d.journal, url: d.url.trim(), key: d.key } }); closeSheet(); toast('Source enregistrée pour tout le monde'); }
+  try { await putGlobal('source', d.id || 'g-' + uid().slice(0, 12), { data: { title: d.title.trim(), authors: d.authors, year: Number(d.year) || new Date().getFullYear(), journal: d.journal, url: d.url.trim(), key: d.key, passage: String(d.passage || '').trim().slice(0, 400) } }); closeSheet(); toast('Source enregistrée pour tout le monde'); }
   catch (e) { toast(e.message, 4500, 'bad'); }
 };
 ACT.srcHide = async (el) => {
