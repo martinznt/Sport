@@ -172,7 +172,7 @@ function draw(anim = false) {
     ${warm ? h`<div class="card flat row warmnote"><span class="grow small">On commence par ${p.warmAdded > 1 ? `${p.warmAdded} exercices` : 'un exercice'} d’échauffement.</span><button class="btn sm" data-act="pSkipWarm">Passer</button></div>` : ''}
     ${big && p.phase !== 'done' ? h`<p class="tiny muted center">Touche l’écran n’importe où pour valider</p>` : ''}
     <div class="bar"><i style="width:${pct}%"></i></div>${p.paused ? h`<div class="card flat center warn-b">⏸ En pause : le temps de pause n’est pas compté</div>` : ''}${p.phase === 'rest' ? vRest(p) : vSet(p)}
-    <div class="row wrapf center-row"><button class="btn" data-act="pPause">${p.paused ? '▶ Reprendre' : '⏸ Pause'}</button></div></div>`.s;
+    <div class="row wrapf center-row"><button class="btn" data-act="pPause">${p.paused ? '▶ Reprendre' : '⏸ Pause'}</button></div>${nextBar(p)}</div>`.s;
   tick(); duoHook?.('draw');
 }
 function stepper(k, value, unit, label) { return h`<div class="center"><div class="muted small">${label}</div><div class="stepper"><button data-act="pAdj" data-k="${k}" data-d="-1" aria-label="Moins">−</button><b>${value}<span class="small muted"> ${unit}</span></b><button data-act="pAdj" data-k="${k}" data-d="1" aria-label="Plus">+</button></div></div>`; }
@@ -192,14 +192,20 @@ function cues(ex, sess) {
 function vSet(p) {
   const ex = cur(), t = ex.mode === 'time', working = p.phase === 'work';
   const usesLoad = p.load > 0 || !!String(ex.load || '').trim() || p.hint?.load > 0;
-  const next = p.s.exercises[p.i + 1];
   return h`<div class="row"><div class="figbox">${raw(figure(ex, { size: 84 }))}</div><div class="grow">${ex.part ? h`<div class="tiny acc-t">${ex.part}</div>` : ''}<h1 style="margin:0">${ex.emoji} ${ex.name}</h1><div class="muted">Série ${p.set + 1} / ${ex.sets}${ex.perSide ? ` · côté ${p.side + 1} / 2` : ''}</div>${item('exsetup', setupId(ex))?.setup ? h`<div class="tiny acc-t">⚙️ ${item('exsetup', setupId(ex)).setup}</div>` : ''}</div></div>
     <div class="center"><b class="presc">${t ? (ex.secMin >= 120 ? fmtDur(ex.secMin) + (ex.secMax !== ex.secMin ? ' à ' + fmtDur(ex.secMax) : '') : rng(ex.secMin, ex.secMax) + ' s') : rng(ex.repsMin, ex.repsMax) + (ex.unit ? ' ' + ex.unit : ' rép.')}</b>${ex.load ? h`<div class="muted">${ex.load}</div>` : ''}${p.hint ? h`<div class="small acc-t">Dernière fois : ${p.hint.last}${p.hint.next ? ' · ' + p.hint.next : ''}</div>` : ''}${ex.rest ? h`<div class="tiny muted">Repos prévu : ${fmtDur(ex.rest)}</div>` : ''}</div>
     ${working ? h`<div class="timer" id="ptimer">${mmss(Math.max(0, Math.ceil(((p.paused ? p.remaining : p.end - Date.now())) / 1000)))}</div><div class="bar"><i id="pbar2" style="width:0%"></i></div><button class="btn big pri" data-act="pWorkDone">✓ Terminer la série</button>`
       : h`${t ? stepper('secs', p.secs, 's', 'Durée') : stepper('reps', p.reps, ex.unit || 'rép.', 'Répétitions faites')}${!t && usesLoad ? stepper('load', p.load, 'kg', 'Charge') : ''}${!t && usesLoad && isBarbell(ex) && p.load >= 20 ? h`<div class="tiny muted center">⚖️ ${plates(p.load).text}</div>` : ''}
         <button class="btn pri big" data-act="pGo" ${p.paused ? 'disabled' : ''}>${t ? `▶ Démarrer (${mmss(p.secs)})` : '✓ Série faite'}</button>`}
-    ${cues(ex, p.s)}
-    ${next ? h`<p class="tiny muted center">Ensuite : ${next.name}${partLeft(p)}</p>` : ''}`;
+    ${cues(ex, p.s)}`;
+}
+/** Bandeau du bas, toujours visible (effort compris) : ce qui reste ici, puis l'exercice suivant et ses séries. */
+function nextBar(p) {
+  const ex = cur(); if (!ex) return '';
+  const left = Math.max(0, ex.sets - p.set - (p.phase === 'rest' ? 0 : 1)), nx = p.s.exercises[p.i + 1];
+  const here = p.phase === 'rest' ? `${ex.name} : encore ${left} série${left > 1 ? 's' : ''}` : left ? `Encore ${left} série${left > 1 ? 's' : ''} de ${ex.name} après celle-ci` : `Dernière série de ${ex.name}`;
+  return h`<div class="pnext" aria-live="polite"><span class="tiny muted">${here}${partLeft(p)}</span>
+    <b class="small">${nx ? h`Ensuite : ${nx.emoji || ''} ${nx.name} · ${nx.sets} série${nx.sets > 1 ? 's' : ''}` : '🏁 Dernier exercice de la séance'}</b></div>`;
 }
 /** Séance au format choisi : temps restant de la partie en cours, et la partie suivante. */
 function partLeft(p) {
@@ -243,6 +249,7 @@ function vQuiz(p) {
       </details><label><b class="small">Commentaire (facultatif)</b><textarea data-input="qComment" rows="3" maxlength="600" placeholder="Sensations, réussite, difficulté…">${q.comment}</textarea></label>
       ${stored ? h`<label class="chk"><input type="checkbox" data-change="qBase" ${p.useBase ? 'checked' : ''}> Utiliser mes valeurs réalisées comme nouvelle base de « ${stored.name} » <span class="tiny muted">(seulement quand elles sont supérieures ou égales à la prescription)</span></label>` : ''}
     </div>` : h`<p class="muted center">Aucune série réalisée : rien à enregistrer.</p>`}
+    ${sets && quizExtra ? quizExtra(p) : ''}
     <button class="btn pri big" data-act="pSave" ${sets ? '' : 'disabled'}>💾 Enregistrer</button><button class="btn" data-act="pDiscard">Ne pas enregistrer</button></div>`;
 }
 /** Objectifs en cours que la séance a fait travailler (capacités des exercices faits ∩ capacités de l'objectif). */
@@ -440,7 +447,13 @@ function saveResult() {
   toast(`Séance enregistrée ✓ ${changes.length ? '— ' + changes[0] : ''}`, 4500);
   S.lastLoop = { at: Date.now(), changes, entryId: entry.id };
   go('home', 'dash');
+  try { savedHook?.(p, entry); } catch (e) { console.error(e); } // 8.35 : étirements programmés ou lancés après l'enregistrement
 }
+/** 8.35 : un bloc ajouté à l'écran de fin (étirements) et une action après l'enregistrement, fournis par views-stretch.js. */
+let quizExtra = null, savedHook = null;
+export const setQuizExtra = (fn) => { quizExtra = fn; };
+export const onSessionSaved = (fn) => { savedHook = fn; };
+export const redrawPlayer = () => { if (S.player) draw(); };
 export function hasFingerComplaint(history, now = Date.now()) {
   return history.some((hh) => now - hh.startedAt < 3 * 86400000 && (hh.data?.questionnaire?.answers || []).some((a) => a.q === 'doigts' && /douleur|gêne/i.test(a.a)));
 }

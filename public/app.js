@@ -55,7 +55,16 @@ function syncBadge() {
 }
 onSheetRender(linkPaths);
 let lastRoute = '', backTo = null;
+/** 8.35 : lien d'un rappel « C'est l'heure de tes étirements » (#/play/<séance>) : la séance s'ouvre et se lance (les
+ * séances de ce compte seulement ; sinon on le dit). */
+function playLink() {
+  const m = (location.hash || '').match(/^#\/play\/([\w-]{1,64})$/); if (!m || !S.user || !S.loaded) return;
+  const s = S.seances.items.find((x) => x.id === m[1] && !x.deleted);
+  history.replaceState(null, '', location.pathname + location.search + (s ? `#/library/seance/${s.id}` : '#/home/cal')); parseHash();
+  if (s && !S.player) setTimeout(() => startPlayer(s), 0); else if (!s) setTimeout(() => toast('Cette séance n’existe plus sur ce compte.', 4000), 0);
+}
 function doRender() {
+  playLink();
   const app = $('#app');
   // Même page redessinée (un choix, une case cochée…) : rubriques ouvertes et position gardées, jamais de remontée.
   // Autre page : on arrive en haut ; en revenant sur la page qu'on vient de quitter (liste → détail → liste), on retrouve

@@ -22,7 +22,7 @@ export function buildGeminiInput(options, { json = true } = {}) {
 const inputThinking = (options) => options.thinking_level === 'LOW' ? 'LOW' : 'MINIMAL';
 export async function runGemini(env, input, { fetchFn = fetch, timeoutMs = 30000, json = true } = {}) {
   const key = String(env.GEMINI_API_KEY || '').trim();
-  if (!key) throw fail('Gemini n’est pas activé. Ajoute le secret GEMINI_API_KEY sur Cloudflare.', 503, 'AI_UNAVAILABLE');
+  if (!key) throw fail('L’assistant n’est pas activé sur ce serveur (secret GEMINI_API_KEY absent sur Cloudflare).', 503, 'AI_UNAVAILABLE');
   const body = buildGeminiInput(input, { json }), controller = new AbortController();
   let timer;
   try {
@@ -33,22 +33,22 @@ export async function runGemini(env, input, { fetchFn = fetch, timeoutMs = 30000
       }).then(async (r) => {
         if (r.status === 429) throw fail('Le quota gratuit Google est momentanément atteint. Réessaie plus tard ; les formulaires restent disponibles.', 429, 'AI_QUOTA');
         if (r.status === 401 || r.status === 403) throw fail('Google refuse la connexion Gemini. Vérifie la clé et l’accès à l’API dans les réglages Cloudflare.', 503, 'AI_UNAVAILABLE');
-        if (r.status === 404) throw fail('Ce modèle Gemini n’est pas disponible pour ce projet Google. Vérifie son accès dans Google AI Studio.', 503, 'AI_UNAVAILABLE');
-        if (!r.ok) throw fail('Gemini est momentanément indisponible. Réessaie plus tard.', 503, 'AI_UNAVAILABLE');
+        if (r.status === 404) throw fail('Le modèle choisi dans l’administration n’est pas disponible pour ce projet Google. Vérifie son accès dans Google AI Studio.', 503, 'AI_UNAVAILABLE');
+        if (!r.ok) throw fail('L’assistant est momentanément indisponible. Réessaie plus tard.', 503, 'AI_UNAVAILABLE');
         return r.json();
       }),
       new Promise((_, reject) => { timer = setTimeout(() => { reject(fail('L’assistant a pris trop de temps. Réessaie ou utilise le formulaire.', 504, 'AI_TIMEOUT')); controller.abort(); }, timeoutMs); }),
     ]);
     const candidate = response?.candidates?.[0];
-    if (candidate?.finishReason === 'MAX_TOKENS') throw fail('La réponse de Gemini est incomplète. Raccourcis la demande ou réessaie ; aucune proposition n’a été appliquée.', 502, 'AI_RESPONSE');
+    if (candidate?.finishReason === 'MAX_TOKENS') throw fail('La réponse de l’assistant est incomplète. Raccourcis la demande ou réessaie ; aucune proposition n’a été appliquée.', 502, 'AI_RESPONSE');
     if (response?.promptFeedback?.blockReason || ['SAFETY', 'RECITATION', 'BLOCKLIST', 'PROHIBITED_CONTENT', 'SPII'].includes(candidate?.finishReason))
-      throw fail('Gemini n’a pas pu répondre à cette demande. Reformule-la ou utilise le formulaire.', 502, 'AI_RESPONSE');
+      throw fail('L’assistant n’a pas pu répondre à cette demande. Reformule-la ou utilise le formulaire.', 502, 'AI_RESPONSE');
     if (!candidate?.content?.parts?.some((p) => p?.thought !== true && typeof p?.text === 'string' && p.text.trim()))
-      throw fail('Gemini n’a pas donné de réponse exploitable. Reformule ou réessaie.', 502, 'AI_RESPONSE');
+      throw fail('L’assistant n’a pas donné de réponse exploitable. Reformule ou réessaie.', 502, 'AI_RESPONSE');
     return response;
   } catch (e) {
     if (e?.aiSafe) throw e;
     // Les détails HTTP ou réseau peuvent contenir la clé ; ils ne sortent jamais de l’adaptateur.
-    throw fail('Gemini est momentanément indisponible. Réessaie plus tard.', 503, 'AI_UNAVAILABLE');
+    throw fail('L’assistant est momentanément indisponible. Réessaie plus tard.', 503, 'AI_UNAVAILABLE');
   } finally { clearTimeout(timer); }
 }

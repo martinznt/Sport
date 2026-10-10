@@ -18,6 +18,9 @@ export function cleanAgendaMeta(m) {
   const out = {};
   if (validDay(m.stopFrom)) out.stopFrom = m.stopFrom;
   if (m.kind === 'activity') out.kind = 'activity';
+  // 8.35 : étirements programmés après une séance : le rappel ouvre et lance cette séance d'étirement.
+  if (m.kind === 'stretch') out.kind = 'stretch';
+  if (id(m.playId)) out.playId = id(m.playId);
   if (m.place) out.place = text(m.place, 80);
   if (id(m.seriesId) && validDay(m.occurrenceDate)) { out.seriesId = id(m.seriesId); out.occurrenceDate = m.occurrenceDate; }
   if (['planned', 'done', 'missed', 'cancelled'].includes(m.status)) out.status = m.status;

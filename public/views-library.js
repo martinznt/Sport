@@ -1,12 +1,13 @@
-import { advancedUI, creationChoices, comparisonView } from './views-experience.js';
+import { advancedUI, comparisonView } from './views-experience.js';
 import { visibleEx, exHidden } from './sportprefs.js';
 import { registerPaths } from './pathlinks.js';
 // views-library.js — Bibliothèque : mes séances (création, édition, modèles, archives), générateur avec simulation,
 // exercices (anatomie, capacités), bibliothèque commune (contributions, copies indépendantes), recherche.
 import { personalFit } from './fit.js';
 import { vGym } from './views-gym.js';
-import { vRoutines, myRoutines } from './views-routines.js';
-import { h, raw, esc, $, toast, openSheet, closeSheet, ask, seg, chip, menuList, menuRow, subHead, tag, empty, howBox, exLine, fmtDay, relDate, numberField, buzzOk, skeleton } from './ui.js';
+import { myRoutines } from './views-routines.js';
+import { vStretch, seanceStretches } from './views-stretch.js';
+import { h, raw, esc, $, goHint, toast, openSheet, closeSheet, ask, seg, chip, menuList, menuRow, subHead, tag, empty, howBox, exLine, fmtDay, relDate, numberField, buzzOk, skeleton } from './ui.js';
 import { linkSheet } from './share.js';
 import './duo.js';
 import './views-ai.js';
@@ -71,9 +72,11 @@ export function vLibrary() {
   if (sub === 'shared-edit' && S.sharedDraft) return vEditor(S.sharedDraft.session, 'shared');
   if (sub === 'common-detail') return vCommonDetail();
   if (sub === 'import') return vImport();
-  const cur = ['seances', 'climbplan', 'generate', 'gym', 'moments', 'catalog', 'best', 'exercises', 'common', 'search'].includes(sub) ? sub : 'home';
-  if (cur === 'home') return h`${creationChoices()}${vLibHome()}`;
-  const views = { seances: vSeances, climbplan: vClimbPlan, generate: vGenerate, gym: vGym, moments: vRoutines, catalog: vCatalog, best: vBest, exercises: vExercises, common: vCommon, search: vSearch };
+  // 8.35 : « Mes moments » devient « Mes phases », dans le Profil (les anciens liens y mènent).
+  if (sub === 'moments') { setTimeout(() => go('profile', 'phases'), 0); return ''; }
+  const cur = ['seances', 'climbplan', 'generate', 'gym', 'stretch', 'catalog', 'best', 'exercises', 'common', 'search'].includes(sub) ? sub : 'home';
+  if (cur === 'home') return vLibHome();
+  const views = { seances: vSeances, climbplan: vClimbPlan, generate: vGenerate, gym: vGym, stretch: vStretch, catalog: vCatalog, best: vBest, exercises: vExercises, common: vCommon, search: vSearch };
   if (cur === 'best') return views.best(); // a son propre retour vers Exercices
   const [ic, t] = LIB_INFO[cur];
   return h`${subHead('libSub', 'home', 'Bibliothèque', `${ic} ${t}`)}${views[cur]()}`;
@@ -83,7 +86,7 @@ const LIB_INFO = {
   seances: ['📋', 'Mes séances', () => { const n = S.seances.items.filter((s) => !s.archived).length; return n ? `${n} séance${n > 1 ? 's' : ''} : lancer, modifier, planifier` : 'Tes séances : lancer, modifier, planifier'; }],
   climbplan: ['✨', 'Créer une séance', () => draftText() || 'Tous sports : l’app choisit, te guide, ou tu composes'],
   gym: ['🏋️', 'Ma salle de sport', () => 'Tes machines, la séance du jour, tes charges et réglages'],
-  moments: ['🧩', 'Mes moments', () => { const n = myRoutines().length; return n ? `${n} moment${n > 1 ? 's' : ''} glissé${n > 1 ? 's' : ''} dans tes séances (échauffement, fin…)` : 'Élastiques, no foot, spray wall… proposés au bon moment de tes séances'; }],
+  stretch: ['🧘', 'Étirements', () => 'Une séance d’étirement adaptée à ta séance : muscles, lieu, délai, durée'],
   catalog: ['📖', 'Carnet de séances', () => `${CATALOG.length} séances prêtes, de débutant à avancé, pour chaque sport`],
   exercises: ['💪', 'Exercices', () => `${LIBRARY.filter((x) => x.role === 'main').length} exercices, et le top pour toi`],
   common: ['🌍', 'Bibliothèque commune', () => 'Séances partagées par les membres (non vérifiées)'],
@@ -92,12 +95,14 @@ const LIB_INFO = {
 registerPaths('Bibliothèque', 'library', Object.entries(LIB_INFO).map(([id, [, label]]) => [label, id]));
 /** Bibliothèque : créer une séance, puis la liste des rubriques (même format que les paramètres). */
 function vLibHome() {
-  if (!advancedUI() && !S.lay && !savedLayouts().library) return h`<h1>Bibliothèque</h1><p class="small muted">Mes séances, le catalogue intégré et les partages.</p>${menuList([['libSub','seances','📋','Mes séances','Personnel : mes créations et mes copies'],['libSub','exercises','💪','Exercices','Catalogue intégré et exercices personnels'],['libSub','catalog','📖','Séances prêtes','Catalogue intégré'],['libSub','common','🌍','Découvrir','Publications de la communauté']])}<details class="card"><summary>Programmes et outils spécialisés</summary>${menuList([['libSub','gym','🏋️','Ma salle de sport','Machines et charges'],['libSub','moments','🧩','Mes moments','Routines et petits compléments'],['libSub','search','🔍','Rechercher','Dans toute la bibliothèque']])}</details>`;
+  // Interface simple : les mêmes rubriques et les mêmes noms qu'en avancé (LIB_INFO), juste moins nombreuses.
+  const libRows = (ids) => menuList(ids.map((k) => { const [ic, t, d] = LIB_INFO[k]; return ['libSub', k, ic, t, d()]; }));
+  if (!advancedUI() && !S.lay && !savedLayouts().library) return h`<h1>Bibliothèque</h1><p class="small muted">Tes séances, les exercices et des séances prêtes à l’emploi.</p>${libRows(['seances', 'stretch', 'exercises', 'catalog', 'common'])}<details class="card"><summary>Programmes et outils spécialisés</summary>${libRows(['gym', 'search'])}</details>${goHint('Tes phases perso (échauffement, spray wall…) sont dans', 'Profil › Mes phases', 'profile/phases')}`;
   // Chaque élément se déplace, se masque ou se colore avec ✏️ « Organiser » (mise en page de la Bibliothèque).
   const row = (k) => () => { const [ic, t, d] = LIB_INFO[k]; return menuRow(['libSub', k, ic, t, d()]); };
-  return h`<h1>Bibliothèque</h1><p class="tiny muted pagehelp">Tes séances, et tout pour en créer : par l’app, guidée, prête à l’emploi ou à la main.</p>${composePage('library', {
+  return h`<h1>Bibliothèque</h1><p class="tiny muted pagehelp">Tes séances, et tout pour en créer : par l’app, guidée, prête à l’emploi ou à la main.</p>${goHint('Tes phases perso (échauffement, spray wall…) sont dans', 'Profil › Mes phases', 'profile/phases')}${composePage('library', {
     newbtn: () => h`<button class="btn pri big" data-act="newChoose">＋ Nouvelle séance</button>`, draft: () => draftBanner(),
-    'r-seances': row('seances'), 'r-climbplan': row('climbplan'), 'r-gym': row('gym'), 'r-moments': row('moments'), 'r-catalog': row('catalog'), 'r-exercises': row('exercises'), 'r-common': row('common'), 'r-search': row('search'),
+    'r-seances': row('seances'), 'r-gym': row('gym'), 'r-stretch': row('stretch'), 'r-catalog': row('catalog'), 'r-exercises': row('exercises'), 'r-common': row('common'), 'r-search': row('search'),
   })}`;
 }
 ACT.libSub = (el) => { closeSheet(); S.sel = null; go('library', el.dataset.id); if (el.dataset.id === 'common') loadCommon(); };
@@ -323,6 +328,7 @@ function vEditor(s, mode) {
       ${howBox(s.explain)}${s.exercises.length ? levelDetails(lv, s) : ''}</div>
     <div class="card">${s.exercises.length ? blocksOf(s, 'edit') : h`<div class="stack"><b>Ta séance est vide : écris-la comme tu veux.</b><p class="small muted">Un exercice par ligne, comme dans un carnet (« 4 × 8 tractions repos 2 min », « 5 min de corde à sauter »…), ou cherche dans le catalogue. Rien n’est obligatoire : ni sport, ni objectif, ni ordre imposé.</p></div>`}
       <div class="row wrapf"><button class="btn ${s.exercises.length ? '' : 'pri'}" data-act="exWrite">✍️ Écrire des exercices</button><button class="btn ${s.exercises.length ? 'pri' : ''}" data-act="exAdd">＋ Ajouter un exercice</button>${s.exercises.length ? h`<button class="btn" data-act="sEquip">🧰 Matériel indisponible</button>` : ''}</div></div>
+    ${shared || empty ? '' : seanceStretches(s)}
     ${shared ? '' : empty ? h`<div class="row wrapf"><button class="btn danger" data-act="sDelete" data-id="${s.id}">🗑 Supprimer cette séance vide</button></div>` : h`<div class="row wrapf"><button class="btn" data-act="planSeance" data-id="${s.id}">📅 Planifier</button><button class="btn" data-act="sDup" data-id="${s.id}">⧉ Dupliquer</button><button class="btn" data-act="sPublish" data-id="${s.id}">🌍 Partager</button></div>
       <details class="how"><summary>Plus d’actions <span class="tiny muted">(modèle, archiver, texte, supprimer…)</span></summary><div class="row wrapf"><button class="btn" data-act="sTemplate" data-id="${s.id}">${s.template ? '★ Retirer des modèles' : '☆ Enregistrer comme modèle'}</button><button class="btn" data-act="sArchive" data-id="${s.id}">${s.archived ? '↩ Désarchiver' : '🗄 Archiver'}</button>
       <button class="btn" data-act="sText" data-id="${s.id}">📤 Copier en texte</button>${contentAdmin() ? h`<button class="btn" data-act="seanceToCatalog" data-id="${s.id}">🌍 En faire une séance prête</button>` : S.user && !S.user.guest ? h`<button class="btn" data-act="propose" data-k="catalog" data-id="${s.id}">💡 Proposer comme séance prête</button>` : ''}<button class="btn danger" data-act="sDelete" data-id="${s.id}">🗑 Supprimer</button></div></details>`}`;
@@ -644,7 +650,7 @@ function vExercises() {
   const lib = visibleEx(LIBRARY).filter((x) => x.role === 'main' && match(x.name) && (!act || x.acts.includes(act)) && (!cap || (x.caps[cap] || 0) >= 0.5));
   const c = ctx(), tried = neverTried(c, { activityId: act || undefined, level: 1 });
   const top = h`<button class="card pick row" data-act="libSub" data-id="best"><span class="catemoji">🏆</span><span class="grow"><b>Top exercices pour toi</b><small class="tiny muted" style="display:block">Les plus utiles par catégorie, selon ton profil</small></span><span class="chev">›</span></button>`;
-  return h`${top}${contentAdmin() ? h`<button class="btn" data-act="exNewGlobal">🌍 ＋ Exercice pour tout le monde</button>` : ''}<button class="card pick ai-cta" data-act="aiOpen" data-id="exercise"><span>🤖</span><div><b>Créer un exercice avec l’assistant</b><small>Écris « clipage », « pompes diamant »… elle prépare la fiche.</small></div></button>
+  return h`${goHint('▶ Pour les mettre dans une séance, va dans', 'Bibliothèque › Mes séances', 'library/seances')}${top}${contentAdmin() ? h`<button class="btn" data-act="exNewGlobal">🌍 ＋ Exercice pour tout le monde</button>` : ''}<button class="card pick ai-cta" data-act="aiOpen" data-id="exercise"><span>🤖</span><div><b>Créer un exercice avec l’assistant</b><small>Écris « clipage », « pompes diamant »… elle prépare la fiche.</small></div></button>
     <input type="search" data-input="exQ" value="${q}" placeholder="Rechercher un exercice…" aria-label="Rechercher un exercice">
     <div class="grid2"><select data-change="exAct" aria-label="Activité"><option value="">Toutes activités</option>${Object.entries(ACTIVITIES).map(([id, a]) => h`<option value="${id}" ${act === id ? 'selected' : ''}>${a.emoji} ${a.label}</option>`)}</select>
     <select data-change="exCap" aria-label="Capacité"><option value="">Toutes capacités</option>${raw(capOptionGroups(Object.keys(CAPACITIES), cap))}</select></div>

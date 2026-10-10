@@ -296,6 +296,9 @@ async function notificationMessage(env, endpoint, userId, tz, now = Date.now()) 
   if (pending.startsWith('calendar:') && userId) {
     const [sourceId, occurrenceDate] = pending.slice(9).split('/');
     const event = await calendarOccurrence(env, userId, sourceId, occurrenceDate);
+    if (event && !event.completed && !['done', 'missed', 'cancelled'].includes(event.meta?.status) && event.meta?.kind === 'stretch' && event.meta?.playId) return {
+      title: '🧘 C’est l’heure de tes étirements', body: `${String(event.title || 'Étirements').slice(0, 100)} à ${event.time}. Touche pour la lancer.`, url: `/#/play/${encodeURIComponent(event.meta.playId)}`, silent,
+    };
     if (event && !event.completed && !['done', 'missed', 'cancelled'].includes(event.meta?.status)) return {
       title: 'Rendez-vous à venir', body: `${String(event.title || 'Ta séance').slice(0, 100)} à ${event.time}${event.meta?.place ? ` · ${String(event.meta.place).slice(0, 70)}` : ''}.`, url: '/#/home/cal', silent,
     };

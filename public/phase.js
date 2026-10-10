@@ -82,6 +82,8 @@ export function normalizePhase(p = {}, i = 0, sport = '') {
     tradeoffs: cleanTradeoffs(x.tradeoffs),
     filters: cleanLevel(x.filters),
     noFailure: !!x.noFailure,
+    // 8.35 : phase sans exercices, avec la consigne affichée pendant la séance.
+    noEx: !!x.noEx, noteText: str(x.noteText, 600),
     maxVolume: oneOf(x.maxVolume, ['', 'low', 'mod'], ''),
     forbidEquip: ids(x.forbidEquip),
   };

@@ -39,8 +39,8 @@ function loadChat() {
 const provider = () => ['cloudflare', 'gemini'].includes(S.coachStatus?.provider) ? S.coachStatus.provider : 'unknown';
 const shareKey = () => 'sea:coach-profile:' + S.user.id + ':' + provider();
 const profileShared = () => provider() !== 'unknown' && ls.get(shareKey(), provider() === 'cloudflare') === true;
-const modelLabel = () => S.coachStatus?.label || (S.coachStatus === undefined ? 'Vérification du modèle…' : 'Modèle à vérifier lors de l’envoi');
-const shareNote = 'Ta demande et les derniers messages sont transmis à Google. Le résumé ci-dessous est ajouté si tu coches cette option.';
+const modelLabel = () => S.coachStatus === undefined ? 'Connexion au coach…' : S.coachStatus?.available === false || S.coachStatus === null ? 'Le coach répond dès que la connexion est rétablie.' : 'Pose ta question, le coach répond en quelques secondes.';
+const shareNote = 'Ta demande et les derniers messages sont transmis au service externe qui fait fonctionner le coach. Le résumé ci-dessous est ajouté si tu coches cette option.';
 function updateCoachStatus() {
   const chat = $('#sheet.open .chat'); if (!chat) return;
   const model = chat.querySelector('[data-coach-model]'); if (model) { model.textContent = modelLabel(); model.title = modelLabel(); }

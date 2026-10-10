@@ -1,7 +1,7 @@
 import { advancedUI, memoryView } from './views-experience.js';
 // views-profile.js — Profil : comprendre mon profil, carte d'entraînement et graphe, activités et catégories,
 // performances, escalade (cotations, styles, maxima, journal), objectifs complexes, matériel, préférences, profil public.
-import { h, subHead, menuList, raw, $, toast, openSheet, closeSheet, ask, seg, chip, tag, empty, howBox, meter, fmtDay, relDate, numberField, buzzOk, lineChart, skeleton, SOURCE_TAG, ymd } from './ui.js';
+import { h, subHead, menuList, raw, $, toast, openSheet, closeSheet, ask, seg, chip, tag, empty, howBox, meter, fmtDay, relDate, numberField, buzzOk, lineChart, skeleton, SOURCE_TAG, ymd, goHint } from './ui.js';
 import { sportState, setSportState, hiddenSports } from './sportprefs.js';
 import { registerPaths } from './pathlinks.js';
 import { hoursText, cleanSlots } from './planning.js';
@@ -36,14 +36,15 @@ import { cheersCard, loadCheers } from './views-community.js';
 import { vMine, mine, addField, onChoice, insertCheckChip } from './views-choices.js';
 import { isMine } from './choices.js';
 import { AVOID_ZONES } from './intentions.js';
+import { vRoutines } from './views-routines.js';
 import { PHYSIQUE, PHYSIQUE_SOURCES, physiqueGroups, physiqueMeasures, physiqueTrack, weeklySets, SETS_RANGE } from './physique.js';
 
-const SUBS = [['memory', 'Mémoire d’entraînement'], ['bilan', 'Mon bilan physique'], ['analyse', 'Mon analyse'], ['body', 'Mon corps'], ['understand', 'Pourquoi ces conseils'], ['map', 'Mes capacités'], ['activities', 'Sports'], ['perfs', 'Mesures'], ['climbing', 'Carnet'], ['goals', 'Objectifs'], ['equipment', 'Matériel'], ['prefs', 'Préférences'], ['public', 'Partage'], ['mine', 'Mes ajouts']];
+const SUBS = [['phases', 'Mes phases'], ['memory', 'Mémoire d’entraînement'], ['bilan', 'Mon bilan physique'], ['analyse', 'Mon analyse'], ['body', 'Mon corps'], ['understand', 'Pourquoi ces conseils'], ['map', 'Mes capacités'], ['activities', 'Sports'], ['perfs', 'Mesures'], ['climbing', 'Carnet'], ['goals', 'Objectifs'], ['equipment', 'Matériel'], ['prefs', 'Préférences'], ['public', 'Partage'], ['mine', 'Mes ajouts']];
 const TILES = { bilan: ['🩺', 'Mon bilan physique', 'ce que l’app sait de ta condition, tests à faire'], analyse: ['🔎', 'Mon analyse', 'capacités, tendances, pourquoi ces conseils'], body: ['🫀', 'Mon corps et mes préférences', 'âge, forme, aime / évite, zones à ménager'], understand: ['🔎', 'Pourquoi ces conseils', 'ce que l’app sait de toi'], map: ['🗺️', 'Mes capacités', 'forces et points à travailler'], activities: ['🏅', 'Mes sports', 'et catégories'], perfs: ['🏆', 'Records et mesures', 'records, tests, maxima'],
-  climbing: ['🧗', 'Carnet', 'blocs, voies, pyramide'], goals: ['🎯', 'Objectifs', 'figures, projets d’escalade'], equipment: ['📍', 'Mes lieux', 'salles, falaises, matériel, ce que tu y as fait'], prefs: ['❤️', 'Préférences', 'aime / évite'], public: ['🌍', 'Partage', 'profil public'], mine: ['✍️', 'Mes ajouts', 'mes propres choix dans les listes'] };
+  climbing: ['🧗', 'Carnet', 'blocs, voies, pyramide'], goals: ['🎯', 'Objectifs', 'figures, projets d’escalade'], phases: ['🧩', 'Mes phases', 'échauffement, spray wall, no foot… proposées quand tu crées une séance'], equipment: ['📍', 'Mes lieux', 'salles, falaises, matériel, ce que tu y as fait'], prefs: ['❤️', 'Préférences', 'aime / évite'], public: ['🌍', 'Partage', 'profil public'], mine: ['✍️', 'Mes ajouts', 'mes propres choix dans les listes'] };
 registerPaths('Profil', 'profile', Object.entries(TILES).filter(([id]) => id !== 'prefs').map(([id, [, label]]) => [label, id]));
 /** Tuiles rangées par thème : qui je suis, ce que je fais, pourquoi l'app conseille ça. */
-const GROUPS = [['Moi', ['bilan', 'body', 'activities', 'goals', 'equipment', 'mine']], ['Mes résultats', ['perfs', 'climbing']], ['Comprendre mes conseils', ['analyse']], ['Partager', ['public']]];
+const GROUPS = [['Moi', ['bilan', 'body', 'activities', 'goals', 'phases', 'equipment', 'mine']], ['Mes résultats', ['perfs', 'climbing']], ['Comprendre mes conseils', ['analyse']], ['Partager', ['public']]];
 export function vProfile() {
   const sub = SUBS.some(([k]) => k === S.sub.profile) ? S.sub.profile : 'home';
   if (sub === 'home') return h`${vHub()}<section class="card"><h3>🧠 Ce que l’app a compris</h3><p class="small muted">Tes habitudes, leur origine et tes corrections.</p><button class="btn" data-act="profSub" data-id="memory">Ma mémoire d’entraînement</button></section>`;
@@ -51,7 +52,7 @@ export function vProfile() {
   // Préférences : avec « Mon corps » ; capacités et « pourquoi » : dans « Mon analyse ».
   if (sub === 'prefs') { setTimeout(() => go('profile', 'body'), 0); return ''; }
   if (sub === 'map' || sub === 'understand') { const [ic, title] = TILES[sub]; return h`${subHead('profSub', 'analyse', 'Mon analyse', `${ic} ${title}`)}${(sub === 'map' ? vMap : vUnderstand)()}`; }
-  const views = { analyse: vAnalyseHub, body: () => h`${vBody()}<span class="kicker">❤️ Mes préférences</span>${vPrefs()}`, understand: vUnderstand, map: vMap, bilan: vBilan, activities: vActivities, perfs: vPerfs, climbing: () => vCarnet(), goals: vGoals, equipment: vEquipment, prefs: vPrefs, public: vPublic, mine: vMine };
+  const views = { analyse: vAnalyseHub, body: () => h`${vBody()}<span class="kicker">❤️ Mes préférences</span>${vPrefs()}`, understand: vUnderstand, map: vMap, bilan: vBilan, activities: vActivities, perfs: vPerfs, climbing: () => vCarnet(), goals: vGoals, phases: vRoutines, equipment: vEquipment, prefs: vPrefs, public: vPublic, mine: vMine };
   const [ic, title] = TILES[sub];
   return h`${subHead('profSub', 'home', 'Profil', `${ic} ${title}`)}${views[sub]()}`;
 }
@@ -162,10 +163,10 @@ function vActivities() {
     <div class="setmenu">${natives.map(([id, a]) => { const st = sportState(id, c.activities); return h`<button class="setrow ${st === 'never' ? 'dim' : ''}" data-act="sportPick" data-id="${id}"><span class="sic">${a.emoji}</span><span class="grow"><b>${a.label}</b><small>${word[st]}${st === 'never' && hide.has(id) ? ' · exercices et séances masqués' : ''}</small></span><span class="chev">›</span></button>`; })}</div>
     <div class="card"><div class="row between"><h3>Mes activités personnalisées</h3><button class="btn sm pri" data-act="actNew">＋ Activité</button></div>
       ${acts.filter((a) => !a.preset && !a.archived).map((a) => h`<div class="item"><div class="ico">${a.emoji || '🏅'}</div><div class="grow"><b>${a.label}</b><div class="tiny muted">${itemsOf('category').filter((x) => x.activityId === a.id && !x.archived).map((x) => x.label).join(', ') || 'aucune catégorie'}</div></div><button class="btn sm" data-act="actEdit" data-id="${a.id}">✎</button></div>`)}
-      ${!acts.some((a) => !a.preset && !a.archived) ? h`<p class="muted small">Basketball, cyclisme, tennis, ski… : crée ton activité avec ses propres catégories, métriques et exercices.</p>` : ''}</div>
+      ${!acts.some((a) => !a.preset && !a.archived) ? h`<p class="muted small">Basketball, cyclisme, tennis, ski… : crée ton activité avec ses propres catégories, mesures et exercices.</p>` : ''}</div>
     ${Object.values(c.activities).map((a) => vActivityCard(a))}
     ${Object.keys(c.activities).some((a) => a.startsWith('climbing')) ? h`<span class="kicker">🧗 Escalade : cotations et styles</span>${climbSystemsStyles()}` : h`<details class="card how"><summary><b>🧗 Escalade : cotations et styles</b></summary>${climbSystemsStyles()}</details>`}
-    <div class="card"><div class="row between"><h3>Mes métriques personnalisées</h3><button class="btn sm" data-act="metricNew">＋ Métrique</button></div>${itemsOf('metric').filter((m) => !m.archived).map((m) => h`<div class="item"><div class="grow"><b>${m.label}</b><div class="tiny muted">${m.unit || 'sans unité'} · ${m.activityId ? activityLabel(m.activityId, c) : 'toutes activités'} · ${(m.caps || []).map((x) => capL(x.id)).join(', ') || 'aucune capacité liée'}</div></div><button class="btn sm" data-act="metricEdit" data-id="${m.id}">✎</button></div>`)}</div>`;
+    ${goHint('Pour suivre un chiffre à toi (détente, 40 km vélo…), crée une mesure dans', 'Profil › Records et mesures', 'profile/perfs')}`;
 }
 function vActivityCard(a) {
   const c = ctx(), native = ACTIVITIES[a.id];
@@ -206,11 +207,11 @@ SUBMIT.catSave = (f) => { const fd = new FormData(f), d = Object.fromEntries(fd)
 ACT.catDel = async (el) => { const cat = item('category', el.dataset.id); if (!cat) return; const used = itemsOf('metric').some((m) => (m.caps || []).some((x) => x.id === cat.id)); if (!(await ask(`Supprimer la catégorie « ${cat.label} » ?`, { danger: true, ok: used ? 'Archiver' : 'Supprimer', detail: used ? 'Des métriques y sont reliées : elle sera archivée (masquée) pour ne rien casser.' : '' }))) return; if (used) putItem('category', cat.id, { ...cat, archived: true }); else delItem('category', cat.id); closeSheet(); render(); };
 function metricForm(m, pre = '') {
   const c = ctx(), caps = new Set((m?.caps || []).map((x) => x.id));
-  return h`<h2 style="margin:0">${m ? 'Modifier la métrique' : 'Nouvelle métrique'}</h2><form data-submit="metricSave" class="stack"><input type="hidden" name="id" value="${m?.id || ''}">
+  return h`<h2 style="margin:0">${m ? 'Modifier la mesure' : 'Nouvelle mesure'}</h2><p class="small muted">Une <b>mesure</b>, c’est un chiffre que tu veux suivre dans le temps : tractions max, temps sur 5 km, détente… Tu la crées une fois, puis tu y notes tes résultats quand tu veux : l’app trace ta courbe et s’en sert pour régler le niveau de tes séances.</p><form data-submit="metricSave" class="stack"><input type="hidden" name="id" value="${m?.id || ''}">
     <label>Ce qui est mesuré<input name="label" required maxlength="80" value="${m?.label || pre}" placeholder="Ex. Détente au panier, 40 km vélo…"></label>
-    <div class="grid2"><label>Unité<input name="unit" maxlength="20" value="${m?.unit || ''}" placeholder="reps, kg, s, km, cm…"></label><label>Sens<select name="dir"><option value="1" ${m?.dir !== -1 ? 'selected' : ''}>Plus c’est haut, mieux c’est</option><option value="-1" ${m?.dir === -1 ? 'selected' : ''}>Plus c’est bas, mieux c’est (temps)</option></select></label></div>
+    <div class="grid2"><label>Unité<input name="unit" maxlength="20" value="${m?.unit || ''}" placeholder="reps, kg, s, km, cm…"></label><label>Qu’est-ce qui est mieux ?<select name="dir"><option value="1" ${m?.dir !== -1 ? 'selected' : ''}>Plus c’est haut, mieux c’est</option><option value="-1" ${m?.dir === -1 ? 'selected' : ''}>Plus c’est bas, mieux c’est (temps)</option></select></label></div>
     <label>Activité<select name="activityId"><option value="">Toutes</option>${Object.values(c.activities).map((a) => h`<option value="${a.id}" ${m?.activityId === a.id ? 'selected' : ''}>${a.label}</option>`)}</select></label>
-    <label>Capacités suivies</label><div class="chips">${[...Object.entries(CAPACITIES), ...Object.values(c.categories).map((x) => [x.id, { label: x.label + ' (catégorie)' }])].map(([id, x]) => h`<label class="chip ${caps.has(id) ? 'on' : ''}"><input type="checkbox" class="hidden" name="caps" value="${id}" ${caps.has(id) ? 'checked' : ''} data-change="chipToggle">${x.label}</label>`)}</div>
+    <b class="small">Ce que ce chiffre montre <span class="tiny muted">(facultatif)</span></b><p class="tiny muted"><em>Coche les qualités qu’il reflète : l’app s’en sert pour estimer ton niveau et choisir tes exercices. Sans rien cocher, la mesure sert juste à suivre ta progression.</em></p><div class="chips">${[...Object.entries(CAPACITIES), ...Object.values(c.categories).map((x) => [x.id, { label: x.label + ' (catégorie)' }])].map(([id, x]) => h`<label class="chip ${caps.has(id) ? 'on' : ''}"><input type="checkbox" class="hidden" name="caps" value="${id}" ${caps.has(id) ? 'checked' : ''} data-change="chipToggle">${x.label}</label>`)}</div>
     <div class="row wrapf"><button class="btn pri" type="submit">Enregistrer</button>${m ? h`<button class="btn danger" type="button" data-act="metricArchive" data-id="${m.id}">Archiver</button>` : ''}</div></form>`;
 }
 ACT.metricNew = (el) => { S.metricBack = el?.dataset?.from === 'metricId' && document.querySelector('#sheet form[data-submit=perfSave]') ? 'perf' : ''; openSheet(metricForm(null, el?.dataset?.q || ''), { wide: true }); };
@@ -218,23 +219,32 @@ ACT.metricEdit = (el) => { const m = item('metric', el.dataset.id); if (m) openS
 SUBMIT.metricSave = (f) => { const fd = new FormData(f), d = Object.fromEntries(fd), mid = d.id || 'm-' + uid().slice(0, 12); putItem('metric', mid, { label: d.label, unit: d.unit, dir: Number(d.dir) === -1 ? -1 : 1, activityId: d.activityId, kind: 'other', caps: fd.getAll('caps').map((id) => ({ id, w: 1 })) }); closeSheet(); toast('Mesure enregistrée'); render();
   // Créée depuis la liste d'une saisie : on revient à la saisie, avec cette mesure choisie.
   if (S.metricBack === 'perf') { S.metricBack = ''; setTimeout(() => ACT.perfAdd({ dataset: { id: mid } }), 150); } };
-ACT.metricArchive = (el) => { const m = item('metric', el.dataset.id); if (m) { putItem('metric', m.id, { ...m, archived: true }); closeSheet(); toast('Métrique archivée (performances conservées)'); render(); } };
+ACT.metricArchive = (el) => { const m = item('metric', el.dataset.id); if (m) { putItem('metric', m.id, { ...m, archived: true }); closeSheet(); toast('Mesure archivée (tes résultats sont gardés)'); render(); } };
 
 /* ═════════ Performances (valeurs observées) ═════════ */
 function vPerfs() {
-  const c = ctx(), rem = testReminders(c);
+  // Un test n'apparaît qu'à un endroit : ceux du bilan physique y restent (avec leur protocole), ici seulement ceux
+  // des objectifs chiffrés et des figures, que le bilan ne montre pas.
+  const c = ctx(), inBilan = new Set(assessment(c).todo.map((r) => r.metricId)), all = testReminders(c), rem = all.filter((t) => !inBilan.has(t.metricId)), nBilan = assessment(c).todo.length;
   const groups = new Map();
-  for (const p of c.perfs) { if (!groups.has(p.metricId)) groups.set(p.metricId, []); groups.get(p.metricId).push(p); }
+  // Poids, composition et mensurations ont leur page (Mon corps, avec leurs courbes) : pas une seconde fois ici.
+  const bodyIds = new Set([...COMPOSITION, ...MEASURES]); let bodyCount = 0;
+  for (const p of c.perfs) { if (bodyIds.has(p.metricId)) { bodyCount++; continue; } if (!groups.has(p.metricId)) groups.set(p.metricId, []); groups.get(p.metricId).push(p); }
   const climber = Object.keys(c.activities).some((a) => a.startsWith('climbing'));
-  return h`<div class="row wrapf"><button class="btn pri" data-act="perfAdd">＋ Saisir une performance</button><button class="btn" data-act="metricNew">＋ Métrique personnalisée</button></div>
+  const own = itemsOf('metric').filter((m) => !m.archived);
+  return h`<p class="small muted pagehelp">Tes chiffres : records, résultats de tests et mesures. Note un résultat quand tu veux : l’app suit ta progression et règle le niveau de tes séances d’après ces valeurs.</p>
+    <div class="row wrapf"><button class="btn pri" data-act="perfAdd">＋ Noter un résultat</button><button class="btn" data-act="metricNew">＋ Créer une mesure</button></div>
+    ${nBilan ? goHint(`📏 ${nBilan} test${nBilan > 1 ? 's' : ''} à faire pour connaître ton niveau, avec la façon de faire chacun : va dans`, 'Profil › Mon bilan physique', 'profile/bilan') : ''}
     ${recordsCards()}
     ${climber ? h`<span class="kicker">🧗 Escalade</span>${climbMaxima()}${pyramidCard()}${fingerCard()}` : ''}
     ${sportTools()}
-    ${rem.length ? h`<div class="card flat"><h3>📏 À mesurer</h3>${rem.map((t) => h`<div class="item"><div class="grow"><b class="small">${t.label}</b><div class="tiny muted">${t.unknown ? 'tu ne sais pas encore' : t.age != null ? `il y a ${t.age} j` : 'jamais mesuré'} · pour ${t.why}</div>${t.test ? h`<details class="how mini"><summary>Comment faire le test ?</summary><p class="tiny">${t.test}</p></details>` : ''}</div><button class="btn sm pri" data-act="perfAdd" data-id="${t.metricId}">Saisir</button></div>`)}</div>` : ''}
+    ${bodyCount ? goHint('⚖️ Ton poids, ta composition et tes mensurations (avec leurs courbes) sont dans', 'Profil › Mon corps et mes préférences', 'profile/body') : ''}
+    ${rem.length ? h`<div class="card flat"><h3>📏 À mesurer pour tes objectifs</h3><p class="tiny muted">Pour savoir où tu en es de tes objectifs chiffrés.</p>${rem.map((t) => h`<div class="item"><div class="grow"><b class="small">${t.label}</b><div class="tiny muted">${t.unknown ? 'tu ne sais pas encore' : t.age != null ? `il y a ${t.age} j` : 'jamais mesuré'} · pour ${t.why}</div>${t.test ? h`<details class="how mini"><summary>Comment faire le test ?</summary><p class="tiny">${t.test}</p></details>` : ''}</div><button class="btn sm pri" data-act="perfAdd" data-id="${t.metricId}">Noter</button></div>`)}</div>` : ''}
+    ${own.length ? h`<div class="card"><h3>📐 Mes mesures personnalisées</h3><p class="tiny muted">Celles que tu as créées. Touche ✎ pour changer leur nom, leur unité ou ce qu’elles montrent.</p>${own.map((m) => h`<div class="item"><div class="grow"><b>${m.label}</b><div class="tiny muted">${m.unit || 'sans unité'} · ${m.activityId ? activityLabel(m.activityId, c) : 'tous sports'} · ${(m.caps || []).map((x) => capL(x.id)).join(', ') || 'suivi seulement'}</div></div><button class="btn sm pri" data-act="perfAdd" data-id="${m.id}">Noter</button><button class="btn sm ic" data-act="metricEdit" data-id="${m.id}" aria-label="Modifier ${m.label}">✎</button></div>`)}</div>` : ''}
     ${groups.size ? [...groups.entries()].map(([mid, list]) => { const m = c.metrics[mid] || { label: mid, unit: '' }; const t = metricTrend(mid, c); const pts = list.filter((p) => !p.unknown && p.value != null).sort((a, b) => a.date - b.date).map((p) => ({ v: p.value })); return h`<div class="card"><div class="row between"><h3>${m.label}</h3><button class="btn sm" data-act="perfAdd" data-id="${mid}">＋</button></div>
       ${m.tiers ? h`<p class="tiny muted">${metricTierText(m)}</p>` : ''}${t ? h`<p class="small">${t.dir > 0 ? '📈' : t.dir < 0 ? '📉' : '➖'} ${t.text}</p>` : ''}${pts.length >= 2 ? lineChart(pts, m.unit) : ''}
       ${list.slice(0, 8).map((p) => h`<div class="item"><div class="grow"><b>${perfText(p, c)}</b> ${tag(({ measured: 'mesuré', declared: 'déclaré', imported: 'importé', session: 'relevé en séance' })[p.source] || p.source, SOURCE_TAG[({ measured: 'mesuré', declared: 'déclaré' })[p.source]] || '')}${p.styles?.length ? h`<div class="tiny muted">${p.styles.map((s) => c.styles[s]?.label || s).join(', ')}</div>` : ''}<div class="tiny muted">${fmtDay(p.date)}${p.note ? ' · ' + p.note : ''}</div></div><button class="btn sm ic" data-act="perfEdit" data-id="${p.id}" aria-label="Modifier">✎</button><button class="btn danger sm ic" data-act="perfDel" data-id="${p.id}" aria-label="Supprimer">✕</button></div>`)}</div>`; })
-      : empty('Aucune performance. Saisis un test (tractions max, 5 km, suspension…) ou indique « je ne sais pas » : l’application te proposera un test.', h`<button class="btn pri" data-act="perfAdd">＋ Saisir une performance</button>`)}`;
+      : empty('Aucun résultat noté. Note un test (tractions max, 5 km, suspension…) ou indique « je ne sais pas » : l’app te proposera un test.', h`<button class="btn pri" data-act="perfAdd">＋ Noter un résultat</button>`)}`;
 }
 function perfForm(p, metricId) {
   const c = ctx(), mid = p?.metricId || metricId || '', m = c.metrics[mid];
@@ -244,8 +254,8 @@ function perfForm(p, metricId) {
   const systems = Object.values(c.systems).filter((s) => !s.archived && (s.activity === act || s.activity === 'autre'));
   const styles = Object.values(c.styles).filter((s) => !s.archived && (s.activity === 'climbing' || !s.activity || s.activity === 'escalade'));
   const d = p?.date ? new Date(p.date) : new Date();
-  return h`<h2 style="margin:0">${p ? 'Modifier la performance' : 'Nouvelle performance'}</h2><form data-submit="perfSave" class="stack"><input type="hidden" name="id" value="${p?.id || ''}">
-    <label>Métrique<select name="metricId" data-change="perfMetric" data-pick="yes" data-add="metricNew" data-add-label="Créer une mesure" required><option value="">— choisir —</option>${metricOptions(list, mid)}</select></label>
+  return h`<h2 style="margin:0">${p ? 'Modifier le résultat' : 'Noter un résultat'}</h2><form data-submit="perfSave" class="stack"><input type="hidden" name="id" value="${p?.id || ''}">
+    <label>Mesure<select name="metricId" data-change="perfMetric" data-pick="yes" data-add="metricNew" data-add-label="Créer une mesure" required><option value="">— choisir —</option>${metricOptions(list, mid)}</select></label>
     ${m?.test ? h`<p class="tiny muted">Protocole : ${m.test}</p>` : ''}${m?.tiers ? h`<p class="tiny muted">${metricTierText(m)}</p>` : ''}
     ${isGrade ? h`<label>Système de cotation<select name="systemId" data-change="perfSystem">${systems.map((s) => h`<option value="${s.id}" ${(p?.grade?.systemId || S.perfSys) === s.id ? 'selected' : ''}>${s.name}</option>`)}</select></label>
       <label>Niveau<select name="levelId">${sortedLevels(c.systems[p?.grade?.systemId || S.perfSys] || systems[0]).map((l) => h`<option value="${l.id}" ${p?.grade?.levelId === l.id ? 'selected' : ''}>${l.label}</option>`)}</select></label>
@@ -264,7 +274,7 @@ CHG.perfMetric = (el) => { const m = ctx().metrics[el.value]; if (m?.kind === 'g
 CHG.perfSystem = (el) => { S.perfSys = el.value; const f = el.form; const sel = f.querySelector('[name=levelId]'); sel.innerHTML = sortedLevels(ctx().systems[el.value]).map((l) => `<option value="${l.id}">${l.label.replace(/[<>&"]/g, '')}</option>`).join(''); };
 SUBMIT.perfSave = (f) => {
   const fd = new FormData(f), d = Object.fromEntries(fd), c = ctx(), m = c.metrics[d.metricId];
-  if (!m) { toast('Choisis une métrique.'); return; }
+  if (!m) { toast('Choisis une mesure.'); return; }
   const date = d.date ? new Date(d.date + 'T12:00:00').getTime() : Date.now();
   if (date > Date.now() + 86400000) { toast('Une performance ne peut pas être datée dans le futur.'); return; }
   const unknown = !!d.unknown;
@@ -470,8 +480,8 @@ function openGoalEntry(text = '', error = '', localAvailable = false) {
   <textarea name="text" maxlength="300" rows="3" required placeholder="Ex. « Enchaîner le 6c du dévers avant l’été » ou « Courir 10 km sans m’arrêter »">${text}</textarea>
   ${error ? h`<p class="small warn-t" role="status">${error}</p><p class="tiny muted">Aucun objectif n’a été préparé ni enregistré. Précise ta demande avant de réessayer.</p>` : ''}
   <label class="chk tiny"><input type="checkbox" name="profileConsent">Joindre le résumé de mon profil</label>
-  <details class="how mini"><summary>Voir le résumé et son destinataire</summary><p class="tiny">${profileSummary()}</p><p class="tiny muted">Si tu coches cette option, ce résumé est joint à ta demande et transmis au modèle choisi pour le site : Google (Gemini) ou Cloudflare.</p></details>
-  <button class="btn pri" type="submit">Analyser</button>${localAvailable ? h`<button class="btn ghost" type="button" data-act="goalLocal" data-text="${text}">Préparer une fiche locale, sans IA</button>` : ''}</form>`);
+  <details class="how mini"><summary>Voir le résumé et son destinataire</summary><p class="tiny">${profileSummary()}</p><p class="tiny muted">Si tu coches cette option, ce résumé est joint à ta demande et transmis au service externe de l’assistant.</p></details>
+  <button class="btn pri" type="submit">Analyser</button>${localAvailable ? h`<button class="btn ghost" type="button" data-act="goalLocal" data-text="${text}">Préparer la fiche sur mon appareil</button>` : ''}</form>`);
 }
 /** Depuis l'assistant de séance : l'intention du jour devient un objectif SEULEMENT si on le demande (fiche relue avant). */
 ACT.goalFromText = (el) => { S.goalBack = el?.dataset?.back || ''; analyzeGoal(String(el?.dataset?.text || '').trim()); };
@@ -515,7 +525,7 @@ function goalFiche(d) {
   const x = ctx(), mets = Object.entries(x.metrics || {}).filter(([, m]) => m.kind !== 'grade');
   const capsAll = [...new Set([...d.caps.map((c) => c.id), ...Object.keys(ACTIVITIES[d.activityId]?.caps || {}), ...(!d.caps.length && d.source === 'local' ? Object.keys(CAPACITIES) : [])])];
   return h`<form data-submit="goalFicheSave" class="stack"><h2 style="margin:0">🎯 Fiche de l’objectif</h2>
-    ${d.source === 'local' ? h`<p class="tiny muted">Fiche locale préparée sans IA à partir de tes mots. Les capacités suggérées restent des estimations à corriger.</p>` : h`<p class="tiny muted">Proposition de l’assistant à relire.</p>${aiEvidence(d)}`}
+    ${d.source === 'local' ? h`<p class="tiny muted">Fiche préparée sur ton appareil à partir de tes mots. Les capacités suggérées restent des estimations à corriger.</p>` : h`<p class="tiny muted">Proposition de l’assistant à relire.</p>${aiEvidence(d)}`}
     <label>Nom court<input name="label" maxlength="80" required value="${d.label}"></label>
     <label>Description<textarea name="summary" maxlength="300" rows="2">${d.summary || ''}</textarea></label>
     <label>Sport<select name="activityId"><option value="">— aucun en particulier —</option>${Object.entries(ACTIVITIES).map(([id, a]) => h`<option value="${id}" ${d.activityId === id ? 'selected' : ''}>${a.emoji} ${a.label}</option>`)}</select></label>
@@ -575,7 +585,7 @@ function goalForm(g) {
   return h`<h2 style="margin:0">${g ? 'Modifier l’objectif' : 'Nouvel objectif'}</h2><form data-submit="goalSave" class="stack"><input type="hidden" name="id" value="${g?.id || ''}">
     <label>Type<select name="type" data-change="goalType">${[...(g ? [] : [['project', 'Un bloc ou une voie précis (projet d’escalade)']]), ['skill', 'Figure / skill'], ['metric', 'Performance à atteindre'], ['grade', 'Niveau d’escalade'], ['sessions', 'Nombre de séances'], ['ascents', 'Réussites en escalade'], ['custom', 'Autre (valeur manuelle)']].map(([k, l]) => h`<option value="${k}" ${t === k ? 'selected' : ''}>${l}</option>`)}</select></label>
     ${t === 'skill' ? h`<label>Figure<select name="skillId">${Object.entries(SKILLS).map(([id, s]) => h`<option value="${id}" ${g?.skillId === id ? 'selected' : ''}>${s.emoji} ${s.label}</option>`)}</select></label>` : ''}
-    ${t === 'metric' ? h`<label>Métrique<select name="metricId" data-pick="yes" data-add="metricNew" data-add-label="Créer une mesure">${metricOptions(Object.entries(c.metrics).filter(([, m]) => m.kind !== 'grade'), g?.metricId)}</select></label>${numberField('target', 'Valeur visée', g?.target ?? '', { required: true })}` : ''}
+    ${t === 'metric' ? h`<label>Mesure<select name="metricId" data-pick="yes" data-add="metricNew" data-add-label="Créer une mesure">${metricOptions(Object.entries(c.metrics).filter(([, m]) => m.kind !== 'grade'), g?.metricId)}</select></label>${numberField('target', 'Valeur visée', g?.target ?? '', { required: true })}` : ''}
     ${t === 'grade' ? h`<label>Discipline<select name="metricId"><option value="max_bloc" ${g?.metricId !== 'max_voie' ? 'selected' : ''}>Bloc</option><option value="max_voie" ${g?.metricId === 'max_voie' ? 'selected' : ''}>Voie</option></select></label><label>Système<select name="systemId" data-change="goalSys">${systems.map((s) => h`<option value="${s.id}" ${(g?.gradeTarget?.systemId || S.goalSys || 'font') === s.id ? 'selected' : ''}>${s.name}</option>`)}</select></label><label>Niveau visé<select name="levelId">${sortedLevels(c.systems[g?.gradeTarget?.systemId || S.goalSys || 'font']).map((l) => h`<option value="${l.id}" ${g?.gradeTarget?.levelId === l.id ? 'selected' : ''}>${l.label}</option>`)}</select></label>` : ''}
     ${['sessions', 'ascents', 'custom'].includes(t) ? h`<label>Nom<input name="label" maxlength="80" value="${g?.label || ''}" required placeholder="${t === 'sessions' ? '3 séances par semaine pendant 1 mois' : 'Mon objectif'}"></label>${numberField('target', 'Cible', g?.target ?? '', { required: true })}${t === 'custom' ? numberField('current', 'Valeur actuelle', g?.current ?? 0) : ''}` : ''}
     ${['metric', 'grade', 'skill'].includes(t) ? h`<label>Nom (facultatif)<input name="label" maxlength="80" value="${g?.label || ''}"></label>` : ''}
@@ -745,7 +755,8 @@ function vEquipment() {
     ${groups.length ? groups.map((g) => h`<span class="kicker">${KIND_LABEL[g.kind][0]} ${KIND_LABEL[g.kind][1]}</span><div class="setmenu">${g.places.map(({ env: e, stats: st }) => h`<button class="setrow" data-act="placeOpen" data-id="${e.id}"><span class="sic">${KIND_LABEL[kindOfEnv(e)][0]}</span><span class="grow"><b>${e.name}</b>${c.defEnv?.id === e.id ? h` <span class="tag ok">par défaut</span>` : ''}<small>${placeLine(e, st)}</small></span><span class="chev">›</span></button>`)}</div>`)
       : empty('Aucun lieu pour l’instant. Ajoute ta salle, ta falaise ou ta maison : l’app adapte les séances à leur matériel et garde ce que tu y fais.')}
     <div class="card"><h3>Indisponible aujourd’hui</h3><p class="tiny muted">Une barre prise, pas de poutre ? Décoche-le : les séances générées s’adaptent et expliquent les remplacements.</p>
-      <div class="chips">${[...new Set(c.envs.flatMap((e) => e.equipment))].map((k) => chip(!un.has(k), EQUIPMENT[k] || k, `data-act="eqToggle" data-id="${k}"`))}</div>${un.size ? h`<button class="btn sm" data-act="eqReset">Tout est disponible</button>` : ''}</div>`;
+      <div class="chips">${[...new Set(c.envs.flatMap((e) => e.equipment))].map((k) => chip(!un.has(k), EQUIPMENT[k] || k, `data-act="eqToggle" data-id="${k}"`))}</div>${un.size ? h`<button class="btn sm" data-act="eqReset">Tout est disponible</button>` : ''}</div>
+    ${goHint('▶ Pour une séance faite pour un de ces lieux et son matériel, va dans', 'Bibliothèque › Créer une séance', 'library/climbplan')}`;
 }
 /** Créneaux de « Mes disponibilités » passés dans ce lieu. */
 const slotsAt = (id) => cleanSlots(item('config', 'availability')?.slots).filter((x) => x.envId === id);

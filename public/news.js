@@ -134,13 +134,13 @@ export const NEWS = [
   { v: '8.26.0', date: '2026-10-13', title: 'Séances structurées et explications', why: 'Tu décides du niveau de détail de ta séance, phase par phase (bloc, pause, voie…), et chaque proposition dit pourquoi. Rien n’est appliqué sans toi.', steps: [
     ['library', 'climbplan', '.steps', '🧱 Ta structure', 'Choisis le niveau de détail (libre → très précis), découpe la séance en phases (bloc, pause, voie…) et verrouille 🔒 ce que tu imposes.'],
     ['', '', '', '💡 Pourquoi ?', 'Chaque proposition dit d’où elle vient : donnée connue, règle, déduction, ou information manquante. Les améliorations ne s’appliquent que si tu les choisis, et s’annulent.'],
-    ['profile', 'goals', '#main h1', '🎯 Objectif avec l’IA', 'Une fiche à relire et corriger avant d’enregistrer. Aucune cible n’est inventée ; « Comment le sais-tu ? » explique chaque point.'],
+    ['profile', 'goals', '#main h1', '🎯 Objectif écrit avec tes mots', 'Une fiche à relire et corriger avant d’enregistrer. Aucune cible n’est inventée ; « Comment le sais-tu ? » explique chaque point.'],
     ['library', 'common', '#main h1', '🌍 Bibliothèque commune', 'Les séances des membres sont classées automatiquement, avec « Classée ainsi parce que… ». Le catalogue officiel reste dans 🗂 Séances prêtes.'],
   ] },
   { v: '8.27.0', date: '2026-09-30', title: 'Construire ta séance, réglage par réglage', why: 'Choisis l’objectif de ta séance et le moment où il arrive, puis règle chaque phase dans l’ordre : type, objectif, précisément, réglages du type, intensité, lieu, ce que tu ne veux pas. Tout le reste, l’app le décide et l’explique.', steps: [
     ['library', 'climbplan', '.steps', '🎯 Objectif à n’importe quel moment', 'Dans « Pour quoi ? » : quoi, précisément, et quand (début, milieu, fin, toute la séance). Tu peux ensuite le poser sur une phase précise.'],
     ['', '', '', '🔗 Une chaîne de réglages', 'Chaque phase se règle dans l’ordre, avec seulement ce qui a du sens pour son type : lieu propre, déplacement, filtres, curseurs de compromis, contraintes.'],
-    ['', '', '', '🔮 Et si… ? et ✍️ Modifier avec l’IA', 'Teste un changement (moins de temps, moins intense, autre lieu) et vois ses conséquences ; ou écris « J’ai seulement 1 h 20 » : l’app montre le plan avant d’appliquer.'],
+    ['', '', '', '🔮 Et si… ? et ✍️ Modifier en l’écrivant', 'Teste un changement (moins de temps, moins intense, autre lieu) et vois ses conséquences ; ou écris « J’ai seulement 1 h 20 » : l’app montre le plan avant d’appliquer.'],
     ['profile', 'goals', '#main h1', '🧭 Plusieurs chemins', 'Pour un objectif : très spécifique, mixte ou préparation physique, comparés. La carte des relations explique chaque lien.'],
   ] },
   { v: '8.28.0', date: '2026-10-01', title: 'Simple d’abord, précis si tu veux', why: 'Créer une séance commence par l’essentiel, déjà rempli d’après ton profil : un toucher sur « ⚡ Proposer ma séance » suffit. Ton profil comprend mieux ta condition grâce à un bilan selon tes objectifs, et le niveau d’une séance est expliqué avec des faits.', steps: [
@@ -168,7 +168,7 @@ export const NEWS = [
   ] },
   { v: '8.31.0', date: '2026-10-03', title: 'Ta salle, tes moments, ta séance sans limite', why: 'Ta salle de sport avec tes machines, tes moments préférés (élastiques, no foot, spray wall…) glissés au bon endroit, autant d’objectifs et de sports que tu veux, jusqu’à 5 h, et 487 séances prêtes.', steps: [
     ['library', 'gym', '#main h1', '🏋️ Ma salle de sport', 'Coche les machines de ta salle : la séance du jour n’utilise qu’elles, reprend tes charges et retient tes réglages. 🔄 si une machine est prise.'],
-    ['library', 'moments', '#main h1', '🧩 Mes moments', 'Élastiques à l’échauffement, no foot ou spray wall en fin de séance… Ils sont proposés dans « Créer une séance », adaptés à la séance du jour, avec un conseil spray wall d’après tes séances.'],
+    ['profile', 'phases', '#main h1', '🧩 Mes phases', 'Élastiques à l’échauffement, no foot ou spray wall en fin de séance… Elles sont proposées dans « Créer une séance », adaptés à la séance du jour, avec un conseil spray wall d’après tes séances.'],
     ['library', 'climbplan', '#main h1', '✨ Créer une séance', 'Autant d’objectifs et de sports que tu veux (voie, bloc, renfo, piscine…), jusqu’à 5 h. Un seul champ « ✍️ Avec tes mots ».'],
     ['library', 'catalog', '#main h1', '📖 Carnet de séances', '487 séances prêtes : choisis ce que tu veux travailler (technique de pieds, doigts, seuil…), « Adapté à moi » ou tout le carnet.'],
   ] },
@@ -184,11 +184,11 @@ export const NEWS = [
   ] },
   { v:'8.32.2', date:'2026-10-05', title:'Un calendrier plus fiable et un coach mieux informé', why:'Retrouve tes activités libres, corrige un bilan sans doublon et poursuis la conversation avec le coach. Les rubriques d’administration sont plus claires.', steps:[
     ['home','cal','#main h1','Le prévu et le réalisé','Une activité libre a son bilan rapide. Retire une activité ajoutée par erreur, et choisis un rappel avant ton rendez-vous si tu le souhaites.'],
-    ['profile','home','.topicons','Un coach avec ton contexte','Choisis de joindre le résumé de ton profil au coach. Ses propositions peuvent préparer une séance ou ouvrir le bon écran. L’administration peut relier Gemini.'],
+    ['profile','home','.topicons','Un coach avec ton contexte','Choisis de joindre le résumé de ton profil au coach. Ses propositions peuvent préparer une séance ou ouvrir le bon écran.'],
     ['settings','main','.topicons','Organiser les pages','Organiser fonctionne depuis les sous-pages. Regarde l’aperçu, puis enregistre ou quitte. Tu retrouves la page que tu consultais.'],
   ] },
-  { v:'8.32.3', date:'2026-10-05', title:'Des réglages et des actions plus fiables', why:'Les réglages IA sont accessibles au rôle Intelligence. Les options de séance et les menus d’administration restent ouverts pendant la synchronisation ; un contenu annulé reste annulé.', steps:[
-    ['settings','main','','Les réponses de l’IA','Le ton et la longueur des réponses peuvent être réglés par l’administration. Les demandes de précision, les sources vérifiées et la validation des modifications restent obligatoires.'],
+  { v:'8.32.3', date:'2026-10-05', title:'Des réglages et des actions plus fiables', why:'Les réglages de l’assistant sont accessibles au rôle Intelligence. Les options de séance et les menus d’administration restent ouverts pendant la synchronisation ; un contenu annulé reste annulé.', steps:[
+    ['settings','main','','Les réponses de l’assistant','Le ton et la longueur des réponses peuvent être réglés par l’administration. Les demandes de précision, les sources vérifiées et la validation des modifications restent obligatoires.'],
   ] },
   { v:'8.32.4', date:'2026-10-05', title:'Des boutons stables pendant le chargement', why:'Dans l’administration, le chargement des modifications attend la fin d’un appui avant de changer la liste. Les raccourcis restent utilisables.', steps:[
     ['settings','main','','Administration','Les raccourcis du Studio restent à leur place pendant ton appui, même si la liste finit de charger.'],

@@ -113,6 +113,9 @@ export function normalizeSession(s = {}) {
     context: normalizeContext(s.context),
     template: !!s.template,
     archived: !!s.archived,
+    // 8.35 : séance d'étirement (pour quelle séance, combien de temps après, zones) et étirements liés à une séance.
+    stretch: s.stretch && typeof s.stretch === 'object' ? { forId: ID_RE.test(String(s.stretch.forId || '')) ? String(s.stretch.forId) : '', delayMin: clamp(s.stretch.delayMin, 0, 1440, 0), groups: idList(s.stretch.groups, 14) } : null,
+    stretchIds: idList(s.stretchIds, 6),
     origin: s.origin && typeof s.origin === 'object' && ['common', 'public', 'link'].includes(s.origin.kind)
       ? { kind: s.origin.kind, id: str(s.origin.id, 64), author: str(s.origin.author, 40), copiedAt: clamp(s.origin.copiedAt, 0, 9e15, 0) } : null,
     explain: normalizeExplain(s.explain),

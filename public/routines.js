@@ -82,7 +82,8 @@ export function suggestRoutines(routines = [], phases = [], o = {}) {
     const advice = isSpray(r) ? sprayAdvice(o.history, o.now ?? Date.now(), { after: phases.slice(0, at), effort }) : null;
     const phase = {
       id: `ro-${r.id}`, type: 'routine', routineId: r.id, role: r.when === 'warmup' ? 'warmup' : r.when === 'cool' ? 'cool' : 'custom', roleLabel: r.label,
-      activity, minutes, intensity: INT[effort], goal: r.label, libId: byId(r.libId) ? r.libId : advice?.libId || '', emoji: r.emoji || '🧩',
+      activity, minutes, intensity: INT[effort], goal: r.label, libId: r.text ? '' : byId(r.libId) ? r.libId : advice?.libId || '', emoji: r.emoji || '🧩',
+      ...(r.text ? { noEx: true, noteText: String(r.text).slice(0, 600) } : {}),
       note: [r.note, ...reasons.map((t) => t[0].toUpperCase() + t.slice(1)), advice ? `${advice.title} : ${advice.how.join(' ')}` : ''].filter(Boolean).join(' · ').slice(0, 400),
     };
     out.push({ r, ok: !missing.length, missing: missing.map((k) => EQUIPMENT[k] || k), at, minutes, effort, reasons, advice, phase });

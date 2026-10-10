@@ -102,17 +102,17 @@ export function estimateNeurons(model, input) {
   return Math.max(1, Math.ceil(((bytes + 64 * ((input.messages || []).length + 1)) * rate.input + input.max_tokens * rate.output) / 1000000));
 }
 async function reserve(env, model, input, budget) {
-  if (!env.DB?.prepare) throw safeError('La réserve gratuite de l’IA ne peut pas être vérifiée. Réessaie plus tard.', 503, 'AI_BUDGET');
+  if (!env.DB?.prepare) throw safeError('La réserve quotidienne de l’assistant ne peut pas être vérifiée. Réessaie plus tard.', 503, 'AI_BUDGET');
   const cost = estimateNeurons(model, input), key = 'ai:budget:' + new Date().toISOString().slice(0, 10);
   if (cost > budget) throw safeError('Cette demande dépasse la réserve gratuite. Raccourcis-la ou utilise le formulaire.', 429, 'AI_QUOTA');
   const row = await query(env, `INSERT INTO system_state(key,value) VALUES(?,?)
     ON CONFLICT(key) DO UPDATE SET value=CAST(system_state.value AS INTEGER)+?
     WHERE CAST(system_state.value AS INTEGER)+?<=? RETURNING value`, key, String(cost), cost, cost, budget).first();
-  if (!row) throw safeError('La réserve gratuite de l’IA est atteinte pour aujourd’hui. Elle revient à minuit UTC ; les formulaires restent disponibles.', 429, 'AI_QUOTA');
+  if (!row) throw safeError('La réserve quotidienne de l’assistant est atteinte pour aujourd’hui. Elle revient à minuit UTC ; les formulaires restent disponibles.', 429, 'AI_QUOTA');
 }
 // Limites propres au site ; elles ne représentent pas les quotas Google du projet.
 async function reserveGemini(env, input, budget) {
-  if (!env.DB?.prepare) throw safeError('La réserve gratuite de l’IA ne peut pas être vérifiée. Réessaie plus tard.', 503, 'AI_BUDGET');
+  if (!env.DB?.prepare) throw safeError('La réserve quotidienne de l’assistant ne peut pas être vérifiée. Réessaie plus tard.', 503, 'AI_BUDGET');
   const bytes = new TextEncoder().encode(JSON.stringify(input.messages || input.prompt || '')).length;
   const cost = bytes + 64 * ((input.messages || []).length + 1) + input.max_tokens;
   if (cost > 60000) throw safeError('Cette demande est trop longue. Raccourcis-la ou utilise le formulaire.', 429, 'AI_QUOTA');
@@ -123,9 +123,9 @@ async function reserveGemini(env, input, budget) {
       WHERE CAST(system_state.value AS INTEGER)+?<=? RETURNING value`, key, String(amount), amount, amount, limit).first();
     if (!row) throw safeError(message, 429, 'AI_QUOTA');
   };
-  await claim('ai:gemini-minute:' + minute, 1, 3, 'Plusieurs demandes IA viennent d’être envoyées. Réessaie dans une minute.');
-  await claim('ai:gemini-input:' + minute, cost, 60000, 'La réserve IA de cette minute est atteinte. Réessaie dans une minute.');
-  await claim('ai:gemini:' + now.toISOString().slice(0, 10), 1, budget, 'La réserve IA du site est atteinte pour aujourd’hui. Elle revient à minuit UTC ; les formulaires restent disponibles.');
+  await claim('ai:gemini-minute:' + minute, 1, 3, 'Plusieurs demandes à l’assistant viennent d’être envoyées. Réessaie dans une minute.');
+  await claim('ai:gemini-input:' + minute, cost, 60000, 'La réserve de l’assistant pour cette minute est atteinte. Réessaie dans une minute.');
+  await claim('ai:gemini:' + now.toISOString().slice(0, 10), 1, budget, 'La réserve de l’assistant est atteinte pour aujourd’hui. Elle revient à minuit UTC ; les formulaires restent disponibles.');
   // Les compteurs par minute n’ont aucune valeur historique et sont supprimés après deux jours.
   const cutoff = new Date(now.getTime() - 2 * 86400000).toISOString().slice(0, 16);
   await query(env, 'DELETE FROM system_state WHERE (key LIKE ? AND key<?) OR (key LIKE ? AND key<?)', 'ai:gemini-minute:%', 'ai:gemini-minute:' + cutoff, 'ai:gemini-input:%', 'ai:gemini-input:' + cutoff).run();
@@ -135,7 +135,7 @@ export async function runAI(env, options, { json = true, timeoutMs = 30000, fetc
   const c = await config(env), max = Number(options.max_tokens),requestedTemperature=Number(options.temperature);
   const provider = AI_MODELS[c.model].provider;
   if (expectedProvider && expectedProvider !== provider) throw safeError('Le modèle de l’assistant a changé. Renvoie ton message pour utiliser le nouveau modèle.', 409, 'AI_CONFIG');
-  if (!configured(env, provider)) throw safeError(provider === 'gemini' ? 'Gemini n’est pas activé. Ajoute le secret GEMINI_API_KEY sur Cloudflare.' : 'Assistant non activé sur ce serveur (Workers AI).', 503, 'AI_UNAVAILABLE');
+  if (!configured(env, provider)) throw safeError(provider === 'gemini' ? 'L’assistant n’est pas activé sur ce serveur (secret GEMINI_API_KEY absent sur Cloudflare).' : 'Assistant non activé sur ce serveur (Workers AI).', 503, 'AI_UNAVAILABLE');
   const input = { ...options, max_tokens: Number.isFinite(max) ? Math.max(100, Math.min(2400, Math.round(max))) : 900,
     temperature:Number.isFinite(requestedTemperature) ? Math.min(c.preferences.creativity,Math.max(0,requestedTemperature)) : c.preferences.creativity,messages:withResponseInstructions(options,c.preferences) };
   delete input.prompt;

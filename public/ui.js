@@ -33,6 +33,8 @@ const ICONS = {
 };
 /** Icônes de navigation : dessin commun et libellé porté par le bouton. */
 export const icon = (name, fallback = '') => ICONS[name] ? h`<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="${ICONS[name]}"></path></svg>` : h`${fallback}`;
+/** Petit message en italique « Pour …, va dans [rubrique] › [page] » : le chemin est un lien qui y mène directement (8.35). */
+export const goHint = (text, path, to) => h`<p class="gohint"><em>${text} <button type="button" class="linkish acc-t" data-act="pathGo" data-to="${to}">${path}</button>.</em></p>`;
 export const $ = (sel, root = document) => root.querySelector(sel);
 export const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
 
@@ -112,7 +114,16 @@ export const onSheetRender = (fn) => { sheetHook = fn; };
 let returnFocus = null;
 const focusKey = (el) => (el?.dataset?.act ? `[data-act="${CSS.escape(el.dataset.act)}"]${el.dataset.id ? `[data-id="${CSS.escape(el.dataset.id)}"]` : ''}` : '');
 const rememberFocus = (box) => { const a = document.activeElement; return a && a !== document.body && !box.contains(a) ? { el: a, key: focusKey(a) } : null; };
-const giveBackFocus = (r) => { if (!r) return; const target = r.el.isConnected ? r.el : r.key ? document.querySelector('#app ' + r.key) : null; if (target) setTimeout(() => { if (!document.querySelector('#sheet.open, #dialog.open, #player.open')) target.focus?.({ preventScroll: true }); }, 0); };
+// Tout de suite si le bouton est encore là (le focus ne passe jamais par le haut de la page), sinon après le redessin.
+const overlayOpen = () => !!document.querySelector('#sheet.open, #dialog.open, #player.open');
+const giveBackFocus = (r) => {
+  if (!r) return;
+  if (r.el.isConnected && !overlayOpen()) r.el.focus?.({ preventScroll: true });
+  setTimeout(() => {
+    if (overlayOpen() || (r.el.isConnected && document.activeElement === r.el)) return;
+    const target = r.el.isConnected ? r.el : r.key ? document.querySelector('#app ' + r.key) : null; target?.focus?.({ preventScroll: true });
+  }, 0);
+};
 if (typeof document !== 'undefined' && typeof document.addEventListener === 'function') document.addEventListener('focusin', (e) => {
   const s = document.getElementById('sheet'); if (!s?.classList.contains('open') || e.target.closest?.('#sheet, #dialog, #toast, #player, #itimer, #grp, #tour')) return;
   s.querySelector('.panel')?.focus({ preventScroll: true });

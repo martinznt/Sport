@@ -4,7 +4,7 @@ import { advancedUI } from './views-experience.js';
 // views-progress.js — Progrès : comparaisons personnelles, résumés, régularité, charge, historique, records,
 // timeline, journal, analyses descriptives et mode Lab. Toujours par rapport à soi-même, jamais aux autres.
 import { doneList } from './views-profile.js';
-import { h, raw, $, toast, openSheet, closeSheet, ask, askText, seg, chip, menuList, subHead, tag, empty, howBox, meter, bars, lineChart, fmtDay, fmtDate, fmtDateTime, relDate, numberField, buzzOk, fmtDur } from './ui.js';
+import { h, goHint, raw, $, toast, openSheet, closeSheet, ask, askText, seg, chip, menuList, subHead, tag, empty, howBox, meter, bars, lineChart, fmtDay, fmtDate, fmtDateTime, relDate, numberField, buzzOk, fmtDur } from './ui.js';
 import { S, ACT, SUBMIT, CHG, ctx, go, render, deleteHistory, updateHistory, putItem, delItem, item, itemsOf, getSeance } from './state.js';
 import { uid, exKey } from './shared.js';
 import { CAPACITIES, MUSCLES, METRICS } from './model.js';
@@ -33,7 +33,8 @@ export function vProgress() {
   if ((sub === 'history' && !S.param) || sub === 'timeline') { S.jf = sub === 'history' ? 'session' : 'step'; setTimeout(() => go('progress', 'journal'), 0); return ''; }
   if (sub === 'history') return h`${subHead('progSub', 'journal', 'Journal', '📋 Séance')}${vHistory()}`;
   const views = { summary: vSummary, history: vHistory, journal: vJournal, analyses: vAnalyses, lab: vLab };
-  if (sub === 'summary') { const c = ctx(); return h`<h1>Progrès</h1><p class="tiny muted pagehelp">Ce que tes séances ont changé : régularité, volume, records et ce qui progresse (ou pas).</p>${vSummary()}<span class="kicker">Aller plus loin</span>${menuList(Object.entries(SUB_INFO).map(([k, [ic, t, d]]) => ['progSub', k, ic, t, d(c)]))}`; }
+  if (sub === 'summary') { const c = ctx(); return h`<h1>Progrès</h1><p class="tiny muted pagehelp">Ce que tes séances ont changé : régularité, volume, records et ce qui progresse (ou pas).</p>${vSummary()}<span class="kicker">Aller plus loin</span>${menuList([['progSub', 'journal', ...SUB_INFO.journal.slice(0, 2), SUB_INFO.journal[2](c)]])}
+    ${goHint('🏆 Tes records, tests et maxima sont dans', 'Profil › Records et mesures', 'profile/perfs')}${goHint('🔎 Pour comprendre tes capacités et tes conseils, va dans', 'Profil › Mon analyse', 'profile/analyse')}`; }
   // Tendances et Lab font partie de « Mon analyse » (profil).
   if (sub === 'analyses' || sub === 'lab') return h`${subHead('profSub', 'analyse', 'Mon analyse', sub === 'lab' ? '🧪 Lab' : '🔍 Tendances et diagnostics')}${views[sub]()}`;
   const [ic, t] = SUB_INFO[sub];
@@ -96,7 +97,7 @@ ACT.histRedo = async(el) => { const e = S.history.find((x) => x.id === el.datase
 function vEntry(e) {
   const q = e.data?.questionnaire || {}, d = e.data || {};
   return h`<h2 style="margin:0">${e.sessionName}</h2>
-    ${isExternal(e) ? h`<p class="small muted">${externalLabel(e)} · Import privé, exclu des demandes envoyées à l’IA.${externalOf(e).provider === 'strava' && externalOf(e).channel === 'api' && /^\d+$/.test(externalOf(e).id) ? h` <a href="https://www.strava.com/activities/${externalOf(e).id}" target="_blank" rel="noopener noreferrer">Voir sur Strava</a>` : ''}</p>` : ''}
+    ${isExternal(e) ? h`<p class="small muted">${externalLabel(e)} · Import privé, jamais envoyé à l’assistant.${externalOf(e).provider === 'strava' && externalOf(e).channel === 'api' && /^\d+$/.test(externalOf(e).id) ? h` <a href="https://www.strava.com/activities/${externalOf(e).id}" target="_blank" rel="noopener noreferrer">Voir sur Strava</a>` : ''}</p>` : ''}
     <div class="card"><p class="small">${fmtDateTime(e.startedAt)} · ${d.quickLog?.durationKnown === false ? 'durée non renseignée' : 'durée '+fmtDur(e.durationSeconds || 0)}${d.activeSeconds ? ' · actif ' + fmtDur(d.activeSeconds) : ''}${d.pausedSeconds ? ' · pause ' + fmtDur(d.pausedSeconds) : ''}${d.plannedMin ? ' · prévu ' + d.plannedMin + ' min' : ''}</p>
       ${d.quickLog?.performance ? h`<p class="small">Repère déclaré : ${d.quickLog.performance}</p>` : ''}${['before','after'].includes(d.quickLog?.order) ? h`<p class="small">${d.quickLog.order==='before'?'Avant':'Après'} la séance principale.</p>`:''}
       ${d.agenda?.planned ? h`<p class="tiny muted">Prévu : ${d.agenda.planned.title} · ${d.agenda.planned.date}${d.agenda.planned.time?' · '+d.agenda.planned.time:''}</p>`:''}
