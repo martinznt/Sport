@@ -99,12 +99,16 @@ export async function explorer({ page, context, audit, info, name }) {
   };
   const tryClick = async (route, key, path) => {
     const before = await page.evaluate(SIGNATURE).catch(() => null), errs = audit.events.pageerrors.length, ext = external.length, oth = JSON.stringify(other);
-    let loc = await open(key); if (!loc) return { outcome: 'absent après redessin' };
+    const loc = await open(key); if (!loc) return { outcome: 'absent après redessin' };
     if (key.disabled || await loc.isDisabled().catch(() => false)) return { outcome: 'désactivé' };
-    // Groupe SVG en plusieurs morceaux (carte des douleurs : deux cercles éloignés) : on touche sa première forme,
-    // pas le centre du groupe (qui tombe entre les deux, sur le corps).
-    if (await loc.evaluate((el) => el instanceof SVGGElement).catch(() => false)) { const part = loc.locator('circle, ellipse, rect, path').first(); if (await part.count()) loc = part; }
-    try { await loc.click({ timeout: 2500 }); } catch (e) {
+    // Groupe SVG en plusieurs morceaux (carte des douleurs : deux zones éloignées, chacune faite d'une zone de toucher
+    // invisible et d'un rond visible posé dessus) : on touche le groupe lui-même, au centre de sa première forme. Toucher
+    // la forme seule ne va pas : le rond, posé dessus mais dans le même bouton, « recouvre » la zone pour Playwright.
+    let position;
+    if (await loc.evaluate((el) => el instanceof SVGGElement).catch(() => false)) {
+      position = await loc.evaluate((g) => { const f = g.querySelector('circle, ellipse, rect, path'); if (!f) return null; const a = g.getBoundingClientRect(), b = f.getBoundingClientRect(); return { x: b.left - a.left + b.width / 2, y: b.top - a.top + b.height / 2 }; }).catch(() => null) || undefined;
+    }
+    try { await loc.click({ timeout: 2500, ...(position ? { position } : {}) }); } catch (e) {
       // Élément qui n'est plus affiché : l'état a changé entre la collecte et le clic (ex. « 1 modification(s) en
       // attente » qui disparaît quand la synchronisation se termine). Ce n'est pas un bouton impossible à toucher.
       if (/not visible|detached|not attached/.test(String(e.message)) && !(await loc.isVisible().catch(() => false))) return { outcome: 'disparu avant le clic', detail: 'plus affiché au moment du clic (état changé entre-temps)' };

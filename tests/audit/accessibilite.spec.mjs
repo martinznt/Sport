@@ -94,3 +94,23 @@ test('AX04 taille des cibles tactiles : au moins 24 × 24 px (WCAG 2.2, 2.5.8) s
   await info.attach('cibles-petites.json', { body: JSON.stringify(small, null, 2), contentType: 'application/json' });
   for (const [route, list] of Object.entries(small)) expect.soft(list, `${route} : cibles trop petites`).toEqual([]);
 });
+
+test('AX05 texte « Grand » et « Très grand » : aucune page plus large que l’écran (défaut V27, corrigé)', async ({ page }) => {
+  test.setTimeout(300000);
+  await seedRealistic(page);
+  const W = page.viewportSize().width, wide = [];
+  for (const size of ['l', 'xl']) {
+    await go(page, 'settings/display', `[data-act=a11ySize][data-v=${size}]`); await page.click(`[data-act=a11ySize][data-v=${size}]`);
+    await expect(page.locator('html')).toHaveAttribute('data-size', size);
+    for (const route of PAGES) {
+      await go(page, route, '#main'); await page.waitForTimeout(150);
+      const w = await page.evaluate(() => Math.max(innerWidth, document.documentElement.scrollWidth));
+      if (w > W + 1) wide.push(`${size} ${route} : ${w} px pour ${W} px`);
+      // Barres fixes (onglets du bas, barre du haut) : la largeur de la page ne les voit pas ; un bouton coupé l'est.
+      const cut = await page.evaluate((W) => [...document.querySelectorAll('nav.tabs button, header.top button')].filter((b) => { const r = b.getBoundingClientRect(); return r.width && (r.right > W + 1 || r.left < -1); }).map((b) => (b.innerText || b.getAttribute('aria-label') || '').trim().replace(/\s+/g, ' ')), W);
+      if (cut.length) wide.push(`${size} ${route} : barre coupée (${cut.join(', ')})`);
+    }
+  }
+  await go(page, 'settings/display', '[data-act=a11ySize][data-v=m]'); await page.click('[data-act=a11ySize][data-v=m]');
+  expect(wide, 'pages plus larges que l’écran').toEqual([]);
+});

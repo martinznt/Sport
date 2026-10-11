@@ -95,6 +95,7 @@ L'audit complet (6 écrans simulés) a ensuite trouvé, et ces défauts sont cor
 - Visite guidée : le calque vide du démarrage bloquait les touchers ; corrigé.
 - Mode « Modifier les textes » (administrateurs) : la barre recouvrait le bouton « Fermer » des grandes fenêtres ; corrigé.
 - Double toucher sur « Ajouter à ma séance » : le second toucher ouvrait ce qui était dessous (page Étirements, retour à la Bibliothèque) ; corrigé.
+- Texte « Grand » ou « Très grand » sur un petit écran (320 px) : quatre pages plus larges que l'écran et l'onglet « Paramètres » coupé ; corrigé, et vérifié désormais sur toutes les pages par un scénario dédié.
 
 ## Toujours valables
 
