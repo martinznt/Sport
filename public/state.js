@@ -414,7 +414,13 @@ export async function syncAll() {
     else { S.lastError = e.message; setSync(e.offline ? 'offline' : e.status === 401 ? 'auth' : 'error'); }
   } finally {
     if (accountMatches(token)) {
-      S.syncing = false; bump(); persist(); softRender();
+      // 8.35 : copie locale écrite tout de suite, avant d'annoncer la synchronisation finie. Avec l'écriture différée
+      // (0,25 s), une fermeture ou un rechargement juste après perdait la copie : l'app rouvrait sans les dernières
+      // données synchronisées (sur le serveur, jamais perdues) jusqu'à la synchronisation suivante, ou plus longtemps hors ligne.
+      await persistNow();
+    }
+    if (accountMatches(token)) {
+      S.syncing = false; bump(); softRender();
       if (S.syncAgain) { S.syncAgain = false; syncSoon(300); }
     }
   }

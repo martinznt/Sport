@@ -47,8 +47,11 @@ PW_EXEC=/opt/pw-browsers/chromium AUDIT_WORKERS=3 node node_modules/playwright/c
 | Premier passage complet (8.35.0 avant les corrections de cet audit) | `1a67411` | 10 oct. 23 h 47 → 11 oct. 2 h 08 (2 h 20) | 686 = 113 scénarios × 6 profils + 8 API |
 | Vérifications ciblées de chaque correction (sondes et scénarios rejoués avant / après) | branche de correction | 11 oct., pendant et après le premier passage | voir section 4 (V20 à V26) |
 | Reprise (A01–A41) et fiabilité (F01–F09), 320 px et tablette, après la dernière correction | `2006174` | 11 oct. | 98 |
-| `npm run check`, `npm test` (109 scripts), `npm run test:e2e` (25 scripts) sur le code final | `2006174` | 11 oct. | ⟦E2E_FINAL⟧ |
-| Second passage complet (code final) | ⟦P2_COMMIT⟧ | ⟦P2_QUAND⟧ | 698 = 115 scénarios × 6 profils + 8 API |
+| `npm run check`, `npm test` (109 scripts), `npm run test:e2e` (25 scripts) | `2006174` | 11 oct. 3 h 22 → 3 h 33 | contrôle réussi ; 1 029 vérifications unitaires réussies, 0 échec ; 25 scripts de bout en bout réussis |
+| Second passage complet | `2006174` | 11 oct. 3 h 34 → 5 h 48 (2 h 14) | 698 = 115 scénarios × 6 profils + 8 API |
+| Sonde « taille du texte » sur toutes les pages (320 et 390 px), corrections V27 et V28, AX05 sur les 6 profils, explorateurs Profil et Paramètres à 320 px | `4c6a70d` | 11 oct. | AX05 : 6 sur 6 ; explorateurs : 2 sur 2 (1 232 clics, aucun bouton impossible à toucher) |
+| `npm run check`, `npm test`, `npm run test:e2e` sur le code final | `4c6a70d` | 11 oct. | ⟦E2E_FINAL⟧ |
+| Troisième passage complet (code final) | `4c6a70d` | ⟦P3_QUAND⟧ | 704 = 116 scénarios × 6 profils + 8 API |
 
 Explorateurs au premier passage : 14 424 clics de boutons sur les 6 profils (12 086 avec un effet visible, 1 626 boutons disparus après un redessin, 446 sans effet visible, 102 grisés, 164 « impossibles à cliquer ») et 920 essais de formulaires (868 avec effet, 44 sans effet visible, 8 « impossibles à utiliser »). Aucune erreur JavaScript, aucun écran d’erreur.
 
@@ -85,9 +88,31 @@ Les 48 échecs, un par un, ont une cause établie :
 
 À noter aussi, sans échec de test : l’explorateur des formulaires n’a pas pu envoyer « Signaler un bug » sur les 6 profils, juste après l’essai de la fenêtre d’import Strava. La cause exacte n’est pas isolée ; dans un état propre (sonde) et avec l’outil corrigé, le formulaire est envoyé.
 
-### Second passage (code final)
+### Second passage (`2006174`)
 
-⟦RESULTATS_P2⟧
+| Profil | Réussis | Échoués | Bloqués | Non exécutés |
+|---|---:|---:|---:|---:|
+| Chromium 320 px | 113 | 2 | 0 | 0 |
+| Chromium 360 px | 114 | 1 | 0 | 0 |
+| Chromium 390 px | 114 | 1 | 0 | 0 |
+| Chromium Pixel 7 | 114 | 1 | 0 | 0 |
+| Chromium tablette 768 px | 114 | 1 | 0 | 0 |
+| Chromium ordinateur 1440 px | 114 | 1 | 0 | 0 |
+| API (sans navigateur) | 8 | 0 | 0 | 0 |
+| **Total** | **691** | **7** | **0** | **0** |
+
+41 des 48 tests en échec au premier passage réussissent (ST01–ST03, S01, S09, A04, AX01, API02, explorateurs Bibliothèque et Administration, Paramètres sauf à 320 px). Les 7 qui échouent encore sont tous dans l’explorateur des boutons, pour d’autres raisons qu’au premier passage :
+
+| Cause | Échecs | Où | Nature |
+|---|---:|---|---|
+| Chaque bouton — Profil : carte des douleurs « impossible à toucher » (9 ou 10 zones) | 6 | 6 profils | outil : la zone de toucher était visée seule, le rond posé dessus la « recouvrait » ; corrigé dans l’outil |
+| Chaque bouton — Paramètres : page de 339 px après une visite guidée | 1 | 320 px | **défaut du site V27** (texte « Très grand » choisi juste avant par l’explorateur) ; a fait trouver **V28** |
+
+Explorateurs au second passage : 14 393 clics (12 146 avec effet, 54 « impossibles à cliquer », tous sur la carte des douleurs, 7 « page plus large que l’écran ») et 920 essais de formulaires, dont « Signaler un bug » envoyé sur les 6 profils. Aucune erreur JavaScript, aucun écran d’erreur.
+
+### Troisième passage (code final `4c6a70d`)
+
+⟦RESULTATS_P3⟧
 
 ## 4. Défauts trouvés, par gravité
 
@@ -174,6 +199,7 @@ La 8.35.0 (demandes : phases, étirements, sources, captures, objectifs, interfa
 | V26 | mineur | Un double toucher sur un bouton qui ferme une fenêtre déclenchait aussi le bouton situé dessous | Une séance › ✍️ Écrire des exercices › écrire › toucher deux fois vite « Ajouter à ma séance » | Exercice ajouté une fois, on reste sur la séance → ajouté une fois, mais à 768 px la page Étirements s’ouvre (« ＋ Préparer des étirements pour cette séance » était dessous) ; à 320 px, retour à l’accueil de la Bibliothèque | A04 sur tablette (échec 3 fois sur 3 avant, réussi après) ; F09 (échoue à 320 px sans la correction). Le navigateur compte les touchers : seul le second toucher d’un double toucher (compté 2), au même endroit et juste après la fermeture, est ignoré ; un nouveau toucher passe |
 | V27 | mineur | Texte « Grand » ou « Très grand » : pages plus larges que l’écran à 320 px | Paramètres › Affichage › Taille du texte « Grand » (ou « Très grand »), écran de 320 px ; ouvrir l’accueil, Bibliothèque › Mes séances, Bibliothèque commune, Paramètres › Mises à jour | Page de la largeur de l’écran → 343 px (« Grand ») et 375 px (« Très grand ») sur l’accueil ; 332 et 365 px sur Mes séances ; 351 px (Bibliothèque commune) et 339 px (Mises à jour) en « Très grand ». Cause : petits boutons au libellé long qui ne passent jamais à la ligne (« ⚡ Je n’ai rien prévu : 3 questions », « ☑ Sélectionner plusieurs séances », « ＋ Partager une de mes séances », « 🧭 Lancer la visite (6 étapes) ») ; rien à 360 px et plus | Explorateur des boutons (second passage : « page de 339 px » après une visite guidée, le texte venant d’être mis en « Très grand ») ; sonde sur toutes les pages en « Normal », « Grand », « Très grand » ; nouveau scénario AX05 (échoue avant, réussit après sur les 6 profils) |
 | V28 | mineur | Texte « Grand » ou « Très grand » : l’onglet « Paramètres » coupé dans la barre du bas | Même réglage, écran de 320 px, n’importe quelle page | Les 5 onglets entiers → « Param… » coupé par le bord de l’écran (les mots des onglets ne se coupent pas) | Capture en « Très grand » ; AX05 (contrôle des barres fixes ajouté : échoue avant sur toutes les pages, réussit après) |
+| V29 | mineur | Copie locale non enregistrée après une synchronisation si l’app se ferme aussitôt | Importer une sauvegarde (ou faire une séance), laisser la synchronisation finir, recharger ou fermer l’app dans le quart de seconde | Rouverte, l’app montre tout → la copie gardée sur l’appareil n’avait pas les dernières données synchronisées (historique 0 au lieu de 1) ; elles revenaient à la synchronisation suivante (jamais perdues : le serveur les a), plus tard encore hors ligne. Cause : copie écrite 0,25 s après la synchronisation, écriture interrompue par la fermeture | `backup-e2e` instable, sans rapport avec les corrections du jour : échecs 3 fois sur 6 sur `a5e7f90`, 4 sur 6 sur `2006174`, 3 sur 5 sur `4c6a70d` ; mesure dans la page : copie locale à 0 au rechargement. Après correction (copie écrite avant d’annoncer la synchronisation finie) : 8 réussites sur 8, test inchangé |
 
 Défauts de l’outil de test (corrigés dans l’outil, jamais dans le site) :
 - **Contrôle de débordement aveugle en émulation mobile.** Chromium élargit la fenêtre à la taille du contenu (`innerWidth` = 478 pour un écran de 390) : « largeur de la page ≤ largeur de la fenêtre » restait vrai même quand la page débordait. Les contrôles comparent maintenant à la vraie largeur de l’écran. Conséquence : **les contrôles de débordement des profils mobiles de l’audit 8.34.2 étaient moins sûrs qu’annoncé** ; V08 en est la preuve.
