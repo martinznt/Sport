@@ -86,7 +86,7 @@ try{
     srv.fail=(request)=>new URL(request.url).pathname==='/api/ai/goal'?Response.json({error:'Assistant indisponible pour le moment.'},{status:503}):null;
     await openGoal();await p.fill('[data-submit=goalAi] [name=text]','Renforcer mon gainage');await p.click('[data-submit=goalAi] button[type=submit]');await p.waitForSelector('[data-act=goalLocal]');
     assert.equal(await p.locator('[data-submit=goalFicheSave]').count(),0);assert.equal(await p.evaluate(async()=>(await import('/state.js')).S.goalDraft),null);
-    await p.click('[data-act=goalLocal]');await p.waitForSelector('[data-submit=goalFicheSave]');assert.match(await p.locator('#sheet').innerText(),/Fiche locale préparée sans IA/);assert.doesNotMatch(await p.locator('#sheet').innerText(),/Confiance de l’assistant|Sources utilisées/);
+    await p.click('[data-act=goalLocal]');await p.waitForSelector('[data-submit=goalFicheSave]');assert.match(await p.locator('#sheet').innerText(),/Fiche préparée sur ton appareil/);assert.doesNotMatch(await p.locator('#sheet').innerText(),/Confiance de l’assistant|Sources utilisées/);
     assert.equal(await p.evaluate(async()=>(await import('/state.js')).S.goalDraft.source),'local');await p.click('[data-submit=goalFicheSave] button[type=submit]');
     await poll(async()=>(await stored('goal')).some((item)=>item.d.label==='Renforcer mon gainage'&&item.d.source==='local'));srv.fail=null;
   });
@@ -104,7 +104,7 @@ try{
   await step('intention indisponible : choix local explicite et aucune fausse origine IA',async()=>{
     srv.fail=(request)=>new URL(request.url).pathname==='/api/ai/intent'?Response.json({error:'Assistant indisponible.'},{status:503}):null;
     await openIntent();await askIntent();await p.waitForSelector('[data-act=gWriteLocal]');assert.equal(await p.locator('[data-act=gDraftSave]').count(),0);
-    await p.click('[data-act=gWriteLocal]');await p.waitForSelector('[data-act=gDraftSave]');assert.match(await p.locator('#sheet').innerText(),/Préparation locale.*sans IA/);assert.equal(await p.locator('.ai-sources').count(),0);await p.click('[data-act=gDraftSave]');
+    await p.click('[data-act=gWriteLocal]');await p.waitForSelector('[data-act=gDraftSave]');assert.match(await p.locator('#sheet').innerText(),/Préparation sur ton appareil/);assert.equal(await p.locator('.ai-sources').count(),0);await p.click('[data-act=gDraftSave]');
     await poll(async()=>(await stored('category')).some((item)=>item.d.label==='gainage dont je parle'&&item.d.source==='local'));srv.fail=null;
   });
   await step('fiche d’exercice non vérifiable : explication claire et aucun brouillon appliquable',async()=>{
@@ -128,7 +128,7 @@ try{
     nextAnswer={...proof,activities:[{activityId:'running',minutes:20,order:'main'}],confidence:'high'};await p.click('[data-act=quickAi]');await p.waitForSelector('#sheet .ai-sources');await inspectSources('#sheet');assert.equal(await p.inputValue('[name=minutes-0]'),'20');assert.equal(await p.locator('[name=activity-0]').inputValue(),'running');assert.equal((await accounts.GoalOwnerB.get('/api/history')).data.history.length,0);await p.keyboard.press('Escape');
   });
   await step('objectif du créateur : aucun repli sur mots-clés après 422, proposition sourcée avant ajout explicite',async()=>{
-    await resetQuota();await p.evaluate(async()=>{const {openWizard}=await import('/views-climbplan.js');openWizard({sport:'climbing_route',auto:false});});await p.waitForSelector('[data-act=cpStep][data-d="1"]');await p.click('[data-act=cpStep][data-d="1"]');await p.waitForSelector('[data-input=cpWords]');await p.fill('[data-input=cpWords]','gainage dont je parle');
+    await resetQuota();await p.evaluate(async()=>{const {openWizard}=await import('/views-climbplan.js');openWizard({sport:'climbing_route',auto:false});});await p.waitForSelector('[data-act=cpStep][data-d="1"]');/* 8.35 : l'étape « Tes objectifs » se montre quand on coche « Mes objectifs » */if(!(await p.locator('input[data-change=cpChoose][data-id=aims]').isChecked()))await p.click('input[data-change=cpChoose][data-id=aims]');await p.click('[data-act=cpStep][data-d="1"]');await p.waitForSelector('[data-input=cpWords]');await p.fill('[data-input=cpWords]','gainage dont je parle');
     nextAnswer={status:'clarify',question:'Dans quelle situation veux-tu améliorer ton gainage ?'};const refused=p.waitForResponse((r)=>new URL(r.url()).pathname==='/api/ai/intent');await p.click('[data-act=cpAiAim]');assert.equal((await refused).status(),422);await p.getByText('Dans quelle situation veux-tu améliorer ton gainage ?', {exact:true}).waitFor();assert.equal(await p.locator('[data-act=cpAiLocal],[data-act=cpAiAdd]').count(),0);
     nextAnswer={...proof,label:'OBJECTIF-CREATEUR-SOURCE',summary:'Intention à relire.',caps:{gainage_anterieur:0.8}};await p.click('[data-act=cpAiAim]');await p.waitForSelector('[data-act=cpAiAdd]');await inspectSources();assert.equal(await p.evaluate(async()=>(await import('/state.js')).S.cp.aims.some((a)=>a.label==='OBJECTIF-CREATEUR-SOURCE')),false);await p.click('[data-act=cpAiCancel]');
   });

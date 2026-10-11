@@ -18,6 +18,9 @@ export function cleanAgendaMeta(m) {
   const out = {};
   if (validDay(m.stopFrom)) out.stopFrom = m.stopFrom;
   if (m.kind === 'activity') out.kind = 'activity';
+  // 8.35 : étirements programmés après une séance : le rappel ouvre et lance cette séance d'étirement.
+  if (m.kind === 'stretch') out.kind = 'stretch';
+  if (id(m.playId)) out.playId = id(m.playId);
   if (m.place) out.place = text(m.place, 80);
   if (id(m.seriesId) && validDay(m.occurrenceDate)) { out.seriesId = id(m.seriesId); out.occurrenceDate = m.occurrenceDate; }
   if (['planned', 'done', 'missed', 'cancelled'].includes(m.status)) out.status = m.status;
@@ -109,7 +112,9 @@ export function calendarIcsEvents(events) {
     let until=base.recurrence?.until || '';
     if(base.meta?.stopFrom && (!until || base.meta.stopFrom<=until))until=shiftDay(base.meta.stopFrom,-1);
     const exceptions=events.filter((e)=>e.meta?.seriesId===base.id);
-    out.push({uid:'ev-'+base.id,title:(base.meta?.kind === 'race' ? '🏁 ' : '🏋️ ')+(base.title || 'Activité'),date,time:base.time || '',timeZone:base.recurrence?.timeZone,minutes:base.meta?.minutes || 60,allDay:!base.time,weekly:base.recurrence?.freq==='weekly',days:base.recurrence?.days,until,
+    // Rendez-vous unique modifié ou annulé : sa version modifiée le remplace (pas d'EXDATE sans répétition, que des agendas ignorent).
+    const replaced=!base.recurrence && exceptions.some((e)=>e.meta?.occurrenceDate===date);
+    if(!replaced)out.push({uid:'ev-'+base.id,title:(base.meta?.kind === 'race' ? '🏁 ' : '🏋️ ')+(base.title || 'Activité'),date,time:base.time || '',timeZone:base.recurrence?.timeZone,minutes:base.meta?.minutes || 60,allDay:!base.time,weekly:base.recurrence?.freq==='weekly',days:base.recurrence?.days,until,
       exDates:exceptions.map((e)=>e.meta.occurrenceDate),desc:base.meta?.place || base.meta?.note || '',done:!base.recurrence && !!base.completed});
     for(const e of exceptions)if(!['cancelled','missed'].includes(e.meta?.status) && occursOn(base,e.meta.occurrenceDate))out.push({uid:'ev-'+e.id,title:e.title || base.title,date:e.date,time:e.time || '',timeZone:base.recurrence?.timeZone,minutes:e.meta?.minutes || base.meta?.minutes || 60,allDay:!e.time,desc:e.meta?.place || '',done:!!e.completed});
   }

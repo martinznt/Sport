@@ -53,9 +53,14 @@ export function vHome() {
   if (sub === 'cal') return h`${subHead('homeSub', 'dash', 'Accueil', '📅 Planning')}<p class="tiny muted pagehelp">Touche un jour pour planifier une séance (avec son heure) ou un événement important. En dessous : ta semaine proposée automatiquement, un objectif daté, tes disponibilités, une pause, l’abonnement agenda.</p>${vCalendar()}`;
   return h`${reinstallCard()}${vDash()}`;
 }
+/** Après « Enregistrer » : ce que la séance change pour la suite (15 min), sur l'accueil. */
+function loopCard() {
+  const loop = S.lastLoop && Date.now() - S.lastLoop.at < 15 * 60000 ? S.lastLoop : null;
+  return loop ? h`<div class="card ok-b"><b>✓ Séance enregistrée</b>${loop.changes.length ? h`<ul class="small">${loop.changes.map((c) => h`<li>${c}</li>`)}</ul>` : h`<p class="small muted">Historique mis à jour.</p>`}<button class="btn sm" data-act="loopClose">OK</button></div>` : '';
+}
 function simpleHome() {
   const date = ymd(new Date());
-  return h`${hero()}${resumeCard()}${setupCard()}${installCard()}${agendaDayCards(date)}${BLOCK_VIEWS.today()}${creationChoices()}${agendaActions(date)}${BLOCK_VIEWS.command()}${BLOCK_VIEWS.progress()}<details class="card"><summary>Pourquoi ces conseils ?</summary>${impactCard()}${BLOCK_VIEWS.goals()}</details><button class="btn ghost" data-act="homeDetails">Voir tous les détails de l’accueil</button>`;
+  return h`${hero()}${loopCard()}${resumeCard()}${setupCard()}${questionCard()}${installCard()}${agendaDayCards(date)}${activeProgram() ? programCard() : ''}${BLOCK_VIEWS.today()}${creationChoices()}${agendaActions(date)}${BLOCK_VIEWS.command()}${BLOCK_VIEWS.progress()}<details class="card"><summary>Pourquoi ces conseils ?</summary>${impactCard()}${BLOCK_VIEWS.goals()}</details><button class="btn ghost" data-act="homeDetails">Voir tous les détails de l’accueil</button>`;
 }
 ACT.homeSimple = () => { S.homeDetails = false; render(); };
 ACT.homeDetails = () => { S.homeDetails = true; render(); };
@@ -82,13 +87,12 @@ ACT.goProfile = (el) => go('profile', el.dataset.id);
 /* ═════════ Tableau de bord ═════════ */
 function vDash() {
   if (!advancedUI() && !S.lay && !S.homeDetails && !savedLayouts().home && !item('config','dashboard')?.blocks?.length) return simpleHome();
-  const loop = S.lastLoop && Date.now() - S.lastLoop.at < 15 * 60000 ? S.lastLoop : null;
   const tile = (act, ic, title, sub, pri = false, id = '') => (pri
     ? h`<button class="qa pri" data-act="${act}" ${id ? raw(`data-id="${id}"`) : ''}><span class="qi">${ic}</span><span class="qt"><b>${title}</b><small>${sub}</small></span><span class="qgo" aria-hidden="true">▶</span></button>`
     : h`<button class="qa" data-act="${act}" ${id ? raw(`data-id="${id}"`) : ''}><span class="qi">${ic}</span><b>${title}</b><small>${sub}</small></button>`);
   const safe = (b) => () => BLOCK_VIEWS[b]();
   return h`${!advancedUI() && S.homeDetails ? h`<button class="btn ghost" data-act="homeSimple">Revenir à l’accueil simple</button>` : ''}${resumeCard()}${setupCard()}${installCard()}
-    ${loop ? h`<div class="card ok-b"><b>✓ Séance enregistrée</b>${loop.changes.length ? h`<ul class="small">${loop.changes.map((c) => h`<li>${c}</li>`)}</ul>` : h`<p class="small muted">Historique mis à jour.</p>`}<button class="btn sm" data-act="loopClose">OK</button></div>` : ''}
+    ${loopCard()}
     ${impactCard()}
     <div class="${S.lay?.page === 'home' ? '' : 'home-grid'}">${composePage('home', {
       hero,
@@ -165,7 +169,7 @@ const BLOCK_VIEWS = {
     };
     return card('☀️ Que faire aujourd’hui ?', h`<button class="btn sm" data-act="nothingPlanned">⚡ Je n’ai rien prévu : 3 questions</button>${t.options.map((o) => h`<div class="item"><div class="grow"><b>${o.title}</b><div class="tiny muted">${o.reason}</div>
       <details class="how mini"><summary>Comment le sais-tu ?</summary><ul class="tiny">${(o.how || []).map((x) => h`<li>${x}</li>`)}</ul></details></div>
-      ${o.kind === 'event' ? eventActions(o) : o.kind === 'rest' ? h`<button class="btn sm" data-act="todayDo" data-id="${o.id}">Léger</button>` : h`<button class="btn pri sm" data-act="todayDo" data-id="${o.id}" aria-label="Préparer cette séance">▶</button>`}</div>`)}`);
+      ${o.kind === 'event' ? eventActions(o) : o.kind === 'rest' ? h`<button class="btn sm" data-act="todayDo" data-id="${o.id}">Léger</button>` : h`<button class="btn pri sm" data-act="todayDo" data-id="${o.id}" aria-label="Préparer cette séance">Préparer ›</button>`}</div>`)}`);
   },
   command() {
     return card('🗣️ Dis-le simplement', h`<button class="btn coachbtn" data-act="coachOpen">💬 Poser une question au coach</button><form data-submit="command" class="row"><input name="text" maxlength="200" class="grow" placeholder="« Séance de 20 min pour les jambes »" aria-label="Commande"><button class="btn pri" type="submit">OK</button></form>

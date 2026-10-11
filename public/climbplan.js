@@ -223,6 +223,12 @@ export function buildFromParts(parts, ctx, opts = {}) {
     for (const e of out.slice(n0)) e.phase = p.id || ''; // chaque exercice sait de quelle phase il vient
   });
   function buildOne(p, i, label) {
+    if (p.noEx && p.type !== 'pause') {
+      // 8.35 : « pas d'exercices, juste une consigne » : un bloc chronométré de la durée de la phase, avec le texte.
+      const sec = Math.round((Number(p.minutes) || 10) * 60), name = String(p.roleLabel || p.goal || label.replace(/^\S+\s/, '') || 'Phase libre').slice(0, 80), text = String(p.noteText || '').trim() || `${name} : à ton rythme.`;
+      out.push(normalizeEx({ id: uid(), name, emoji: p.emoji || '📝', mode: 'time', sets: 1, secMin: sec, secMax: sec, rest: 0, block: p.role === 'warmup' ? 'warmup' : p.role === 'cool' ? 'cool' : 'main', part: label, intensity: { easy: 'low', mod: 'mod', hard: 'high', max: 'high' }[p.intensity] || 'mod', note: text, ok: [text] }));
+      return;
+    }
     if (p.type === 'pause') {
       // Pause : un temps de récupération réel, que le lecteur de séance décompte.
       out.push(normalizeEx({ id: uid(), name: 'Pause · récupération', emoji: '⏸️', mode: 'time', sets: 1, secMin: Math.round(p.minutes * 60), secMax: Math.round(p.minutes * 60), rest: 0, block: 'main', part: label, intensity: 'low', note: p.goal || 'Récupère : bois, mange un peu, reste au chaud.' }));

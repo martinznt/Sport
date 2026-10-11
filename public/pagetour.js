@@ -28,7 +28,7 @@ export const PAGE_INTRO = {
   'profile/activities': ['🏅 Mes sports', 'Les sports que tu pratiques, et pour l’escalade tes cotations et tes styles.'],
   'profile/equipment': ['📍 Mes lieux', 'Tes salles, ta maison, tes falaises, avec le matériel de chacun : les séances n’utilisent que ce qui est disponible.'],
   'profile/analyse': ['🔎 Mon analyse', 'Tes capacités (forces et points à travailler), les tendances, et pourquoi l’app te conseille ce qu’elle te conseille.'],
-  'settings/main': ['Paramètres', 'Le choix Simple ou Avancée est en haut. Choisis une rubrique ou cherche le réglage par son nom.'],
+  'settings/main': ['Paramètres', 'Choisis une rubrique, ou cherche le réglage par son nom avec la loupe.'],
   'settings/display': ['🎨 Affichage', 'Thème clair ou sombre, couleurs, taille du texte, langue : ça suit ton compte sur tous tes appareils.'],
   'settings/notifs': ['🔔 Notifications', 'Rappels d’entraînement, nouvelles mises à jour, réponses : choisis ce que tu reçois et quand.'],
   'library/seance': ['📋 Ta séance', 'Tout sur cette séance : son résumé, ses exercices (à modifier, remplacer, réordonner), ▶ Lancer, et 🔁 Adapter pour faire une version pour cette fois (durée, matériel, douleur, intensité) sans la modifier.'],

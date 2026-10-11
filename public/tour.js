@@ -13,7 +13,7 @@ const STEPS = [
   ['library', 'home', '#main .setmenu', '📚 Bibliothèque', 'Tes séances enregistrées, « Créer une séance » (l’app te guide), le carnet de séances prêtes par niveau, et tous les exercices.'],
   ['library', 'catalog', '#main h1', '📖 Le carnet de séances', 'Pas le temps de créer ? Des séances toutes prêtes pour chaque sport, de débutant à avancé.'],
   ['profile', 'home', '#main', '👤 Ton profil', 'Tout ce que l’app sait de toi : corps, sports, lieux et matériel, objectifs, mesures. Plus il est complet, plus tes séances sont justes.'],
-  ['settings', 'main', '#main .setmenu', 'Paramètres', 'Le choix Simple ou Avancée est en haut. Les réglages courants sont dans la liste ; la recherche retrouve les autres.'],
+  ['settings', 'main', '#main .setmenu', 'Paramètres', 'Les réglages courants sont dans la liste ; la recherche retrouve les autres.'],
   ['settings', 'help', '[data-act=helpTour]', '🧭 C’est parti !', 'Tu pourras relancer cette visite ici, et la visite de chaque page avec le bouton 🧭 en haut. Bon entraînement 💪'],
 ];
 const T = { i: -1, onEnd: null, raf: 0, steps: STEPS, stay: false };
@@ -63,6 +63,7 @@ function place() {
   T.raf = requestAnimationFrame(() => {
     const root = document.getElementById('tour'); if (!root || T.i < 0) return;
     const spot = root.querySelector('.tour-spot'), bub = root.querySelector('.tour-bubble'), arrow = root.querySelector('.tour-arrow');
+    if (!spot || !bub || !arrow) return; // défilement pendant le changement de page : la bulle n'est pas encore dessinée
     const vw = window.innerWidth, vh = window.innerHeight, pad = 8;
     // La page a pu se redessiner (données arrivées entre-temps) : on retrouve l'élément.
     if ((!T.el || !document.body.contains(T.el)) && T.steps[T.i]?.[2]) { const again = document.querySelector(T.steps[T.i][2]); if (again && again.getBoundingClientRect().height > 0) T.el = again; }

@@ -17,9 +17,9 @@ import { cleanItem, itemKey } from './items.js';
 import { decideOutboxError, newOpId, describeOp } from './outbox.js';
 import { buildContext } from './brain.js';
 import { registerMine } from './choices.js';
-import { toast, tz, $ } from './ui.js';
+import { toast, tz, $, closeSheet, sheetOpen, clearToasts } from './ui.js';
 
-export const APP_VERSION = '8.34.1';
+export const APP_VERSION = '8.35.0';
 export const ACT = {}, SUBMIT = {}, CHG = {}, INPUT = {};
 export const DEFAULT_SETTINGS = { sound: true, vibration: true, voice: false, keepAwake: true, handsFree: false, defaultRest: 60, defaultMinutes: 30, onboarded: false, autoBase: false, avoid: {}, bigMode: false, autoWarm: true, season: false, soundStyle: 'bip', volume: 60, lang: 'fr', notifSound: 'doux', redMode: false, interfaceMode: 'simple' };
 const initialAccountState = () => ({
@@ -98,6 +98,7 @@ function ensureAccount() {
   if (typeof document !== 'undefined') {
     document.querySelector('#dialog [data-dlg="0"]')?.click();
     for (const selector of ['#sheet', '#dialog', '#player', '#grp']) { const panel = document.querySelector(selector); if (panel) { panel.classList.remove('open'); panel.replaceChildren(); } }
+    clearToasts(); // un message en attente de l'autre compte ne s'affiche pas
     const message = document.querySelector('#toast'); if (message) { message.className = ''; message.replaceChildren(); }
     document.body?.classList.remove('grp-open', 'noscroll');
   }
@@ -413,7 +414,13 @@ export async function syncAll() {
     else { S.lastError = e.message; setSync(e.offline ? 'offline' : e.status === 401 ? 'auth' : 'error'); }
   } finally {
     if (accountMatches(token)) {
-      S.syncing = false; bump(); persist(); softRender();
+      // 8.35 : copie locale écrite tout de suite, avant d'annoncer la synchronisation finie. Avec l'écriture différée
+      // (0,25 s), une fermeture ou un rechargement juste après perdait la copie : l'app rouvrait sans les dernières
+      // données synchronisées (sur le serveur, jamais perdues) jusqu'à la synchronisation suivante, ou plus longtemps hors ligne.
+      await persistNow();
+    }
+    if (accountMatches(token)) {
+      S.syncing = false; bump(); softRender();
       if (S.syncAgain) { S.syncAgain = false; syncSoon(300); }
     }
   }
@@ -443,13 +450,15 @@ export function go(tab, sub, param = '') {
   if (tab === 'settings' && sub === 'bug' && !(S.tab === 'settings' && S.sub.settings === 'bug')) S.bugFrom = { owner: S.user?.id, page: `${S.tab}/${S.sub[S.tab] || ''}` };
   if (sub) S.sub[tab] = sub;
   const hash = `#/${tab}/${sub || S.sub[tab] || ''}${param ? '/' + encodeURIComponent(param) : ''}`;
-  if (location.hash === hash) { S.tab = tab; S.param = param; render(); }
+  if (location.hash === hash) { if (sheetOpen()) closeSheet(); S.tab = tab; S.param = param; render(); } // déjà sur la page : le menu se ferme quand même
   else location.hash = hash;
 }
 /** Un lien mal encodé (« % » seul…) ne bloque jamais le démarrage : le paramètre illisible est ignoré. */
 export const safeDecode = (v) => { try { return decodeURIComponent(v); } catch { return ''; } };
+/** Anciennes adresses encore présentes dans des notifications déjà reçues (avant la 8.34.1). */
+const ROUTE_ALIAS = { 'home/agenda': 'cal' };
 export function parseHash() {
-  const [, tab, sub, param] = (location.hash || '').split('/');
+  const [, tab, raw, param] = (location.hash || '').split('/'), sub = ROUTE_ALIAS[`${tab}/${raw}`] || raw;
   if (['home', 'progress', 'library', 'profile', 'settings'].includes(tab)) { S.tab = tab; if (sub) S.sub[tab] = sub; S.param = param ? safeDecode(param) : ''; }
 }
 export const newId = () => uid();

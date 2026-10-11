@@ -69,4 +69,14 @@ ok('matériel des moments : celui du lieu réel d’insertion, pas l’union de 
   const s=R.suggestRoutines([mk('nofoot')],base,{sports:['climbing_boulder'],eq,equipmentAt:()=>new Set(['band']),minutes:115,now});
   assert.equal(s[0].ok,false);assert.ok(s[0].missing.length);
 });
+ok('8.35 : séance courte, « ＋ » ajoute quand même la phase et allonge la séance ; jamais dans un créneau horaire',()=>{
+  const short=P([{id:'w',type:'warmup',role:'warmup',minutes:8},{id:'m',type:'climb',minutes:14},{id:'c',type:'cool',role:'cool',minutes:5}]);
+  const sug={at:2,phase:{type:'routine',minutes:10,goal:'Spray wall',role:'prep'}};
+  assert.ok(R.insertRoutine(short,sug).blocked,'sans l’option : refus (insertion automatique)');
+  const r=R.insertRoutine(short,sug,{extend:true});
+  assert.equal(r.blocked,undefined);assert.equal(r.extended,10);assert.equal(r.phases.length,4);assert.equal(r.phases[1].minutes,14,'aucune phase raccourcie');
+  const win={from:1080,to:1110,envId:'a'},inWin=P([{id:'m',type:'climb',minutes:14,window:win},{id:'n',type:'climb',minutes:14,window:win}]);
+  const no=R.insertRoutine(inWin,{at:1,phase:{type:'routine',minutes:10,goal:'X',role:'prep'}},{extend:true});
+  assert.ok(no.blocked);assert.match(no.blocked,/créneau/);assert.doesNotMatch(no.blocked,/[Dd]éverrouill/);
+});
 console.log(`\n${n} tests des moments OK`);

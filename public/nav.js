@@ -1,6 +1,6 @@
 // nav.js — « ‹ Retour à … » : quand un raccourci emmène ailleurs (ajouter un objectif, un lieu, un exercice…),
 // un bouton en haut de la page ramène à l'endroit d'où l'on vient, sans rien perdre (les brouillons sont gardés).
-import { h } from './ui.js';
+import { h, closeSheet } from './ui.js';
 import { S, ACT, go, ls, ctx, render } from './state.js';
 import { hintsFor, hintState } from './hints.js';
 import { globalHints } from './global.js';
@@ -36,5 +36,16 @@ ACT.hintGo = (el) => {
   const cur = `${S.tab}/${S.sub?.[S.tab] || ''}${S.param ? '/' + S.param : ''}`;
   if (x.go) { setReturn(x.back || 'Retour', cur); const [t, sub] = x.go.split('/'); go(t, sub); }
   else if (x.act) ACT[x.act]?.({ dataset: {} });
+};
+// Petits messages « … va dans Profil › Mes phases » : le chemin emmène directement, et « ‹ Retour » ramène ici.
+const PAGE_NAME = { home: 'l’accueil', progress: 'Progrès', library: 'la Bibliothèque', profile: 'mon profil', settings: 'les Paramètres' };
+ACT.pathGo = (el) => {
+  const to = String(el.dataset.to || ''); if (!to) return;
+  const cur = `${S.tab}/${S.sub?.[S.tab] || ''}${S.param ? '/' + S.param : ''}`;
+  if (S.tab === 'library' && S.sub?.library === 'climbplan') setReturn('Retour à ma séance en cours', cur);
+  else if (S.tab === 'library' && S.sub?.library === 'seance') setReturn('Retour à ma séance', cur);
+  else setReturn(`Retour à ${PAGE_NAME[S.tab] || 'la page d’avant'}`, cur);
+  closeSheet();
+  const [t, sub, ...rest] = to.split('/'); go(t, sub, rest.join('/') || undefined);
 };
 ACT.hintOff = (el) => { const off = new Set(ls.get(OFF, []) || []); off.add(el.dataset.id); ls.set(OFF, [...off]); render(); };

@@ -24,20 +24,15 @@ try {
     await p.evaluate(async()=>{const m=await import('/state.js');m.putItem('config','main',{tourDone:true,asked:['acts','place','minutes','perWeek','goal','avoid']});});
     await p.click('[data-act=setupSkip]');await p.waitForSelector('[data-act=expressOpen]');assert.equal(await p.locator('html').getAttribute('data-interface'),'simple');
   });
-  await step('paramètres en un toucher : six rubriques et un seul choix d’interface',async()=>{
+  await step('paramètres en un toucher : six rubriques et plus aucun choix d’interface (8.35)',async()=>{
     await p.getByRole('button',{name:'Paramètres',exact:true}).click();
     await p.waitForSelector('.setmain > .setmenu .setrow');
     assert.equal(await p.locator('nav .ico svg').count(),5);
     assert.equal(await p.locator('.setmain > .setmenu .setrow').count(),6);
-    assert.equal(await p.locator('[data-act=interfaceSet]').count(),2);
-    assert.ok(await p.locator('[data-act=interfaceSet][data-v=simple]').isVisible());
+    assert.equal(await p.locator('[data-act=interfaceSet]').count(),0);
     assert.equal(await p.locator('#settings-more').getAttribute('open'),null);
-    await p.fill('[data-input=setFind]','interface simple');await p.waitForSelector('#setfindres [data-act=findGo]');
-    assert.equal(await p.locator('.setmain').isVisible(),false);
-    await p.click('#setfindres [data-act=findGo]');await p.waitForSelector('.setmain:not([hidden])');
-    assert.equal(await p.locator('[data-act=interfaceSet]').count(),2);
     await p.fill('[data-input=setFind]','administration');await p.click('#setfindres [data-act=findGo]');await p.waitForSelector('[data-submit=adminOn]');
-    assert.equal((await api('/api/auth/me')).user.isAdmin,false);await p.click('nav [data-id=settings]');await p.waitForSelector('[data-act=interfaceSet]');
+    assert.equal((await api('/api/auth/me')).user.isAdmin,false);await p.click('nav [data-id=settings]');await p.waitForSelector('.setmain:not([hidden])');
   });
   await step('affichage : une seule taille du texte, couleurs facultatives et recherche précise',async()=>{
     await p.click('[data-act=setSub][data-id=display]');await p.waitForSelector('[data-act=a11ySize]');assert.equal(await p.locator('[data-act=interfaceSet]').count(),0);
@@ -62,7 +57,7 @@ try {
       for(const mode of ['dark','light']) {
         await p.click('nav [data-id=settings]');await p.click('[data-act=setSub][data-id=display]');await p.click(`[data-act=appear][data-k=mode][data-v=${mode}]`);await p.click('nav [data-id=settings]');await p.waitForSelector('.setmain:not([hidden])');
         const noOverflow=async state=>assert.ok(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),`${width}px ${mode}, ${state}`);
-        await noOverflow('options repliées');assert.ok(await p.locator('[data-act=interfaceSet][data-v=simple]').isVisible());
+        await noOverflow('options repliées');
         assert.equal(await p.locator('.set-account-name').innerText(),'👤 SimpleAgendaMobileCompte');
         const logout=await p.locator('[data-act=logout]').boundingBox();assert.ok(logout&&logout.x>=0&&logout.x+logout.width<=width,'bouton de déconnexion entièrement visible');
         // Une rubrique ouverte par la personne reste ouverte quand elle revient sur la page : on ne l'ouvre que si besoin.
@@ -114,9 +109,11 @@ try {
     await openDay(friday);assert.equal(await p.locator('.agenda-event').count(),1);assert.ok((await p.locator('.agenda-event').innerText()).includes('Prévue'));await p.click('#sheet button[data-act=closeSheet]');
     const hist=(await api('/api/history')).history;assert.ok(hist.every(h=>h.data.agenda.occurrenceDate===tuesday));
   });
-  await step('mode avancé puis simple : préférence persistante, même historique',async()=>{
-    await p.click('nav [data-id=settings]');await p.click('[data-act=interfaceSet][data-v=advanced]');await poll(async()=>(await api('/api/settings')).settings.interfaceMode==='advanced');await p.reload();await p.waitForSelector('[data-act=interfaceSet][data-v=simple]');assert.equal(await p.locator('html').getAttribute('data-interface'),'advanced');await p.click('[data-act=interfaceSet][data-v=simple]');await poll(async()=>(await api('/api/settings')).settings.interfaceMode==='simple');assert.equal((await api('/api/history')).history.length,2);
+  await step('8.35 : un ancien réglage « avancée » est sans effet ; même historique',async()=>{
+    await p.evaluate(async()=>{const m=await import('/state.js');m.S.settings.interfaceMode='advanced';m.saveSettings();});await poll(async()=>(await api('/api/settings')).settings.interfaceMode==='advanced');
+    await p.reload();await p.waitForSelector('nav [data-id=settings]');assert.equal(await p.locator('html').getAttribute('data-interface'),'simple');assert.equal((await api('/api/history')).history.length,2);
   });
+
   await step('accueil, bibliothèque, moi et progrès lisibles à 320 et 390 px',async()=>{
     for(const width of [320,390])for(const tab of ['home','library','profile','progress']){await p.setViewportSize({width,height:844});await p.click(`nav [data-id=${tab}]`);await p.waitForTimeout(100);assert.ok(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),`${width}px ${tab}`);assert.doesNotMatch(await p.locator('main').innerText(),/undefined|NaN|\[object Object\]|Cet écran n’a pas pu/);}
     await p.waitForTimeout(1200);await p.screenshot({path:'/tmp/escalade-simple-progress.png',fullPage:true});

@@ -20,7 +20,7 @@ export const CHOICE_LISTS = {
   zone: { title: 'Zones à ménager', icon: '🩹', add: '＋ Autre zone', aria: 'Ajouter une zone à ménager',
     effect: 'Cochée « en ce moment », ou choisie pour une séance, elle est rappelée sur chaque exercice. L’app ne sait pas quels exercices la chargent : passe ou remplace ceux qui la gênent.' },
   equipment: { title: 'Mon matériel', icon: '🧰', add: '＋ Autre matériel', aria: 'Ajouter du matériel',
-    effect: 'Coché dans tes lieux et nommé partout. Un de tes moments (Mes moments) peut en avoir besoin : il n’est alors proposé que là où ce matériel est.' },
+    effect: 'Coché dans tes lieux et nommé partout. Une de tes phases (Profil › Mes phases) peut en avoir besoin : il n’est alors proposé que là où ce matériel est.' },
   envie: { title: 'Mes envies de séance', icon: '✨', add: '＋ Mon envie', aria: 'Écrire mon envie de séance',
     effect: 'Proposée dans « Je n’ai rien prévu ». Les mots reconnus (gainage, tractions, cardio…) orientent la séance ; sinon elle reste ton intention écrite.' },
   minutes: { title: 'Mes durées', icon: '⏱️', add: '＋ Autre durée', aria: 'Ajouter une durée, en minutes',

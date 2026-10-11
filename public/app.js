@@ -55,7 +55,16 @@ function syncBadge() {
 }
 onSheetRender(linkPaths);
 let lastRoute = '', backTo = null;
+/** 8.35 : lien d'un rappel « C'est l'heure de tes étirements » (#/play/<séance>) : la séance s'ouvre et se lance (les
+ * séances de ce compte seulement ; sinon on le dit). */
+function playLink() {
+  const m = (location.hash || '').match(/^#\/play\/([\w-]{1,64})$/); if (!m || !S.user || !S.loaded) return;
+  const s = S.seances.items.find((x) => x.id === m[1] && !x.deleted);
+  history.replaceState(null, '', location.pathname + location.search + (s ? `#/library/seance/${s.id}` : '#/home/cal')); parseHash();
+  if (s && !S.player) setTimeout(() => startPlayer(s), 0); else if (!s) setTimeout(() => toast('Cette séance n’existe plus sur ce compte.', 4000), 0);
+}
 function doRender() {
+  playLink();
   const app = $('#app');
   // Même page redessinée (un choix, une case cochée…) : rubriques ouvertes et position gardées, jamais de remontée.
   // Autre page : on arrive en haut ; en revenant sur la page qu'on vient de quitter (liste → détail → liste), on retrouve
@@ -67,7 +76,7 @@ function doRender() {
   const pl = pendingLink();
   if (!S.user) { app.innerHTML = (pub ? vPublicVisitor(safeDecode(pub[1])) : pl && !S.authMode ? h`<main class="wrap">${vLanding(pl)}</main>` : vAuth()).s; return; }
   if (!S.loaded) { app.innerHTML = h`<main class="wrap">${skeleton(4)}</main>`.s; return; }
-  document.documentElement.dataset.interface = S.settings.interfaceMode === 'advanced' ? 'advanced' : 'simple';
+  document.documentElement.dataset.interface = 'simple'; // 8.35 : interface unique
   let body;
   try { body = layoutEditing() ? layoutEditor() : pl ? vLanding(pl) : pub && safeDecode(pub[1]).toLowerCase() !== S.user.username.toLowerCase() ? vPublicVisitor(safeDecode(pub[1])) : VIEWS[S.tab](); }
   catch (e) {
@@ -282,6 +291,25 @@ document.addEventListener('submit', (e) => {
   Promise.resolve().then(() => fn(f, e)).catch((err) => { console.error(err); toast('Enregistrement impossible : ' + (err?.message || 'erreur'), 4500, 'bad'); }).finally(() => sending.delete(f));
 });
 document.addEventListener('change', (e) => { const el = e.target.closest('[data-change]'); if (!el) return; const fn = CHG[el.dataset.change]; if (fn) try { fn(el); } catch (err) { console.error(err); toast(err.message, 4000, 'bad'); } });
+// Un champ « fichier » peut être redessiné pendant que la personne choisit son fichier (synchronisation au retour au
+// premier plan, mise à jour…) : le choix arrive alors sur l'ancien champ, sorti de la page, que l'écoute ci-dessus ne
+// voit plus, et le fichier était perdu sans message. Chaque champ fichier est donc aussi écouté directement ; ce relais
+// n'agit que si le champ n'est plus dans la page (sinon l'écoute ci-dessus s'en charge, une seule fois).
+const watchFile = (input) => {
+  if (input.__seaWatch) return; input.__seaWatch = true;
+  input.addEventListener('change', () => { if (input.isConnected) return; const fn = CHG[input.dataset.change]; if (fn) try { fn(input); } catch (err) { console.error(err); toast(err.message, 4000, 'bad'); } });
+};
+let fileScan = false;
+new MutationObserver(() => { if (fileScan) return; fileScan = true; queueMicrotask(() => { fileScan = false; for (const el of document.querySelectorAll('input[type=file][data-change]')) watchFile(el); }); }).observe(document.body, { childList: true, subtree: true });
+// Virgule décimale (clavier français) : dans un champ numérique, le navigateur l'efface sans rien dire (« 72,5 » devenait
+// 725). Elle est remplacée par un point au moment de la frappe ou du collage ; le champ reste numérique (clavier, contrôles).
+document.addEventListener('beforeinput', (e) => {
+  const el = e.target;
+  if (!(el instanceof HTMLInputElement) || el.type !== 'number') return;
+  const text = e.data ?? e.dataTransfer?.getData('text/plain') ?? '';
+  if (!text.includes(',')) return;
+  e.preventDefault(); document.execCommand('insertText', false, text.trim().replace(/\s/g, '').replace(',', '.'));
+}, true);
 document.addEventListener('input', (e) => { const el = e.target.closest('[data-input]'); if (!el) return; const fn = INPUT[el.dataset.input]; if (fn) fn(el); });
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && sheetOpen()) closeSheet(); });
 window.addEventListener('hashchange', () => {

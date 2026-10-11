@@ -4,7 +4,7 @@ import { advancedUI } from './views-experience.js';
 // views-progress.js — Progrès : comparaisons personnelles, résumés, régularité, charge, historique, records,
 // timeline, journal, analyses descriptives et mode Lab. Toujours par rapport à soi-même, jamais aux autres.
 import { doneList } from './views-profile.js';
-import { h, raw, $, toast, openSheet, closeSheet, ask, askText, seg, chip, menuList, subHead, tag, empty, howBox, meter, bars, lineChart, fmtDay, fmtDate, fmtDateTime, relDate, numberField, buzzOk, fmtDur } from './ui.js';
+import { h, goHint, raw, $, toast, openSheet, closeSheet, ask, askText, seg, chip, menuList, subHead, tag, empty, howBox, meter, bars, lineChart, fmtDay, fmtDate, fmtDateTime, relDate, numberField, buzzOk, fmtDur } from './ui.js';
 import { S, ACT, SUBMIT, CHG, ctx, go, render, deleteHistory, updateHistory, putItem, delItem, item, itemsOf, getSeance } from './state.js';
 import { uid, exKey } from './shared.js';
 import { CAPACITIES, MUSCLES, METRICS } from './model.js';
@@ -33,7 +33,8 @@ export function vProgress() {
   if ((sub === 'history' && !S.param) || sub === 'timeline') { S.jf = sub === 'history' ? 'session' : 'step'; setTimeout(() => go('progress', 'journal'), 0); return ''; }
   if (sub === 'history') return h`${subHead('progSub', 'journal', 'Journal', '📋 Séance')}${vHistory()}`;
   const views = { summary: vSummary, history: vHistory, journal: vJournal, analyses: vAnalyses, lab: vLab };
-  if (sub === 'summary') { const c = ctx(); return h`<h1>Progrès</h1><p class="tiny muted pagehelp">Ce que tes séances ont changé : régularité, volume, records et ce qui progresse (ou pas).</p>${vSummary()}<span class="kicker">Aller plus loin</span>${menuList(Object.entries(SUB_INFO).map(([k, [ic, t, d]]) => ['progSub', k, ic, t, d(c)]))}`; }
+  if (sub === 'summary') { const c = ctx(); return h`<h1>Progrès</h1><p class="tiny muted pagehelp">Ce que tes séances ont changé : régularité, volume, records et ce qui progresse (ou pas).</p>${vSummary()}<span class="kicker">Aller plus loin</span>${menuList([['progSub', 'journal', ...SUB_INFO.journal.slice(0, 2), SUB_INFO.journal[2](c)]])}
+    ${goHint('🏆 Tes records, tests et maxima sont dans', 'Profil › Records et mesures', 'profile/perfs')}${goHint('🔎 Pour comprendre tes capacités et tes conseils, va dans', 'Profil › Mon analyse', 'profile/analyse')}`; }
   // Tendances et Lab font partie de « Mon analyse » (profil).
   if (sub === 'analyses' || sub === 'lab') return h`${subHead('profSub', 'analyse', 'Mon analyse', sub === 'lab' ? '🧪 Lab' : '🔍 Tendances et diagnostics')}${views[sub]()}`;
   const [ic, t] = SUB_INFO[sub];
@@ -43,7 +44,7 @@ ACT.progSub = (el) => { if (el.dataset.id === 'journal' && !el.dataset.keep) S.j
 const pct = (x) => (x == null ? '—' : `${x > 0 ? '+' : ''}${x} %`);
 
 function vSummary() {
-  if (!advancedUI() && !S.lay && !savedLayouts().progress && ctx().history.length) return simpleProgress();
+  if (!advancedUI() && !S.lay && !S.progDetails && !savedLayouts().progress && ctx().history.length) return simpleProgress();
   const c = ctx(), days = S.benchDays || 30, b = benchmarks(c, days), per = S.sumKind || 'week', s = periodSummary(c, per), reg = regularity(c), load = loadAnalysis(c);
   if (!c.history.length) return h`<section class="card hero center"><div style="font-size:3rem">🌱</div><h2>Ta progression commence ici</h2><p>Fais ta première séance : tes chiffres, tes records et ta régularité apparaîtront ici.</p><button class="btn pri big" data-act="genOpen">🎯 Me proposer une séance</button></section>${storyCard()}`;
   const delta = (x) => (x == null ? '' : x > 0 ? h`<i class="up">▲ ${x} %</i>` : x < 0 ? h`<i class="down">▼ ${Math.abs(x)} %</i>` : h`<i>=</i>`);
@@ -64,9 +65,10 @@ function vSummary() {
       ${s.undertrained.length ? h`<p class="small">🧩 Peu travaillé : ${s.undertrained.join(', ')}</p>` : ''}
       <button class="btn" data-act="recapOpen">📸 Mon bilan du mois en image</button></details>`;
   const kpisView = () => h`<div class="kpiwrap"><div class="row between">${seg('benchDays', String(days), [['7', '7 jours'], ['30', '30 jours'], ['90', '90 jours']])}</div>
-    <div class="kpis">${kpi('🏋️', 'Séances', b.cur.sessions, b.deltas.sessions)}${kpi('⏱', 'Minutes', b.cur.minutes, b.deltas.minutes)}${kpi('🔁', 'Séries', b.cur.sets, b.deltas.sets)}${kpi('😮‍💨', 'Ressenti', b.cur.rpe ?? '—', null)}</div>
+    <div class="kpis">${kpi('🏋️', 'Séances', b.cur.sessions, b.deltas.sessions)}${kpi('⏱', 'Minutes', b.cur.minutes, b.deltas.minutes)}${kpi('🔁', 'Séries', b.cur.sets, b.deltas.sets)}${kpi('😮‍💨', 'Ressenti', b.cur.rpe == null ? '—' : String(b.cur.rpe).replace('.', ','), null)}</div>
     <p class="tiny muted center">Comparé aux ${days} jours d’avant · uniquement toi</p></div>`;
-  return composePage('progress', {
+  const back = !advancedUI() && S.progDetails ? h`<button class="btn ghost" data-act="progSimple">‹ Revenir au résumé simple</button>` : '';
+  return h`${back}${composePage('progress', {
     streak: () => streakCard(),
     kpis: kpisView,
     wins: () => (wins.length ? h`<section class="card ok-b"><span class="kicker ok-t">Tes bonnes nouvelles</span>${wins.map(([ic, t]) => h`<div class="win"><span>${ic}</span>${t}</div>`)}</section>` : ''),
@@ -79,7 +81,7 @@ function vSummary() {
     weeksum: () => SUM(),
     learned: () => learnedCard(),
     story: () => storyCard(),
-  });
+  })}`;
 }
 ACT.benchDays = (el) => { S.benchDays = Number(el.dataset.id); render(); };
 ACT.sumKind = (el) => { S.sumKind = el.dataset.id; render(); };
@@ -96,7 +98,7 @@ ACT.histRedo = async(el) => { const e = S.history.find((x) => x.id === el.datase
 function vEntry(e) {
   const q = e.data?.questionnaire || {}, d = e.data || {};
   return h`<h2 style="margin:0">${e.sessionName}</h2>
-    ${isExternal(e) ? h`<p class="small muted">${externalLabel(e)} · Import privé, exclu des demandes envoyées à l’IA.${externalOf(e).provider === 'strava' && externalOf(e).channel === 'api' && /^\d+$/.test(externalOf(e).id) ? h` <a href="https://www.strava.com/activities/${externalOf(e).id}" target="_blank" rel="noopener noreferrer">Voir sur Strava</a>` : ''}</p>` : ''}
+    ${isExternal(e) ? h`<p class="small muted">${externalLabel(e)} · Import privé, jamais envoyé à l’assistant.${externalOf(e).provider === 'strava' && externalOf(e).channel === 'api' && /^\d+$/.test(externalOf(e).id) ? h` <a href="https://www.strava.com/activities/${externalOf(e).id}" target="_blank" rel="noopener noreferrer">Voir sur Strava</a>` : ''}</p>` : ''}
     <div class="card"><p class="small">${fmtDateTime(e.startedAt)} · ${d.quickLog?.durationKnown === false ? 'durée non renseignée' : 'durée '+fmtDur(e.durationSeconds || 0)}${d.activeSeconds ? ' · actif ' + fmtDur(d.activeSeconds) : ''}${d.pausedSeconds ? ' · pause ' + fmtDur(d.pausedSeconds) : ''}${d.plannedMin ? ' · prévu ' + d.plannedMin + ' min' : ''}</p>
       ${d.quickLog?.performance ? h`<p class="small">Repère déclaré : ${d.quickLog.performance}</p>` : ''}${['before','after'].includes(d.quickLog?.order) ? h`<p class="small">${d.quickLog.order==='before'?'Avant':'Après'} la séance principale.</p>`:''}
       ${d.agenda?.planned ? h`<p class="tiny muted">Prévu : ${d.agenda.planned.title} · ${d.agenda.planned.date}${d.agenda.planned.time?' · '+d.agenda.planned.time:''}</p>`:''}
@@ -224,5 +226,8 @@ ACT.labDel = async (el) => { if (await ask('Supprimer cette expérience ?', { da
 
 function simpleProgress() {
  const c=ctx(), days=S.benchDays || 30, b=benchmarks(c,days), r=regularity(c), less=undertrained(c).items.slice(0,3), load=loadAnalysis(c);
- return h`<section class="card"><h3>Ce qui change</h3><div class="chips">${[7,30,90].map((d) => chip(days===d, d+' jours', 'data-act="benchDays" data-id="'+d+'"'))}</div><p class="small">${r.text}</p>${b.capDiff.slice(0,4).map((x) => h`<div class="item"><div class="grow"><b>${x.label}</b><div class="tiny muted">${x.cur > x.prev ? 'Plus travaillé' : x.cur < x.prev ? 'Moins travaillé' : 'Stable'} · volume observé, pas une mesure de niveau</div></div></div>`)}${!b.capDiff.length ? h`<p class="muted small">Données insuffisantes pour comparer les capacités. Tes activités sont bien dans le journal.</p>` : ''}</section><details class="card"><summary>Ce qui mérite mon attention</summary>${less.map((x) => h`<p class="small">${x.text || x.label || x.capId}</p>`)}<p class="small">${load.text}</p>${load.signals.length?h`<ul class="small">${load.signals.map(text=>h`<li>${text}</li>`)}</ul><p class="tiny muted">Ces observations décrivent tes séances et ton ressenti.</p>`:''}</details><button class="btn" data-act="progSub" data-id="journal">Mon journal réel</button>${storyCard()}`;
+ return h`<section class="card"><h3>Ce qui change</h3><div class="chips">${[7,30,90].map((d) => chip(days===d, d+' jours', 'data-act="benchDays" data-id="'+d+'"'))}</div><p class="small">${r.text}</p>${b.capDiff.slice(0,4).map((x) => h`<div class="item"><div class="grow"><b>${x.label}</b><div class="tiny muted">${x.cur > x.prev ? 'Plus travaillé' : x.cur < x.prev ? 'Moins travaillé' : 'Stable'} · volume observé, pas une mesure de niveau</div></div></div>`)}${!b.capDiff.length ? h`<p class="muted small">Données insuffisantes pour comparer les capacités. Tes activités sont bien dans le journal.</p>` : ''}</section><details class="card"><summary>Ce qui mérite mon attention</summary>${less.map((x) => h`<p class="small">${x.text || x.label || x.capId}</p>`)}<p class="small">${load.text}</p>${load.signals.length?h`<ul class="small">${load.signals.map(text=>h`<li>${text}</li>`)}</ul><p class="tiny muted">Ces observations décrivent tes séances et ton ressenti.</p>`:''}</details><div class="row wrapf"><button class="btn" data-act="progSub" data-id="journal">Mon journal réel</button><button class="btn" data-act="progDetails">📊 Voir tous mes chiffres</button></div><p class="tiny muted"><em>Séances, minutes et séries sur 7, 30 ou 90 jours, charge de chaque semaine, régularité.</em></p>${storyCard()}`;
 }
+// 8.35 : une seule interface ; les chiffres détaillés (avant : interface avancée) restent à un toucher.
+ACT.progDetails = () => { S.progDetails = true; render(); window.scrollTo(0, 0); };
+ACT.progSimple = () => { S.progDetails = false; render(); window.scrollTo(0, 0); };

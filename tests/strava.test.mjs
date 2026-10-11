@@ -32,7 +32,7 @@ const hold=()=>{let release,arrived;const ready=new Promise(r=>arrived=r),pendin
 try {
   await ok('migration13 additive : nouvelles tables et clés étrangères, ancien historique intact',async()=>{
     defaults();const env=configured(),u=await account(env);
-    assert.equal(SCHEMA_VERSION,13);
+    assert.ok(SCHEMA_VERSION>=13); /* 8.35 : 14 (captures d'écran) */
     for(const table of ['strava_connections','strava_oauth_states','strava_previews','external_activity_imports'])assert.ok(env.DB.raw.prepare('PRAGMA table_info('+table+')').all().length);
     await u.post('/api/history',{id:'native-before-strava',sessionName:'Séance locale',startedAt:Date.now()-1000,durationSeconds:60,data:{}});
     await connect(u);assert.equal((await u.get('/api/history')).data.history[0].sessionName,'Séance locale');

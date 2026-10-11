@@ -53,7 +53,7 @@ export function vIntegrations() {
   const st = state();
   if (!S.user?.guest && !st.status && !st.loading && !st.error) queueMicrotask(() => loadStatus(st));
   const apps = APPS.filter((app) => app.id !== 'strava');
-  return h`<div class="stack integrations"><p class="small muted">Garde tes activités au même endroit. Chaque import demande ta confirmation ; les activités importées par Strava ou un fichier GPX / TCX restent privées et sont exclues des demandes envoyées à l’IA.</p>
+  return h`<div class="stack integrations"><p class="small muted">Garde tes activités au même endroit. Chaque import demande ta confirmation ; les activités importées par Strava ou un fichier GPX / TCX restent privées et ne sont jamais envoyées à l’assistant.</p>
     ${stravaCard(st)}
     <div class="card"><h3>Importer un fichier</h3><p class="small">GPX ou TCX depuis une montre ou une appli ; CSV depuis un tableur. Tu vérifies le résumé ou les colonnes avant l’ajout.</p><div class="row wrapf"><button class="btn" data-act="importOpen" data-source="file">GPX / TCX</button><button class="btn" data-act="integrationCSV">Ouvrir l’import CSV</button></div></div>
     <details class="card"><summary>Applications d’escalade et de sport</summary><p class="tiny muted">Les possibilités ci-dessous dépendent des fonctions proposées par chaque application. Un lien vers son site ne signifie pas qu’elle est connectée à ton compte.</p><div class="stack">${apps.map(appCard)}</div></details>

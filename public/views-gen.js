@@ -2,7 +2,7 @@
 // (objectifs, intentions du sport, forces, faiblesses, muscles, zones à ménager), tout en choix multiples.
 // On peut ajouter une intention / une force / une faiblesse en l'écrivant : l'assistant la relie aux bonnes capacités,
 // et on peut la proposer à tout le monde (les administrateurs reçoivent la proposition).
-import { h, raw, chip, openSheet, closeSheet, toast, skeleton } from './ui.js';
+import { h, goHint, raw, chip, openSheet, closeSheet, toast, skeleton } from './ui.js';
 import { S, accountToken, accountMatches, ACT, SUBMIT, CHG, ctx, render, putItem, api, ls, item } from './state.js';
 import { uid } from './shared.js';
 import { CAPACITIES, EQUIPMENT, ACTIVITIES } from './model.js';
@@ -129,7 +129,7 @@ export function vGenerateForm(activityOptions) {
       ${section('strengths', '💪 Mes forces', arr('strengthCaps').length, h`<div class="chips">${sw.strengths.length ? sw.strengths.map((x) => toggleChip(arr('strengthCaps').includes(x.id), x.label, 'gPick', x.id, 'data-k="strengthCaps"')) : h`<span class="small muted">Pas encore de point fort connu (fais quelques mesures dans Profil).</span>`}<button type="button" class="chip add" data-act="gWrite" data-k="strength">＋ Ajouter</button></div>`)}
       ${section('weak', '🌱 Mes faiblesses', arr('weakCaps').length, h`<div class="chips">${sw.weak.map((x) => toggleChip(arr('weakCaps').includes(x.id), `${x.label}${x.tag ? ' · ' + x.tag : ''}`, 'gPick', x.id, 'data-k="weakCaps"'))}<button type="button" class="chip add" data-act="gWrite" data-k="weakness">＋ Ajouter</button></div>`)}
       ${section('muscles', '🫀 Muscles', arr('muscles').length, h`<div class="chips">${MUSCLE_GROUPS.map(([k, l]) => toggleChip(arr('muscles').includes(k), l, 'gPick', k, 'data-k="muscles"'))}</div>`)}
-      ${section('zones', '🩹 Zones à ménager', arr('zones').length, h`<div class="chips">${AVOID_ZONES.map(([k, l]) => toggleChip(arr('zones').includes(k), l, 'gPick', k, 'data-k="zones"'))}</div><p class="tiny muted">Pour cette séance seulement. Pas un avis médical : en cas de douleur, consulte un professionnel.</p>`)}
+      ${section('zones', '🩹 À ménager pour cette séance', arr('zones').length, h`<div class="chips">${AVOID_ZONES.map(([k, l]) => toggleChip(arr('zones').includes(k), l, 'gPick', k, 'data-k="zones"'))}</div><p class="tiny muted">Pour cette séance seulement. Pas un avis médical : en cas de douleur, consulte un professionnel.</p>${goHint('Pour toutes tes séances, règle-les une fois dans', 'Profil › Mon corps et mes préférences', 'profile/body')}`)}
       ${section('place', '📍 Lieu et matériel', g.envId ? 1 : 0, h`<label>Lieu<select data-change="gEnv"><option value="">${c.defEnv ? 'Par défaut : ' + c.defEnv.name : 'Aucun décrit'}</option>${c.envs.map((e) => h`<option value="${e.id}" ${g.envId === e.id ? 'selected' : ''}>${e.name}</option>`)}</select></label>
         <div class="chips">${eq.length ? eq.map((k) => h`<span class="chip static">${EQUIPMENT[k] || k}</span>`) : h`<span class="small muted">Aucun matériel déclaré</span>`}</div>
 `)}
@@ -178,7 +178,7 @@ SUBMIT.gWriteGo = async (f) => {
     if (!current() || !document.querySelector('#sheet.open .intent-loading')) return;
     S.gDraft = null;
     const localAvailable = e.guest || e.offline || [503, 429].includes(e.status);
-    openSheet(h`<div class="stack"><h2 style="margin:0">${e.status === 422 ? 'À préciser' : 'Analyse indisponible'}</h2><p class="small" role="status">${e.guest ? 'Crée un compte pour utiliser l’assistant.' : e.message || 'L’assistant n’a pas fourni de proposition vérifiable.'}</p><p class="tiny muted">Aucune intention n’a été préparée ni enregistrée.</p><button class="btn" data-act="gWrite" data-k="${d.kind}" data-text="${text}">Reformuler</button>${localAvailable ? h`<button class="btn ghost" data-act="gWriteLocal" data-k="${d.kind}" data-text="${text}">Préparer avec les mots-clés, sans IA</button>` : ''}</div>`);
+    openSheet(h`<div class="stack"><h2 style="margin:0">${e.status === 422 ? 'À préciser' : 'Analyse indisponible'}</h2><p class="small" role="status">${e.guest ? 'Crée un compte pour utiliser l’assistant.' : e.message || 'L’assistant n’a pas fourni de proposition vérifiable.'}</p><p class="tiny muted">Aucune intention n’a été préparée ni enregistrée.</p><button class="btn" data-act="gWrite" data-k="${d.kind}" data-text="${text}">Reformuler</button>${localAvailable ? h`<button class="btn ghost" data-act="gWriteLocal" data-k="${d.kind}" data-text="${text}">Préparer avec les mots-clés, sur mon appareil</button>` : ''}</div>`);
   }
 };
 ACT.gWriteLocal = (el) => {
@@ -189,7 +189,7 @@ ACT.gWriteLocal = (el) => {
 };
 function showIntentDraft(r) {
   S.gDraft = r;
-  openSheet(h`<div class="stack"><h2 style="margin:0">${r.emoji} ${r.label}</h2>${r.source === 'local' ? h`<p class="tiny muted">Préparation locale à partir de mots-clés, sans IA. Ces liens sont des estimations à relire.</p>` : h`<p class="tiny muted">Proposition de l’assistant à relire.</p>${aiEvidence(r)}`}${r.summary ? h`<p class="small">${r.summary}</p>` : ''}
+  openSheet(h`<div class="stack"><h2 style="margin:0">${r.emoji} ${r.label}</h2>${r.source === 'local' ? h`<p class="tiny muted">Préparation sur ton appareil, à partir de mots-clés. Ces liens sont des estimations à relire.</p>` : h`<p class="tiny muted">Proposition de l’assistant à relire.</p>${aiEvidence(r)}`}${r.summary ? h`<p class="small">${r.summary}</p>` : ''}
     <b class="small">Ça travaille</b><div class="chips">${Object.keys(r.caps).map((id) => h`<span class="chip static">${capLabel(id)}</span>`)}</div>
     <button class="btn pri" data-act="gDraftSave">Ajouter et sélectionner</button>
     ${r.kind === 'intent' && !S.user?.guest ? h`<button class="btn" data-act="gDraftPropose">👥 Proposer à tout le monde</button><p class="tiny muted">Un administrateur la verra et pourra l’ajouter pour tous les utilisateurs.</p>` : ''}</div>`);

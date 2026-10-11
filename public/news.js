@@ -134,13 +134,13 @@ export const NEWS = [
   { v: '8.26.0', date: '2026-10-13', title: 'Séances structurées et explications', why: 'Tu décides du niveau de détail de ta séance, phase par phase (bloc, pause, voie…), et chaque proposition dit pourquoi. Rien n’est appliqué sans toi.', steps: [
     ['library', 'climbplan', '.steps', '🧱 Ta structure', 'Choisis le niveau de détail (libre → très précis), découpe la séance en phases (bloc, pause, voie…) et verrouille 🔒 ce que tu imposes.'],
     ['', '', '', '💡 Pourquoi ?', 'Chaque proposition dit d’où elle vient : donnée connue, règle, déduction, ou information manquante. Les améliorations ne s’appliquent que si tu les choisis, et s’annulent.'],
-    ['profile', 'goals', '#main h1', '🎯 Objectif avec l’IA', 'Une fiche à relire et corriger avant d’enregistrer. Aucune cible n’est inventée ; « Comment le sais-tu ? » explique chaque point.'],
+    ['profile', 'goals', '#main h1', '🎯 Objectif écrit avec tes mots', 'Une fiche à relire et corriger avant d’enregistrer. Aucune cible n’est inventée ; « Comment le sais-tu ? » explique chaque point.'],
     ['library', 'common', '#main h1', '🌍 Bibliothèque commune', 'Les séances des membres sont classées automatiquement, avec « Classée ainsi parce que… ». Le catalogue officiel reste dans 🗂 Séances prêtes.'],
   ] },
   { v: '8.27.0', date: '2026-09-30', title: 'Construire ta séance, réglage par réglage', why: 'Choisis l’objectif de ta séance et le moment où il arrive, puis règle chaque phase dans l’ordre : type, objectif, précisément, réglages du type, intensité, lieu, ce que tu ne veux pas. Tout le reste, l’app le décide et l’explique.', steps: [
     ['library', 'climbplan', '.steps', '🎯 Objectif à n’importe quel moment', 'Dans « Pour quoi ? » : quoi, précisément, et quand (début, milieu, fin, toute la séance). Tu peux ensuite le poser sur une phase précise.'],
     ['', '', '', '🔗 Une chaîne de réglages', 'Chaque phase se règle dans l’ordre, avec seulement ce qui a du sens pour son type : lieu propre, déplacement, filtres, curseurs de compromis, contraintes.'],
-    ['', '', '', '🔮 Et si… ? et ✍️ Modifier avec l’IA', 'Teste un changement (moins de temps, moins intense, autre lieu) et vois ses conséquences ; ou écris « J’ai seulement 1 h 20 » : l’app montre le plan avant d’appliquer.'],
+    ['', '', '', '🔮 Et si… ? et ✍️ Modifier en l’écrivant', 'Teste un changement (moins de temps, moins intense, autre lieu) et vois ses conséquences ; ou écris « J’ai seulement 1 h 20 » : l’app montre le plan avant d’appliquer.'],
     ['profile', 'goals', '#main h1', '🧭 Plusieurs chemins', 'Pour un objectif : très spécifique, mixte ou préparation physique, comparés. La carte des relations explique chaque lien.'],
   ] },
   { v: '8.28.0', date: '2026-10-01', title: 'Simple d’abord, précis si tu veux', why: 'Créer une séance commence par l’essentiel, déjà rempli d’après ton profil : un toucher sur « ⚡ Proposer ma séance » suffit. Ton profil comprend mieux ta condition grâce à un bilan selon tes objectifs, et le niveau d’une séance est expliqué avec des faits.', steps: [
@@ -168,27 +168,25 @@ export const NEWS = [
   ] },
   { v: '8.31.0', date: '2026-10-03', title: 'Ta salle, tes moments, ta séance sans limite', why: 'Ta salle de sport avec tes machines, tes moments préférés (élastiques, no foot, spray wall…) glissés au bon endroit, autant d’objectifs et de sports que tu veux, jusqu’à 5 h, et 487 séances prêtes.', steps: [
     ['library', 'gym', '#main h1', '🏋️ Ma salle de sport', 'Coche les machines de ta salle : la séance du jour n’utilise qu’elles, reprend tes charges et retient tes réglages. 🔄 si une machine est prise.'],
-    ['library', 'moments', '#main h1', '🧩 Mes moments', 'Élastiques à l’échauffement, no foot ou spray wall en fin de séance… Ils sont proposés dans « Créer une séance », adaptés à la séance du jour, avec un conseil spray wall d’après tes séances.'],
+    ['profile', 'phases', '#main h1', '🧩 Mes phases', 'Élastiques à l’échauffement, no foot ou spray wall en fin de séance… Elles sont proposées dans « Créer une séance », adaptés à la séance du jour, avec un conseil spray wall d’après tes séances.'],
     ['library', 'climbplan', '#main h1', '✨ Créer une séance', 'Autant d’objectifs et de sports que tu veux (voie, bloc, renfo, piscine…), jusqu’à 5 h. Un seul champ « ✍️ Avec tes mots ».'],
     ['library', 'catalog', '#main h1', '📖 Carnet de séances', '487 séances prêtes : choisis ce que tu veux travailler (technique de pieds, doigts, seuil…), « Adapté à moi » ou tout le carnet.'],
   ] },
   { v:'8.32.0', date:'2026-10-04', title:'Simple à utiliser, toujours aussi riche', why:'Une interface simple par défaut, tes rendez-vous récurrents et un bilan rapide qui raconte la vraie séance.', steps:[
-    ['settings','main','[data-act=interfaceSet]','Mon interface','Choisis Simple ou Avancée : tes données et la réflexion sportive restent les mêmes.'],
     ['home','cal','#main h1','Mes rendez-vous sportifs','Planifie plusieurs jours par semaine, même sans séance détaillée. Chaque occurrence a son propre bilan.'],
     ['profile','memory','#main h2','Ce que l’app a compris','Retrouve les observations, leur origine et leur confiance. Confirme ou corrige ce qui est faux.'],
   ] },
   { v:'8.32.1', date:'2026-10-04', title:'Des réglages plus faciles à trouver', why:'Une présentation plus sobre, les réglages essentiels à portée de main et des visites que tu peux passer.', steps:[
-    ['settings','main','[data-act=interfaceSet]','Choisir mon interface','Simple ou Avancée se choisit dès l’ouverture des paramètres.'],
     ['settings','display','[data-act=a11ySize]','Lire plus confortablement','La taille du texte se règle à un seul endroit, avec les options d’accessibilité.'],
     ['settings','help','[data-act=helpTour]','Les visites restent facultatives','Passe une visite à n’importe quelle étape. Tu peux la relancer dans Aide.'],
   ] },
   { v:'8.32.2', date:'2026-10-05', title:'Un calendrier plus fiable et un coach mieux informé', why:'Retrouve tes activités libres, corrige un bilan sans doublon et poursuis la conversation avec le coach. Les rubriques d’administration sont plus claires.', steps:[
     ['home','cal','#main h1','Le prévu et le réalisé','Une activité libre a son bilan rapide. Retire une activité ajoutée par erreur, et choisis un rappel avant ton rendez-vous si tu le souhaites.'],
-    ['profile','home','.topicons','Un coach avec ton contexte','Choisis de joindre le résumé de ton profil au coach. Ses propositions peuvent préparer une séance ou ouvrir le bon écran. L’administration peut relier Gemini.'],
+    ['profile','home','.topicons','Un coach avec ton contexte','Choisis de joindre le résumé de ton profil au coach. Ses propositions peuvent préparer une séance ou ouvrir le bon écran.'],
     ['settings','main','.topicons','Organiser les pages','Organiser fonctionne depuis les sous-pages. Regarde l’aperçu, puis enregistre ou quitte. Tu retrouves la page que tu consultais.'],
   ] },
-  { v:'8.32.3', date:'2026-10-05', title:'Des réglages et des actions plus fiables', why:'Les réglages IA sont accessibles au rôle Intelligence. Les options de séance et les menus d’administration restent ouverts pendant la synchronisation ; un contenu annulé reste annulé.', steps:[
-    ['settings','main','','Les réponses de l’IA','Le ton et la longueur des réponses peuvent être réglés par l’administration. Les demandes de précision, les sources vérifiées et la validation des modifications restent obligatoires.'],
+  { v:'8.32.3', date:'2026-10-05', title:'Des réglages et des actions plus fiables', why:'Les réglages de l’assistant sont accessibles au rôle Intelligence. Les options de séance et les menus d’administration restent ouverts pendant la synchronisation ; un contenu annulé reste annulé.', steps:[
+    ['settings','main','','Les réponses de l’assistant','Le ton et la longueur des réponses peuvent être réglés par l’administration. Les demandes de précision, les sources vérifiées et la validation des modifications restent obligatoires.'],
   ] },
   { v:'8.32.4', date:'2026-10-05', title:'Des boutons stables pendant le chargement', why:'Dans l’administration, le chargement des modifications attend la fin d’un appui avant de changer la liste. Les raccourcis restent utilisables.', steps:[
     ['settings','main','','Administration','Les raccourcis du Studio restent à leur place pendant ton appui, même si la liste finit de charger.'],
@@ -213,12 +211,32 @@ export const NEWS = [
     ['home','dash','[data-act=timerOpen]','Un chrono plus juste','L’EMOM dit avant de démarrer combien d’intervalles il fera. Si l’écran s’éteint, le chrono reprend au bon endroit. Seuls les efforts faits vont dans ton historique.'],
     ['settings','main','','Un téléphone pour plusieurs','Chaque compte garde ses brouillons et ses photos de progrès. Supprimer son compte les efface aussi de l’appareil.'],
   ] },
+  { v:'8.34.2', date:'2026-10-10', title:'Plus simple au quotidien', why:'Après un audit complet du site, des boutons qui disent ce qu’ils font, la virgule acceptée dans les nombres et une série de petites gênes en moins.', steps:[
+    ['home','dash','','Des boutons plus clairs','Une suggestion se « Prépare › » ; une séance générée se lance tout de suite avec « ▶ Lancer maintenant », en haut. Les raccourcis s’appellent « Décrire mon envie » et « Sport et durée ».'],
+    ['profile','body','','La virgule est comprise','« 72,5 » kg ou « 32,5 » cm sont bien enregistrés : avant, la virgule était effacée sans prévenir.'],
+    ['home','dash','','Moins de petites gênes','Le menu se ferme quand on touche la page où l’on est, un message ne s’efface plus aussitôt, un ressenti non donné ne compte plus comme « 1 », et l’icône du calendrier n’affiche plus « 17 juillet ».'],
+  ] },
+  { v:'8.35.0', date:'2026-10-10', title:'Tes phases, tes étirements, des sources', why:'Tes propres phases dans le profil, une séance d’étirement préparée pour toi, des objectifs en deux temps, des sources citées partout et une seule interface, plus simple.', steps:[
+    ['profile','phases','','Tes phases à toi','« ＋ Ajouter une phase » : échauffement aux élastiques, spray wall, no foot… Quand tu crées une séance de ce sport, l’app te les propose ; un toucher les ajoute. Une phase peut n’avoir aucun exercice, juste une consigne.'],
+    ['library','stretch','','Des étirements faits pour toi','Choisis la séance, les zones, le lieu et le matériel, quand t’étirer et combien de temps : l’app prépare la séance d’étirement. À la fin de ta séance, « Dans 15 min » la programme dans ton calendrier.'],
+    ['library','climbplan','','Tu choisis ce que tu règles','À l’étape 1, coche ce que tu veux choisir toi-même (phases, durées, objectifs…) ; l’app propose le reste. À la fin, retire un exercice (✕) ou une phase sans revenir en arrière.'],
+    ['profile','goals','[data-act=goalNew]','Des objectifs plus simples','« ＋ Ajouter un objectif » : dis ce que tu veux en un toucher, puis deux ou trois choix. La cible part de ta dernière valeur notée.'],
+    ['library','exercises','','Des sources pour chaque conseil','« 📚 Sources » montre les études et les sites d’où viennent les conseils, avec leur icône. « 🎯 Voir le passage » ouvre la source à la phrase exacte.'],
+    ['settings','main','','Une capture d’écran pour expliquer','En signalant un bug ou en proposant une amélioration, joins une capture d’écran : seuls les administrateurs la voient.'],
+  ] },
 ];
 
 const KEY = 'sea:news-toured';
 const num = (v) => String(v || '0').split('.').map((x) => Number(x) || 0).reduce((t, x) => t * 1000 + x, 0);
 
 /** Étapes de rattrapage : toutes les versions pas encore visitées depuis la dernière visite, en une seule visite. */
+/** Moment de chaque version (midi, heure locale), jamais plus tardif que celui de la version suivante : les 8.15 à 8.26
+ *  portaient des dates postérieures à la 8.27, et passaient « nouvelles » pour un nouveau compte, en tête de liste. */
+export function newsDates() {
+  const at = {}; let next = Infinity;
+  for (const n of NEWS.slice().reverse()) { next = Math.min(new Date((n.date || '2026-09-27') + 'T12:00:00').getTime(), next - 1); at[n.v] = next; }
+  return at;
+}
 export function pendingNews() { return catchUpSteps(NEWS, ls.get(KEY, '0'), APP_VERSION, { since: ls.get(KEY + '-at', 0) }); }
 /** Versions ratées depuis la dernière visite (la plus ancienne d'abord). */
 export const missedNews = () => missedVersions(NEWS, ls.get(KEY, '0'), APP_VERSION);
@@ -226,8 +244,10 @@ export const missedNews = () => missedVersions(NEWS, ls.get(KEY, '0'), APP_VERSI
 export const latestNews = () => NEWS.filter((n) => num(n.v) <= num(APP_VERSION)).at(-1)?.steps || [];
 export const markNewsToured = () => { ls.set(KEY, APP_VERSION); ls.set(KEY + '-at', Date.now()); };
 /** Première utilisation de l'appareil : rien de « nouveau » à montrer (la visite complète s'en charge).
- *  Appareil déjà utilisé avant l'arrivée de cette visite : on montre les nouveautés depuis la 8.3. */
+ *  Appareil déjà utilisé avant l'arrivée de cette visite (il a déjà vu une version du site) : nouveautés depuis la 8.3.
+ *  8.35 : un compte connecté ne suffit plus à le croire (le compte peut être tout neuf) ; sinon, au rechargement
+ *  suivant, un nouveau compte voyait « 40 mises à jour depuis ta dernière visite ». */
 export function initNews() {
   if (ls.get(KEY, null) !== null) return;
-  if (ls.get('sea:seen-build', null) || ls.get('sea:user', null)) ls.set(KEY, '8.2.9'); else markNewsToured();
+  if (ls.get('sea:seen-build', null)) ls.set(KEY, '8.2.9'); else markNewsToured();
 }

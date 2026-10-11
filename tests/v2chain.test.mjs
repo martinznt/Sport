@@ -77,14 +77,14 @@ ok('objectif : un verrou n’est jamais modifié en silence', () => {
   const ph = base(); ph[1].locks = { ...ph[1].locks, intensity: 'user', order: 'user' }; ph[1].intensity = 'easy'; ph[2].locks = { ...ph[2].locks, goal: 'user' };
   const r = placeObjective(ph, { family: 'performance', when: 'start' });
   const p = r.phases.find((x) => x.objective);
-  if (p.id === 'b') { assert.equal(p.intensity, 'easy', 'intensité verrouillée gardée'); assert.match(r.notes.join(' '), /Ordre verrouillé/); }
+  if (p.id === 'b') { assert.equal(p.intensity, 'easy', 'intensité verrouillée gardée'); assert.match(r.notes.join(' '), /Ordre choisi par toi/); }
   const locked = r.phases.find((x) => x.id === 'v'); if (locked.objective) assert.notEqual(locked.role, 'perf');
 });
 ok('chaîne de paramètres selon le type de phase', () => {
   assert.deepEqual(chainFor(normalizePhase({ type: 'pause', minutes: 10 })), ['type', 'intensite', 'lieu']);
-  const v = normalizePhase({ type: 'climb', kind: 'voie', minutes: 60 }); assert.equal(chainFor(v).length, 8);
+  const v = normalizePhase({ type: 'climb', kind: 'voie', minutes: 60 }); assert.equal(chainFor(v).length, 7); assert.ok(!chainFor(v).includes('verrous'), '8.35 : plus de rubrique des verrous');
   const pv = paramsFor(v); assert.equal(pv.activity, 'climbing_route'); assert.ok(pv.filters.includes('longueur')); assert.ok(pv.subs.technique.length);
   const pr = paramsFor(normalizePhase({ type: 'main', activity: 'strength', minutes: 30 })); assert.ok(pr.filters.includes('muscle')); assert.ok(!pr.filters.includes('style'));
-  const st = chainStatus(v); assert.match(st.text, /\/8 réglés/); assert.ok(st.next);
+  const st = chainStatus(v); assert.match(st.text, /\/7 réglés/); assert.ok(st.next);
 });
 console.log(`${n} tests V2 (chaîne, intentions, filtres, budget) OK`);

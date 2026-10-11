@@ -1,8 +1,58 @@
 # CHANGELOG — Séances entraînement
 
+## 8.35.0 — Phases, étirements, objectifs simples, sources, captures d'écran, une seule interface
+
+Livraison et étapes (dont Gemini) : [DELIVERY_8_35.md](DELIVERY_8_35.md) ; toutes les demandes et leur état : [docs/DEMANDES_8_35.md](docs/DEMANDES_8_35.md). Préparée sur la branche `claude/new-session-wi9olv`, non fusionnée, non déployée.
+
+- Phases : Profil › Mes phases (avant : Bibliothèque › Mes moments), proposées dans le créateur pour leur sport ; une phase peut n'avoir qu'un message à afficher, proposé par l'app et modifiable.
+- Créateur : cases « ce que je choisis moi-même » à l'étape 1 et en bas de chaque étape ; « ✏️ modifié par toi » à la place de modifiable / l'app choisit / bloqué ; retirer un exercice ou une phase après coup ; revenir en arrière garde tout ; « Tes objectifs » allégé.
+- Étirements : Bibliothèque › Étirements (séance, zones, lieu, matériel, délai, durée) ; proposés à la fin de la séance ; « dans X min » programme un rendez-vous dont le rappel lance la séance.
+- Objectifs : « ＋ Ajouter un objectif » en deux temps, cible proposée d'après la dernière valeur réelle, résumé en une phrase.
+- Lecteur : prochain exercice et nombre de séries en bas, même pendant l'effort.
+- Sources : repère « 📚 Sources » avec l'icône du site ; liste des liens ; « 🎯 Voir le passage » mène à la phrase exacte, lue par le serveur dans le résumé PubMed ; sur chaque exercice, la part de pratique et les études qui appuient ses règles.
+- Captures d'écran : jointes aux signalements et aux propositions (vérifiées, visibles par les administrateurs du bon rôle, effacées avec le compte et au bout d'un an) ; analysées par l'assistant du site (Gemini).
+- Assistant : plus de nom de fournisseur ni du mot « IA » pour les membres ; demandes courtes des administrateurs traitées directement.
+- Clarté : une seule interface (simple) ; mesures expliquées ; doublons retirés (Progrès, Mes sports, À mesurer, poids, noms des rubriques) ; petits messages « va dans … » cliquables avec « ‹ Retour » ; fenêtres sans clignotement.
+- Corrections : titre de séance et listes qui débordaient à 320 px ; focus rendu tout de suite après Échap ; un bouton long des étirements qui débordait à 320 px ; « Qui reçoit ta demande ? » restait sur « pas encore connu » une fois le service connu ; Mes phases et le Carnet (pour les grimpeurs) manquaient à l'accueil du Profil depuis le retrait de l'interface avancée.
+- Créateur : un sport, un lieu ou des objectifs choisis toi-même pour une phase restaient grisés ensuite ; ils restent modifiables (et gardés quand l'app recalcule). Le champ « ✍️ Avec tes mots » manquait quand « Mes objectifs » n'était pas coché ; il est à l'étape 1. « ＋ » sur une de tes phases était refusé sur une séance courte (« Déverrouille… ») : la phase est ajoutée et la séance s'allonge d'autant, le message le dit. La rubrique vide « Ce que l'app décide » est retirée du panneau d'une phase ; les messages ne parlent plus de réglages « verrouillés » mais de réglages « faits par toi ».
+- Accueil : depuis le retrait de l'interface avancée, plusieurs éléments n'apparaissaient plus que dans l'ancien tableau de bord ; ils sont sur l'accueil : le programme en cours (avec « ▶ C'est parti » le jour d'une séance), la carte « ✓ Séance enregistrée » (ce qui change pour la suite), la « Petite question » du profil (réponse en un toucher) et un raccourci « ⏱ Chrono ».
+- Améliorations proposées : si tu as réglé toi-même toutes les durées, « Ajouter un échauffement » (ou un retour au calme) échouait avec « Suggestion impossible à appliquer » ; la carte annonce maintenant que la séance s'allonge (tes durées sont gardées) et « ↶ Revenir » rend aussi la durée d'avant. Dans un créneau horaire fixe d'un lieu, elle explique pourquoi c'est impossible.
+- Fin de séance : « Plus de détails sur ma séance » se refermait à chaque choix (muscles, exercice le plus dur) ; il reste ouvert.
+- Nouveautés : un compte tout neuf voyait, au rechargement suivant, « N mises à jour depuis ta dernière visite » et une visite de rattrapage de toutes les versions ; seul un appareil qui a déjà vu une version du site est concerné.
+- Mise en page : un nom de séance contenant un long mot sans espace élargissait la page à 390 px (le titre ne passait pas à la ligne dans sa rangée).
+- Messages : deux messages coup sur coup, le premier pouvait disparaître sans être lu (ex. « … déjà présent(s), pas de doublon » de l'import CSV) ; ils passent l'un après l'autre (3 au plus, sans doublon).
+- Administration : « 🔎 Analyser avec l'assistant » ouvrait un message vide si l'assistant n'avait pas encore été ouvert ; la demande préparée est gardée (seulement pour le même compte).
+- Sources : le lien « Voir le passage » renvoyé par le serveur est vérifié (https ou http) avant d'être affiché.
+- Progrès : depuis le retrait de l'interface avancée, les chiffres détaillés (séances, minutes et séries sur 7, 30 ou 90 jours, charge de chaque semaine, régularité) n'étaient plus accessibles ; « 📊 Voir tous mes chiffres » sur le Résumé les ouvre, « ‹ Revenir au résumé simple » ramène au résumé.
+- Mes exercices : après « Copier dans mes exercices », la ligne de l'exercice rendait toute l'app plus large que l'écran jusqu'à 390 px (barre d'onglets et fenêtres coupées à droite, boutons difficiles à toucher) ; les boutons passent sous le nom et « 💡 Proposer à tout le monde » peut s'écrire sur deux lignes.
+- Messages d'erreur : texte blanc sur un rouge plus foncé, contraste 6:1 (avant 3,6:1, et 3,9:1 en mode daltonien, sous le minimum de 4,5:1).
+- « Ajouter à ma séance » (✍️ Écrire des exercices) : un toucher dans les 0,2 s après la frappe était perdu (l'aperçu s'allongeait et déplaçait le bouton sous le doigt) ; l'aperçu, et les listes filtrées pendant la frappe, attendent maintenant que le doigt soit levé.
+- Visite guidée : pendant son démarrage (jusqu'à 1,5 s), le calque encore vide bloquait les touchers ; il les laisse passer tant que la bulle n'est pas affichée.
+- Administration : en mode « Modifier les textes », la barre passait au-dessus des fenêtres et recouvrait leur bouton « Fermer » (le toucher terminait le mode textes) ; elle passe sous les fenêtres.
+- Liens « va dans … » : zone touchable d'au moins 24 px de haut (avant 20 px).
+- Double toucher : sur un bouton qui ferme une fenêtre (« Ajouter à ma séance »…), le second toucher actionnait le bouton de la page situé dessous (page Étirements ouverte à 768 px, retour à la Bibliothèque à 320 px) ; il est ignoré, un nouveau toucher passe normalement.
+- Texte « Grand » et « Très grand » (Paramètres › Affichage) : à 320 px, l'accueil, Mes séances, la Bibliothèque commune et les Mises à jour devenaient plus larges que l'écran (petits boutons au libellé long sur une seule ligne), et l'onglet « Paramètres » sortait de la barre du bas ; les petits boutons passent à la ligne avec un grand texte, et les libellés des onglets restent dans l'écran.
+- Synchronisation : la copie gardée sur l'appareil est écrite dès la fin de chaque synchronisation (avant, 0,25 s après : fermée ou rechargée juste après, l'app rouvrait sans les dernières données synchronisées jusqu'à la synchronisation suivante ; rien n'était perdu sur le serveur).
+- Base de données : une table ajoutée (captures), créée seule ; rien de supprimé.
+
+## 8.34.2 — Audit Playwright complet : défauts corrigés et petites gênes en moins
+
+Rapport complet (scénarios, résultats, défauts par gravité, limites) : [docs/AUDIT_PLAYWRIGHT_2026-10-09.md](docs/AUDIT_PLAYWRIGHT_2026-10-09.md) ; livraison : [DELIVERY_8_34_2.md](DELIVERY_8_34_2.md). Préparée sur la branche `claude/new-session-wi9olv`, **non fusionnée, non déployée**.
+
+- Données : un ressenti non donné (0) était enregistré « 1 » par le serveur, ce qui faussait la moyenne et la charge ; il reste « non donné ».
+- Saisie : la virgule décimale (« 72,5 » kg, « 32,5 » cm) était effacée sans prévenir par les champs numériques (725, 325) ; elle est comprise.
+- Fichiers : un fichier choisi pendant que la page se redessinait était perdu sans message ; l'import démarre quand même.
+- Calendrier : supprimer un rendez-vous répété supprime aussi ses exceptions ; un rendez-vous unique déplacé n'apparaît plus deux fois dans l'agenda du téléphone ; un ancien lien de rappel ouvre le calendrier.
+- Sécurité : en-têtes de sécurité sur toutes les réponses (version, changements, contenu global, icônes, agenda).
+- Accessibilité : le clavier entre dans une fenêtre ouverte et revient au bouton qui l'a ouverte ; badges non obtenus lisibles (contraste) ; petites cibles agrandies ; jours de la semaine annoncés.
+- Messages : un message reste au moins 1,8 s avant d'être remplacé (les erreurs passent tout de suite).
+- Visite guidée : plus d'erreur quand la page défile avant que la bulle soit dessinée.
+- Petites gênes : icône du calendrier dessinée (l'émoji affichait « 17 juillet ») ; une seule notification pour un nouveau compte ; « Préparer › » au lieu de « ▶ » sur une suggestion ; « ▶ Lancer maintenant » en haut d'une séance générée ; raccourcis « Décrire mon envie » et « Sport et durée » ; le menu se ferme sur la page courante ; « − » grisé à la valeur minimale ; nom de la séance en titre ; « Choisir quand même » si le matériel manque ; ressenti écrit « 3,4 ».
+- Tests : suite d'audit Playwright (`npm run test:audit`, dossier `tests/audit/`), explorateurs automatiques de chaque bouton et de chaque formulaire, mesure de couverture, et `tests/audit-fixes-2.test.mjs`.
+
 ## 8.34.1 — Corrections de l’audit du 9 octobre : sauvegardes, comptes séparés, chrono juste, accessibilité
 
-Détails, constat par constat, vérifications et limites : [DELIVERY_8_34_1.md](DELIVERY_8_34_1.md). Préparée sur la branche `claude/new-session-wi9olv`, **non fusionnée, non déployée** (ZIP remis pour relecture).
+Détails, constat par constat, vérifications et limites : [DELIVERY_8_34_1.md](DELIVERY_8_34_1.md). Préparée sur la branche `claude/new-session-wi9olv`, puis fusionnée dans `main` par la PR #25.
 
 - Sauvegarde : importée sur un autre compte, l’historique et les rendez-vous reçoivent de nouveaux identifiants, avec leurs liens (plus de refus 409) ; importer deux fois n’ajoute rien ; une séance supprimée depuis peut être récupérée, si on le choisit ; un import ne supprime jamais rien.
 - Un appareil pour plusieurs comptes : brouillon du chrono, dernier réglage du générateur, rappels, filtre des séances et sauvegarde rangés par compte ; supprimer son compte efface aussi ses photos de progrès de l’appareil ; un invité qui crée son compte garde ses photos.

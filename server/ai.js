@@ -94,7 +94,7 @@ export function cleanDraft(raw, kind) {
 
 /** Appel du fournisseur sélectionné. Lève une erreur explicite en cas d'échec. */
 export async function aiDraft(env, { kind, text, activityId, evidenceOptions }) {
-  if (!hasAI(env)) { const e = new Error('Assistant IA non activé sur ce serveur.'); e.status = 503; throw e; }
+  if (!hasAI(env)) { const e = new Error('Assistant non activé sur ce serveur.'); e.status = 503; throw e; }
   const sources = await proposalSources({ text, evidenceOptions });
   const resp = await runAI(env, { messages: buildMessages(kind, text, activityId, { sources }), max_tokens: 1200, temperature: 0.2 }, { json: true, allowClarification: true });
   const value = extractJson(resp), evidence = requireProposalEvidence(value, sources), draft = cleanDraft(value, kind);

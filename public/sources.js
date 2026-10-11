@@ -34,3 +34,40 @@ export const SOURCES = {
 };
 /** Petit lien vers les sources (affiché sous un conseil). */
 export const sourceRefs = (ids = []) => ids.filter((id) => SOURCES[id]).map((id) => ({ id, short: `${SOURCES[id].authors.split(/,| et al/)[0]} ${SOURCES[id].year}`, ...SOURCES[id] }));
+
+/* ───────── 8.35 : d'où vient chaque source (icône du site) ───────── */
+// Une petite icône par site, dessinée ici (initiales et couleur) : aucun logo ni image chargés depuis un autre site.
+const SITE = {
+  pubmed: ['PubMed', 'PM', '#20558a'], bmj: ['BMJ', 'BMJ', '#2a6ebb'], acsm: ['ACSM (Medicine & Science in Sports & Exercise)', 'MSSE', '#00539b'],
+  springer: ['Springer (Sports Medicine)', 'Sp', '#c4001a'], nsca: ['NSCA (J. Strength Cond. Res.)', 'JSCR', '#c8102e'], cochrane: ['Cochrane', 'Co', '#962d91'],
+  frontiers: ['Frontiers', 'Fr', '#d6232a'], hk: ['Human Kinetics', 'HK', '#00467f'], elsevier: ['Elsevier (ScienceDirect)', 'El', '#a85200'],
+  bmc: ['BMC (BioMed Central)', 'BMC', '#2d6a9f'], aasm: ['AASM (sommeil)', 'AASM', '#00487a'], cdnsci: ['Canadian Science Publishing', 'CSP', '#a6192e'],
+  semsch: ['Semantic Scholar', 'S2', '#1857b6'], blog: ['Blog de l’autrice (résumé de son étude)', 'Blog', '#6b6b6b'], web: ['Site de la source', '↗', '#555'],
+};
+/** Site d'une source : [nom, initiales, couleur]. D'après son adresse, puis d'après la revue pour les liens DOI. */
+export function siteOf(s = {}) {
+  let host = ''; try { host = new URL(s.url).hostname.replace(/^www\./, ''); } catch { /* lien absent */ }
+  const j = String(s.journal || '');
+  const key = host === 'pubmed.ncbi.nlm.nih.gov' ? 'pubmed' : host.endsWith('cochranelibrary.com') ? 'cochrane' : host.endsWith('frontiersin.org') ? 'frontiers'
+    : host.endsWith('humankinetics.com') ? 'hk' : host.endsWith('sciencedirect.com') ? 'elsevier' : host.endsWith('biomedcentral.com') ? 'bmc' : host === 'aasm.org' ? 'aasm'
+    : host === 'link.springer.com' ? 'springer' : host === 'journals.lww.com' ? 'acsm' : host.endsWith('semanticscholar.org') ? 'semsch' : host.endsWith('blogspot.com') ? 'blog'
+    : host === 'doi.org' ? (/BMJ|British Journal of Sports/.test(j) ? 'bmj' : /Medicine & Science in Sports/.test(j) ? 'acsm' : /Sports Medicine/.test(j) ? 'springer' : /Strength and Conditioning/.test(j) ? 'nsca'
+      : /Cochrane/.test(j) ? 'cochrane' : /Applied Physiology, Nutrition/.test(j) ? 'cdnsci' : 'web') : 'web';
+  return SITE[key];
+}
+
+/* ───────── 8.35 : sources d'un exercice ───────── */
+// La technique d'un exercice vient de la pratique d'entraînement (dit tel quel) ; les RÈGLES appliquées (séries, repos,
+// échauffement, étirements, doigts, intervalles) renvoient aux études qui les appuient. Rien n'est attribué à une étude
+// qui ne l'a pas étudié : chaque ligne dit ce que la source appuie.
+export function exerciseSources(e = {}) {
+  const acts = e.acts || [], caps = e.caps || {}, name = String(e.name || '').toLowerCase(), out = [];
+  const add = (claim, ids) => { const ok = ids.filter((id) => SOURCES[id]); if (ok.length) out.push({ claim, ids: ok }); };
+  if (e.role === 'warmup' || /échauff/.test(name)) add('Un échauffement structuré réduit le risque de blessure', ['soligard2008', 'lauersen2014']);
+  if (/étir|stretch/.test(name) || e.role === 'cool') add('Étirements : effets sur l’amplitude et la performance', ['behm2016']);
+  if ((caps.force_doigts || 0) >= 0.5) add('Travail des doigts : efficacité et précautions pour les poulies', ['medernach2015', 'schoffl2006']);
+  if (e.mode !== 'time' && acts.some((a) => ['strength', 'calisthenics', 'conditioning'].includes(a)) && e.role !== 'warmup') add('Séries, répétitions, charge et repos', ['acsm2009', 'schoenfeld2016', 'schoenfeld2017']);
+  if (acts.includes('running') && e.mode === 'time' && /fractionn|interval|30\/30|vma|seuil/.test(name)) add('Intervalles et VO2max', ['helgerud2007', 'milanovic2015']);
+  if (acts.includes('running') && /footing|endurance|facile/.test(name)) add('Beaucoup de volume à intensité facile', ['seiler2010']);
+  return out;
+}

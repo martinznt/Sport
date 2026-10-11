@@ -1,11 +1,12 @@
 import { vIntegrations } from './views-integrations.js';
-import { advancedUI, interfaceChoice } from './views-experience.js';
+import { advancedUI } from './views-experience.js';
 import { appIconsCard, notificationIconsCard } from './app-icons.js';
 import { registerPaths } from './pathlinks.js';
 import { adminSearchCard } from './admin-search.js';
 // views-settings.js — Paramètres : séance, apparence, compte, données (export / import JSON, import CSV),
 // synchronisation et diagnostic, administration (EDIT_PASSWORD vérifié par le serveur), signalement de bug.
-import { h, raw, icon, $, toast, openSheet, closeSheet, ask, seg, chip, tag, empty, fmtDateTime, fmtDay, relDate, buzzOk, skeleton, subHead, menuList } from './ui.js';
+import { h, raw, icon, $, toast, openSheet, closeSheet, ask, seg, chip, tag, empty, fmtDateTime, fmtDay, relDate, buzzOk, skeleton, subHead, menuList, whenReleased } from './ui.js';
+import { shotField, shotsOf, shotsPayload, clearShots, shotsView } from './shots.js';
 import { S, ACT, SUBMIT, CHG, INPUT, APP_VERSION, ctx, go, render, api, queue, saveSettings, syncAll, retryFailed, discardFailed, restoreConflict, pendingCount, persistNow, clearLocal, DEFAULT_SETTINGS, putItem, itemsOf, addHistory, saveEvent, ls, own, writePending, persist, bump, syncSoon, accountToken, accountMatches } from './state.js';
 import { uid, normalizeSession } from './shared.js';
 import { cleanItem, itemKey } from './items.js';
@@ -16,7 +17,7 @@ import { installCard, openSetup, showTour } from './views-setup.js';
 import { isInstalled } from './install.js';
 import { SOUND_STYLES, beep } from './sound.js';
 import { remindersCard } from './reminders.js';
-import { NEWS } from './news.js';
+import { NEWS, newsDates } from './news.js';
 import { filterBugs } from './adminlist.js';
 import { vStudio, vStudioSet, vAudit, vLab, vHealth, vMaint, vCode, vCodeItem, canRole, ROLE_L } from './views-studio.js';
 import { FAQ } from './help.js';
@@ -94,7 +95,7 @@ function vMain() {
   const rows = (list) => h`<div class="setmenu">${list.map(([k, ic, t, d, a]) => h`<button class="setrow" data-act="${a || 'setSub'}" data-id="${k}"><span class="sic" aria-hidden="true">${icon(k, ic)}</span><span class="grow"><b>${t}</b><small>${d}</small></span><span class="chev" aria-hidden="true">›</span></button>`)}</div>`;
   return h`<label class="findbox"><span aria-hidden="true">🔍</span><input type="search" data-input="setFind" placeholder="Ex. texte, rappel, mot de passe…" aria-label="Rechercher un paramètre" autocomplete="off"></label>
     <div id="setfindres" aria-live="polite"></div>
-    <div class="setmain">${interfaceChoice()}${rows(entries.filter(([k]) => common.has(k)))}${account}${isInstalled() ? '' : installCard({ force: true })}
+    <div class="setmain">${rows(entries.filter(([k]) => common.has(k)))}${account}${isInstalled() ? '' : installCard({ force: true })}
     <details class="card" id="settings-more" ${advancedUI() ? 'open' : ''}><summary>Autres options</summary>
     ${rows(entries.filter(([k]) => !common.has(k)))}
     <div class="card"><h3>🧩 Mon profil sportif</h3><p class="small muted">Pour que l’app s’adapte à toi (sports, niveau, temps, matériel, objectif).</p>
@@ -113,10 +114,10 @@ function prefs() {
 /* ═════════ Toutes les mises à jour, de la plus récente à la première ═════════ */
 function vUpdates() {
   const notes = announcements().filter((a) => a.update);
-  const list = NEWS.slice().reverse();
+  const list = NEWS.slice().reverse(), at = newsDates();
   return h`<p class="small muted">Chaque mise à jour a sa visite : elle montre, à l’écran, ce qui a changé. Idéal pour voir comment l’app a évolué.</p>
     ${notes.map((a) => h`<div class="card upd"><div class="row between"><span class="kicker">${a.emoji} Note de l’équipe</span><span class="tiny muted">${new Date(a.at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}</span></div><h3 style="margin:.2em 0">${a.title}</h3>${a.body ? h`<p class="small">${a.body}</p>` : ''}</div>`)}
-    ${list.map((n, i) => h`<div class="card upd ${i === 0 ? 'acc-b' : ''}"><div class="row between"><span class="kicker">Version ${n.v}${i === 0 ? ' · la plus récente' : ''}</span><span class="tiny muted">${new Date(n.date + 'T12:00:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}</span></div>
+    ${list.map((n, i) => h`<div class="card upd ${i === 0 ? 'acc-b' : ''}"><div class="row between"><span class="kicker">Version ${n.v}${i === 0 ? ' · la plus récente' : ''}</span><span class="tiny muted">${new Date(at[n.v]).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}</span></div>
       <h3 style="margin:.2em 0">${n.title}</h3><p class="small">${n.why}</p>
       <div class="row wrapf"><button class="btn sm ${i === 0 ? 'pri' : ''}" data-act="notifTour" data-v="${n.v}">🧭 Lancer la visite (${n.steps.length} étape${n.steps.length > 1 ? 's' : ''})</button></div>
       <details class="how mini"><summary>Ce qui a changé</summary><ul class="small">${n.steps.map((st) => h`<li><b>${st[3]}</b> : ${st[4]}</li>`)}</ul></details></div>`)}`;
@@ -494,9 +495,10 @@ function bugList() {
   const list = filterBugs(S.admin.bugs, S.admin.filter || 'open', S.admin.bugQ || '');
   if (!list.length) return h`<p class="muted small">${S.admin.bugQ ? 'Aucun signalement ne correspond.' : 'Aucun signalement.'}</p>`;
   const labels = { open: 'ouvert', in_progress: 'en cours', done: 'traité', ignored: 'ignoré / doublon' };
-  return h`<p class="tiny muted">${list.length} signalement(s)${list.some((b) => b.recent) ? ` · ${list.filter((b) => b.recent).length} récent(s)` : ''}</p>${list.map((b) => h`<div class="card flat${b.recent && b.status === 'open' ? ' acc-b' : ''}"><div class="row between"><b>${b.title}</b><span>${b.recent ? tag('nouveau', 'acc') : ''}${tag(labels[b.status] || 'ouvert', b.status === 'done' ? 'ok' : 'warn')}</span></div>
+  return h`<p class="tiny muted">${list.length} signalement(s)${list.some((b) => b.recent) ? ` · ${list.filter((b) => b.recent).length} récent(s)` : ''}</p>${list.map((b) => h`<div class="card flat${b.recent && b.status === 'open' ? ' acc-b' : ''}"><div class="row between wrapf"><b class="brk grow">${b.title}</b><span>${b.recent ? tag('nouveau', 'acc') : ''}${tag(labels[b.status] || 'ouvert', b.status === 'done' ? 'ok' : 'warn')}</span></div>
     <p class="tiny muted">par ${b.author} · ${fmtDateTime(b.createdAt)}${b.page ? ' · page : ' + b.page : ''}</p>
     ${b.description.length > 180 ? h`<details class="how mini"><summary>${b.description.slice(0, 140)}…</summary><p class="small pre">${b.description}</p></details>` : h`<p class="small pre">${b.description}</p>`}
+    ${shotsView(b.images, 'bug', b.id, `« ${b.title} » — ${b.description.split('\n— État de la page —')[0].slice(0, 400)}${b.page ? ` (page ${b.page})` : ''}`)}
     ${b.appVersion || b.userAgent ? h`<details class="how mini"><summary>Détail technique</summary><p class="tiny muted">${b.appVersion ? 'Version ' + b.appVersion : ''}${b.userAgent ? ' · ' + b.userAgent.slice(0, 200) : ''}${b.updatedAt && b.updatedAt !== b.createdAt ? ' · statut changé ' + fmtDateTime(b.updatedAt) : ''}</p></details>` : ''}
     <div class="row wrapf">${Object.entries(labels).filter(([status]) => status !== b.status).map(([status, label]) => h`<button class="btn sm" data-act="bugStatus" data-id="${b.id}" data-v="${status}">${status === 'open' ? 'Rouvrir' : status === 'done' ? 'Marquer traité' : status === 'in_progress' ? 'Prendre en cours' : 'Ignorer / doublon'}</button>`)}</div></div>`)}`;
 }
@@ -562,7 +564,7 @@ function vAdminUsers() {
 }
 ACT.usersReload = () => { S.admin.users = null; loadUsers(); };
 ACT.userSort = (el) => { S.admin.userSort = el.dataset.id; render(); };
-INPUT.userQ = (el) => { S.admin.userQ = el.value; clearTimeout(INPUT.userQ.t); INPUT.userQ.t = setTimeout(() => { render(); const i = document.querySelector('input[data-input=userQ]'); if (i) { i.focus(); i.setSelectionRange(i.value.length, i.value.length); } }, 250); };
+INPUT.userQ = (el) => { S.admin.userQ = el.value; clearTimeout(INPUT.userQ.t); INPUT.userQ.t = setTimeout(() => whenReleased(() => { render(); const i = document.querySelector('input[data-input=userQ]'); if (i) { i.focus(); i.setSelectionRange(i.value.length, i.value.length); } }), 250); };
 SUBMIT.adminOn = async (f) => {
   const token = accountToken();
   const pw = new FormData(f).get('password'); f.reset(); // la valeur saisie est effacée du formulaire immédiatement
@@ -592,7 +594,8 @@ function vBug() {
       <label>Page concernée<select name="page">${pages.map(([k, l], i) => h`<option value="${k}" ${i === 0 ? 'selected' : ''}>${l}</option>`)}</select></label>
       <label class="chk"><input type="checkbox" name="device" checked> Joindre les informations techniques de l’appareil (navigateur, version de l’application)</label>
       <label class="chk"><input type="checkbox" name="state" checked> Joindre l’état de la page (pages visitées juste avant, taille d’écran, connexion, dernières erreurs techniques ; aucune de tes données d’entraînement)</label>
-      <p class="tiny muted">Ne mets jamais de mot de passe dans un signalement. Envoyé hors ligne, il part dès le retour de la connexion.</p>
+      ${shotField('bug', { hint: 'Une capture de l’écran qui pose problème aide beaucoup : fais-la avec ton téléphone, puis choisis-la ici.' })}
+      <p class="tiny muted">Ne mets jamais de mot de passe dans un signalement. Sans capture, envoyé hors ligne, il part dès le retour de la connexion ; avec une capture, il faut être en ligne.</p>
       <button class="btn pri" type="submit">Envoyer</button></form>
     <div class="card"><h3>Mes signalements</h3>${S.myBugs ? (S.myBugs.length ? S.myBugs.map((b) => h`<div class="item"><div class="grow"><b>${b.title}</b><div class="tiny muted">${fmtDateTime(b.createdAt)}</div></div>${tag(({ done: 'traité', in_progress: 'en cours', ignored: 'ignoré / doublon' })[b.status] || 'reçu', b.status === 'done' ? 'ok' : '')}</div>`) : h`<p class="muted small">Aucun signalement envoyé.</p>`) : h`<p class="muted small">Liste disponible en ligne.</p>`}</div>`;
 }
@@ -603,11 +606,18 @@ export function pageState() {
   return [`Pages : ${routes}`, `Écran : ${innerWidth}×${innerHeight} (${devicePixelRatio || 1}x)`, `Connexion : ${navigator.onLine ? 'en ligne' : 'hors ligne'} · synchro ${S.sync || '?'}`,
     `Affichage : ${document.documentElement.dataset.mode || ''} · texte ${document.documentElement.dataset.size || 'm'}`, `Version : ${APP_VERSION}`, `Dernières erreurs :\n${errs}`].join('\n');
 }
-SUBMIT.bugSend = (f) => {
+SUBMIT.bugSend = async (f) => {
   const d = Object.fromEntries(new FormData(f));
   const description = d.state ? `${d.description}\n\n— État de la page —\n${pageState()}`.slice(0, 5000) : d.description;
-  queue('POST', '/api/bugs', { id: uid(), title: d.title, description, page: d.page, appVersion: d.device ? APP_VERSION : '', userAgent: d.device ? navigator.userAgent.slice(0, 300) : '' });
-  f.reset(); buzzOk(); toast('Signalement enregistré : il est envoyé aux administrateurs. Merci !'); setTimeout(loadMyBugs, 2500);
+  const body = { id: uid(), title: d.title, description, page: d.page, appVersion: d.device ? APP_VERSION : '', userAgent: d.device ? navigator.userAgent.slice(0, 300) : '' };
+  // Avec une capture : envoi direct (une image ne reste pas en attente sur l'appareil). Échec : le formulaire est gardé.
+  if (shotsOf('bug').length) {
+    const btn = f.querySelector('button[type=submit]'); if (btn) btn.disabled = true;
+    try { await api('POST', '/api/bugs', { ...body, images: shotsPayload('bug') }); }
+    catch (e) { if (btn) btn.disabled = false; toast(e.offline ? 'Connexion requise pour envoyer une capture : réessaie en ligne (ou retire la capture pour l’envoyer plus tard).' : e.message, 6000, 'bad'); return; }
+    clearShots('bug');
+  } else queue('POST', '/api/bugs', body);
+  f.reset(); buzzOk(); toast('Signalement enregistré : il est envoyé aux administrateurs. Merci !'); render(); setTimeout(loadMyBugs, 2500);
 };
 
 /** Nommer ou retirer un administrateur (le serveur garde toujours au moins un administrateur). */

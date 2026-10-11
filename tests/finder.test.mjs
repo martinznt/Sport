@@ -25,11 +25,9 @@ ok('dans Paramètres, seulement des réglages', () => {
   assert.ok(findIn(SETTINGS_INDEX, 'son').length > 0); assert.ok(findIn(SETTINGS_INDEX, 'son').every((r) => r.kind === 'setting'));
   assert.deepEqual(findIn(SETTINGS_INDEX, 'minuteur tabata'), []);
 });
-ok('le choix d’interface et l’accessibilité se trouvent avec leurs mots courants', () => {
-  for (const q of ['interface simple', 'interface avancée', 'mode compliqué']) {
-    const r = findIn(SETTINGS_INDEX, q)[0];
-    assert.equal(r.title, 'Interface simple ou avancée'); assert.equal(r.to, 'settings/main');
-  }
+// 8.35 : le choix simple / avancée a été retiré (une seule interface) : la recherche ne le propose plus.
+ok('plus de choix d’interface dans la recherche ; l’accessibilité se trouve avec ses mots courants', () => {
+  for (const q of ['interface simple', 'interface avancée', 'mode compliqué']) assert.ok(!findIn(SETTINGS_INDEX, q).some((r) => /Interface simple ou avancée/.test(r.title)), q);
   assert.equal(top('gros boutons', SETTINGS_INDEX), 'Gros boutons');
   assert.equal(top('lecture facile', SETTINGS_INDEX), 'Lecture facile');
   assert.equal(top('daltonisme', SETTINGS_INDEX), 'Couleurs pour daltonisme');

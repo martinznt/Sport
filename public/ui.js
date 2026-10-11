@@ -21,6 +21,9 @@ const ICONS = {
   help: 'M12 2a10 10 0 1 0 0 20 10 10 0 1 0 0-20M9 9a3 3 0 0 1 6 0c0 2-3 2-3 4M12 17h.01',
   admin: 'M12 2l8 3v6c0 5-8 11-8 11S4 16 4 11V5zM8 11l3 3 5-5',
   search: 'M10.5 3a7.5 7.5 0 1 0 0 15 7.5 7.5 0 1 0 0-15M16 16l5 5',
+  cal: 'M4 6h16v14H4zM4 10h16M8 3v5M16 3v5M8 14h2m4 0h2M8 17h2', // dessiné : l'émoji 📅 affichait « 17 juillet », en anglais
+  program: 'M4 6h16v14H4zM4 10h16M8 3v5M16 3v5M8 15l2 2 4-4',
+  timer: 'M12 9v4l3 2M12 5a8 8 0 1 0 0 16 8 8 0 1 0 0-16M9 2h6',
   all: 'M4 6h16M4 12h16M4 18h16',
   edit: 'M14 4l6 6M4 16 16 4l4 4L8 20H4z',
   easy: 'M6 3h12v18H6zM9 7h6M9 11h6M9 15h4',
@@ -30,6 +33,8 @@ const ICONS = {
 };
 /** Icônes de navigation : dessin commun et libellé porté par le bouton. */
 export const icon = (name, fallback = '') => ICONS[name] ? h`<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="${ICONS[name]}"></path></svg>` : h`${fallback}`;
+/** Petit message en italique « Pour …, va dans [rubrique] › [page] » : le chemin est un lien qui y mène directement (8.35). */
+export const goHint = (text, path, to) => h`<p class="gohint"><em>${text} <button type="button" class="linkish acc-t" data-act="pathGo" data-to="${to}">${path}</button>.</em></p>`;
 export const $ = (sel, root = document) => root.querySelector(sel);
 export const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
 
@@ -56,11 +61,50 @@ const secTxt = (a, b) => (a >= 120 ? (a === b ? fmtDur(a) : `${fmtDur(a)} à ${f
 const oneEach = (e) => e.mode !== 'time' && e.repsMax === 1 && e.repsMin === 1;
 export const exLine = (e) => `${oneEach(e) && !e.unit && e.sets === 1 ? '1 fois' : oneEach(e) && /^\d/.test(e.unit || '') ? `${e.sets} × ${e.unit}${e.perSide ? ' / côté' : ''}` : oneEach(e) && /^\S+s(?=\s|$)/.test(e.unit || '') ? `${e.sets} ${e.sets > 1 ? e.unit : e.unit.replace(/^(\S+)s(?=\s|$)/, '$1')}` : `${e.sets === 1 && (e.mode === 'time' || e.unit) ? '' : e.sets + ' × '}${e.mode === 'time' ? secTxt(e.secMin, e.secMax) : rng(e.repsMin, e.repsMax) + (e.unit ? ' ' + e.unit : '')}${e.perSide ? ' / côté' : ''}`}${e.rest ? ' · repos ' + fmtDur(e.rest) : ''}${e.load ? ' · ' + e.load : ''}`;
 
+/* ───────── Appui en cours ───────── */
+// 8.35 : un redessin différé (aperçu, liste filtrée pendant la frappe) attend que le doigt soit levé. Sinon le bouton
+// visé bougeait sous le doigt et le toucher était perdu (« Ajouter à ma séance » descendait quand l'aperçu s'allongeait).
+let pressedAt = 0, lastPress = null, shield = null;
+if (typeof addEventListener === 'function') {
+  addEventListener('pointerdown', (e) => { pressedAt = Date.now(); lastPress = { x: e.clientX, y: e.clientY, t: pressedAt, inWin: !!e.target?.closest?.('#sheet, #dialog') }; }, true);
+  const up = () => { setTimeout(() => { pressedAt = 0; }, 0); }; // après le « click » qui suit le relâchement
+  addEventListener('pointerup', up, true); addEventListener('pointercancel', up, true);
+  // 8.35 : double toucher sur un bouton qui ferme une fenêtre (« Ajouter à ma séance »…) : le second toucher tombait sur
+  // le bouton de la page situé dessous (à 768 px, « Préparer des étirements » ouvrait la page Étirements). Juste après
+  // la fermeture, le second toucher d'un double toucher (compté 2 par le navigateur) au même endroit est ignoré, une
+  // fois ; un nouveau toucher, même au même endroit, passe normalement.
+  addEventListener('click', (e) => {
+    if (!shield || Date.now() > shield.until) { shield = null; return; }
+    if (e.detail < 2 || e.target?.closest?.('#sheet.open, #dialog.open') || Math.abs(e.clientX - shield.x) > 30 || Math.abs(e.clientY - shield.y) > 30) return;
+    shield = null; e.preventDefault(); e.stopImmediatePropagation();
+  }, true);
+}
+/** Une fenêtre se ferme après un toucher dans la fenêtre : le second toucher d'un double toucher au même endroit est ignoré. */
+function guardBehind() { if (lastPress?.inWin && Date.now() - lastPress.t < 1500) shield = { x: lastPress.x, y: lastPress.y, until: Date.now() + 400 }; }
+/** Lance fn tout de suite, ou dès que l'appui en cours est terminé (3 s au plus : un appui long ne bloque rien). */
+export function whenReleased(fn) { if (!pressedAt || Date.now() - pressedAt > 3000) return fn(); setTimeout(() => whenReleased(fn), 100); }
+
 /* ───────── Messages et feuilles ───────── */
+// Un message reste au moins 1,8 s à l'écran avant d'être remplacé (sinon un « Nouveau badge » effaçait aussitôt
+// « Séances exportées… »). 8.35 : les suivants attendent leur tour dans l'ordre (3 au plus, sans doublon) ; avant,
+// seul le plus récent était gardé et un message comme « … déjà présent(s) » pouvait être perdu. Une erreur passe tout de suite.
+let toastAt = 0;
+const toastQ = [];
+function nextToast() { toast.q = 0; const x = toastQ.shift(); if (x) toast(...x); }
+/** Changement de compte : aucun message en attente de l'autre compte ne s'affiche. */
+export function clearToasts() { clearTimeout(toast.q); toast.q = 0; toastQ.length = 0; }
 export function toast(msg, ms = 2800, kind = '') {
   const t = $('#toast'); if (!t) return;
-  t.textContent = msg; t.className = 'show ' + kind;
+  const wait = t.classList.contains('show') && kind !== 'bad' ? toastAt + 1800 - Date.now() : 0;
+  if (wait > 0) {
+    if (!toastQ.some((x) => x[0] === msg) && t.textContent !== msg) toastQ.push([msg, ms, kind]);
+    if (toastQ.length > 3) toastQ.shift();
+    if (!toast.q) toast.q = setTimeout(nextToast, wait);
+    return;
+  }
+  t.textContent = msg; t.className = 'show ' + kind; toastAt = Date.now();
   clearTimeout(toast.t); toast.t = setTimeout(() => { t.className = ''; }, ms);
+  if (toastQ.length && !toast.q) toast.q = setTimeout(nextToast, 1800);
 }
 export const buzzOk = () => { try { if (navigator.vibrate && document.documentElement.dataset.haptics !== 'off') navigator.vibrate(12); } catch { /* rien */ } };
 let sheetStack = 0;
@@ -71,7 +115,7 @@ let sheetStack = 0;
 // Une fenêtre (#sheet) garde ses rubriques tant qu'elle est ouverte ; rouverte plus tard, elle repart de zéro.
 const userOpen = new Map();
 const detailText = (d) => (d.querySelector(':scope > summary')?.textContent || '').replace(/\d+/g, '#').replace(/\s+/g, ' ').trim().slice(0, 80);
-const scopeOf = (root) => (root.id === 'main' ? 'page:' + (location.hash || '#/').split('?')[0] : 'sheet:' + sheetTitle(root));
+const scopeOf = (root) => (root.id === 'main' ? 'page:' + (location.hash || '#/').split('?')[0] : root.id === 'player' ? 'player' : 'sheet:' + sheetTitle(root));
 function keyOf(root, target) {
   const seen = new Map();
   for (const d of root.querySelectorAll('details')) { const t = detailText(d), n = seen.get(t) || 0; seen.set(t, n + 1); if (d === target) return `${scopeOf(root)}|${t}|${n}`; }
@@ -80,7 +124,7 @@ function keyOf(root, target) {
 if (typeof document !== 'undefined' && typeof document.addEventListener === 'function') document.addEventListener('click', (e) => {
   const sm = e.target.closest?.('summary'), d = sm?.parentElement;
   if (!d || d.tagName !== 'DETAILS' || d.matches('.setsec,[data-free]') || sm.matches('[data-act]')) return;
-  const root = d.closest('#sheet > .panel') || d.closest('#main'); if (!root) return;
+  const root = d.closest('#sheet > .panel') || d.closest('#main') || d.closest('#player'); if (!root) return;
   // Écran redessiné entre-temps : c'est l'app qui a répondu au toucher, rien à retenir.
   setTimeout(() => { if (!d.isConnected) return; const k = keyOf(root, d); if (k) userOpen.set(k, d.open); }, 0);
 }, true);
@@ -98,20 +142,40 @@ const sheetTitle = (el) => (el?.querySelector('h2,h3')?.textContent || '').repla
 let sheetHook = null;
 /** Appelé après chaque ouverture de fenêtre (ex. liens des indications de chemin). */
 export const onSheetRender = (fn) => { sheetHook = fn; };
+// Clavier et lecteurs d'écran : le focus entre dans la fenêtre, y reste tant qu'elle est ouverte, puis revient au bouton
+// qui l'a ouverte (ou au même bouton redessiné), sans faire défiler la page.
+let returnFocus = null;
+const focusKey = (el) => (el?.dataset?.act ? `[data-act="${CSS.escape(el.dataset.act)}"]${el.dataset.id ? `[data-id="${CSS.escape(el.dataset.id)}"]` : ''}` : '');
+const rememberFocus = (box) => { const a = document.activeElement; return a && a !== document.body && !box.contains(a) ? { el: a, key: focusKey(a) } : null; };
+// Tout de suite si le bouton est encore là (le focus ne passe jamais par le haut de la page), sinon après le redessin.
+const overlayOpen = () => !!document.querySelector('#sheet.open, #dialog.open, #player.open');
+const giveBackFocus = (r) => {
+  if (!r) return;
+  if (r.el.isConnected && !overlayOpen()) r.el.focus?.({ preventScroll: true });
+  setTimeout(() => {
+    if (overlayOpen() || (r.el.isConnected && document.activeElement === r.el)) return;
+    const target = r.el.isConnected ? r.el : r.key ? document.querySelector('#app ' + r.key) : null; target?.focus?.({ preventScroll: true });
+  }, 0);
+};
+if (typeof document !== 'undefined' && typeof document.addEventListener === 'function') document.addEventListener('focusin', (e) => {
+  const s = document.getElementById('sheet'); if (!s?.classList.contains('open') || e.target.closest?.('#sheet, #dialog, #toast, #player, #itimer, #grp, #tour')) return;
+  s.querySelector('.panel')?.focus({ preventScroll: true });
+});
 export function openSheet(content, { wide = false } = {}) {
   const s = $('#sheet');
+  if (!s.classList.contains('open')) returnFocus = rememberFocus(s);
   const body = val(content), close = body.includes('data-act="closeSheet"') ? '' : '<button type="button" class="btn sm ghost" data-act="closeSheet" aria-label="Fermer la fenêtre">Fermer</button>';
   // La même fenêtre redessinée (même titre) garde sa position et ses rubriques ouvertes.
   const old = s.classList.contains('open') ? s.querySelector('.panel') : null, oldTitle = sheetTitle(old), keep = old ? { top: old.scrollTop } : null;
-  s.innerHTML = `<div class="back" data-act="closeSheet"></div><div class="panel${wide ? ' wide' : ''}" role="dialog" aria-modal="true"><div class="sheet-tools"><div class="grab" aria-hidden="true"></div>${close}</div>${body}</div>`;
+  s.innerHTML = `<div class="back" data-act="closeSheet"></div><div class="panel${wide ? ' wide' : ''}" role="dialog" aria-modal="true" tabindex="-1"><div class="sheet-tools"><div class="grab" aria-hidden="true"></div>${close}</div>${body}</div>`;
   const panel = s.querySelector('.panel');
   try { sheetHook?.(panel); } catch { /* un lien de moins, jamais une fenêtre cassée */ }
   restoreUserDetails(panel);
   if (keep && oldTitle && sheetTitle(panel) === oldTitle) panel.scrollTop = keep.top;
-  s.classList.add('open'); sheetStack++;
-  setTimeout(() => { const f = s.querySelector('[autofocus]'); if (f) f.focus(); }, 30);
+  s.classList.toggle('redraw', !!old); s.classList.add('open'); sheetStack++; // redessinée : pas d'animation (sinon elle clignote à chaque choix)
+  setTimeout(() => { if (!s.classList.contains('open')) return; const f = s.querySelector('[autofocus]'); if (f) f.focus(); else if (!s.contains(document.activeElement)) s.querySelector('.panel')?.focus({ preventScroll: true }); }, 30);
 }
-export function closeSheet() { const s = $('#sheet'); s.classList.remove('open'); s.innerHTML = ''; sheetStack = 0; for (const k of [...userOpen.keys()]) if (k.startsWith('sheet:')) userOpen.delete(k); }
+export function closeSheet() { const s = $('#sheet'), wasOpen = s.classList.contains('open'); s.classList.remove('open'); s.innerHTML = ''; if (wasOpen) { giveBackFocus(returnFocus); returnFocus = null; guardBehind(); } sheetStack = 0; for (const k of [...userOpen.keys()]) if (k.startsWith('sheet:')) userOpen.delete(k); }
 export const sheetOpen = () => $('#sheet')?.classList.contains('open');
 
 /** Confirmation dans une feuille (testable, accessible). Résout true / false. */
@@ -124,7 +188,7 @@ export function askText(message, { value = '', placeholder = '', ok = 'Valider',
       <div class="row wrapf end"><button class="btn" data-dlg="0">${cancel}</button><button class="btn pri" data-dlg="1">${ok}</button></div></div>`.s;
     d.classList.add('open');
     const input = d.querySelector('#dlg-in');
-    const done = (v) => { const t = v ? String(input.value || '').trim() : null; d.classList.remove('open'); d.innerHTML = ''; d.removeEventListener('click', onClick); resolve(t); };
+    const done = (v) => { const t = v ? String(input.value || '').trim() : null; guardBehind(); d.classList.remove('open'); d.innerHTML = ''; d.removeEventListener('click', onClick); resolve(t); };
     const onClick = (e) => { const b = e.target.closest('[data-dlg]'); if (b) done(b.dataset.dlg === '1'); else if (e.target.classList.contains('back')) done(false); };
     d.addEventListener('click', onClick);
     input.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); done(true); } else if (e.key === 'Escape') done(false); });
@@ -133,11 +197,11 @@ export function askText(message, { value = '', placeholder = '', ok = 'Valider',
 }
 export function ask(message, { ok = 'Confirmer', cancel = 'Annuler', danger = false, detail = '' } = {}) {
   return new Promise((resolve) => {
-    const d = $('#dialog');
+    const d = $('#dialog'), back = rememberFocus(d);
     d.innerHTML = h`<div class="back"></div><div class="panel" role="alertdialog" aria-modal="true" aria-labelledby="dlg-t"><h2 id="dlg-t" style="margin:0">${message}</h2>${detail ? h`<p class="muted small">${detail}</p>` : ''}
       <div class="row wrapf end"><button class="btn" data-dlg="0">${cancel}</button><button class="btn ${danger ? 'danger' : 'pri'}" data-dlg="1" autofocus>${ok}</button></div></div>`.s;
     d.classList.add('open');
-    const done = (v) => { d.classList.remove('open'); d.innerHTML = ''; d.removeEventListener('click', onClick); resolve(v); };
+    const done = (v) => { guardBehind(); d.classList.remove('open'); d.innerHTML = ''; d.removeEventListener('click', onClick); resolve(v); if (back && back.el.isConnected) setTimeout(() => { if (!document.querySelector('#dialog.open')) back.el.focus?.({ preventScroll: true }); }, 0); };
     const onClick = (e) => { const b = e.target.closest('[data-dlg]'); if (b) done(b.dataset.dlg === '1'); else if (e.target.classList.contains('back')) done(false); };
     d.addEventListener('click', onClick);
     setTimeout(() => d.querySelector('[autofocus]')?.focus(), 20);

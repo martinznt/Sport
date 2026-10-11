@@ -131,3 +131,74 @@ export function localChatSources({ profile = '', appMap = '' } = {}) {
   if (summary) sources.push({ id: 'profile', label: 'Résumé de ton profil partagé', kind: 'profile', excerpt: summary });
   return sources;
 }
+
+/* ═════════ 8.35 : « Voir le passage » — la phrase exacte d'une source, lue dans son vrai résumé PubMed ═════════ */
+// Les mots ci-dessous servent seulement à REPÉRER la phrase qui porte l'information dans le résumé : la phrase renvoyée
+// est toujours recopiée du résumé lu sur PubMed (jamais écrite ici). Rien trouvé : le lien ouvre le résumé de l'article.
+const PASSAGE_TERMS = {
+  who2020: ['150', '300 minutes', 'moderate', 'aerobic'], acsm2009: ['progression', 'repetitions', 'sets', 'load'],
+  grgic2018: ['frequency', 'volume', 'strength gains'], schoenfeld2016: ['rest', '3 min', 'strength', 'hypertrophy'],
+  helgerud2007: ['high-intensity', 'intervals', 'vo2max'], milanovic2015: ['vo2max', 'hit', 'continuous'],
+  tabata1996: ['anaerobic capacity', 'vo2max', 'intermittent'], seiler2010: ['80%', 'low intensity', 'distribution'],
+  stoggl2014: ['polarized', 'vo2peak', 'greater'], lopez2012: ['grip', 'edge', 'endurance'],
+  medernach2015: ['fingerboard', 'grip', 'endurance', 'strength'], saul2019: ['determinants', 'success', 'climbing'],
+  schoffl2006: ['pulley', 'injur', 'climbers'], soligard2008: ['warm-up', 'injur', 'reduc'],
+  lauersen2014: ['strength training', 'reduced', 'injur'], behm2016: ['stretch', 'range of motion', 'performance'],
+  sherrington2019: ['falls', 'exercise', 'reduc'], schoenfeld2017: ['dose-response', 'sets', 'weekly', 'muscle'],
+  vispute2011: ['abdominal', 'fat', 'not'], bosquet2007: ['taper', 'volume', 'performance'],
+  issurin2010: ['block', 'periodization'], vickers2016: ['race', 'prediction', 'time'],
+  lesuer1997: ['prediction', '1-rm', 'equations'], gabbett2016: ['workload', 'injur', 'training'],
+  halson2014: ['load', 'fatigue', 'monitoring'], morton2018: ['protein', 'g/kg', 'fat-free'],
+  watson2015: ['7 or more hours', 'sleep'], sawka2007: ['dehydration', '2%', 'performance'],
+  donnelly2009: ['150', 'weight', 'minutes'],
+};
+const PMID_OF = Object.fromEntries(CATALOG.map((entry) => [entry.id, entry.pmid]));
+/** Phrases d'un résumé (étiquettes « Results: » retirées). */
+export function abstractSentences(excerpt) {
+  return String(excerpt || '').split('\n').map((part) => part.replace(/^[A-Z][A-Za-z /&-]{2,40}:\s+/, '')).join(' ')
+    .split(/(?<=[.!?])\s+(?=[A-Z0-9(])/).map((s) => s.trim()).filter((s) => s.length >= 25 && s.length <= 600);
+}
+/** La phrase qui contient le plus de mots repères (null si aucune). */
+export function bestSentence(sentences, terms = []) {
+  let best = null, top = 0;
+  for (const s of sentences) {
+    const low = s.toLowerCase(), score = terms.reduce((n, t) => n + (low.includes(t.toLowerCase()) ? 1 : 0), 0);
+    if (score > top) { best = s; top = score; }
+  }
+  return best;
+}
+/** Fragment de texte (#:~:text=) : le navigateur fait défiler jusqu'à la phrase et la surligne. */
+export function textFragment(sentence) {
+  const enc = (s) => encodeURIComponent(s).replace(/-/g, '%2D').replace(/,/g, '%2C').replace(/&/g, '%26');
+  const w = String(sentence || '').replace(/\s+/g, ' ').trim().replace(/[.!?]+$/, '').split(' ');
+  if (!w[0]) return '';
+  return '#:~:text=' + (w.length <= 12 ? enc(w.join(' ')) : enc(w.slice(0, 6).join(' ')) + ',' + enc(w.slice(-6).join(' ')));
+}
+async function fetchText(url, { fetcher, timeoutMs }) {
+  const controller = new AbortController(); let timer;
+  try {
+    return await Promise.race([(async () => { const r = await fetcher(url, { signal: controller.signal, redirect: 'error' }); return r?.ok ? boundedText(r) : null; })(),
+      new Promise((_, reject) => { timer = setTimeout(() => { controller.abort(); reject(new Error('Source timeout')); }, timeoutMs); })]);
+  } catch { return null; } finally { clearTimeout(timer); controller.abort(); }
+}
+/** Trouve la fiche PubMed d'une source du catalogue (identifiant connu, sinon recherche par titre exact vérifié). */
+async function pmidFor(id, opts) {
+  if (PMID_OF[id]) return PMID_OF[id];
+  const source = SOURCES[id]; if (!source) return null;
+  const xml = await fetchText('https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=pubmed&retmax=3&term=' + encodeURIComponent(source.title.replace(/[()[\]:]/g, ' ') + '[ti]'), opts);
+  return [...String(xml || '').matchAll(/<Id>(\d{1,10})<\/Id>/g)].map((m) => m[1])[0] || null;
+}
+/**
+ * Passage d'une source : { pmid, passage, url } lu sur PubMed (le titre doit correspondre), ou null.
+ * url mène à la phrase (fragment de texte) ou, à défaut, au résumé de l'article.
+ */
+export async function sourcePassage(id, { fetcher = globalThis.fetch, timeoutMs = 5000 } = {}) {
+  const source = SOURCES[id]; if (!source) return null;
+  const opts = { fetcher, timeoutMs: Math.min(5000, Math.max(1, Number(timeoutMs) || 5000)) };
+  const pmid = await pmidFor(id, opts); if (!pmid) return null;
+  const xml = await fetchText('https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pubmed&id=' + pmid + '&retmode=xml', opts);
+  const article = xml ? articleExcerpt(xml, { pmid, source }) : null; if (!article) return null;
+  const passage = bestSentence(abstractSentences(article.excerpt), PASSAGE_TERMS[id] || []);
+  const page = `https://pubmed.ncbi.nlm.nih.gov/${pmid}/`;
+  return { pmid, passage: passage || '', url: page + (passage ? textFragment(passage) : '#abstract') };
+}

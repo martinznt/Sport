@@ -54,7 +54,7 @@ ACT.wishStart = (el) => { const p = item('project', el.dataset.id); if (!p) retu
 ACT.compOpen = () => { S.comp ||= { n: 5, res: Array.from({ length: 8 }, () => ({ top: 0, zone: 0 })) }; compSheet(); };
 function compSheet() {
   const q = S.comp, list = q.res.slice(0, q.n), sc = compScore(list);
-  const step = (i, k) => h`<div class="stepper sm"><button type="button" data-act="compAdj" data-i="${i}" data-k="${k}" data-d="-1" aria-label="Moins">−</button><b>${list[i][k] || '—'}</b><button type="button" data-act="compAdj" data-i="${i}" data-k="${k}" data-d="1" aria-label="Plus">+</button></div>`;
+  const step = (i, k) => h`<div class="stepper sm"><button type="button" data-act="compAdj" data-i="${i}" data-k="${k}" data-d="-1" aria-label="Moins" ${list[i][k] ? '' : 'disabled'}>−</button><b>${list[i][k] || '—'}</b><button type="button" data-act="compAdj" data-i="${i}" data-k="${k}" data-d="1" aria-label="Plus">+</button></div>`;
   openSheet(h`<div class="stack"><h2 style="margin:0">🏆 Mode compétition</h2>
     <p class="tiny muted">Pour chaque bloc : le nombre d’essais pour faire le top et pour atteindre la zone (vide = pas atteint). Le score se lit « tops T zones Z essais tops essais zones ».</p>
     <div class="chips">${[4, 5, 6, 8].map((n) => chip(q.n === n, `${n} blocs`, `data-act="compN" data-id="${n}"`))}</div>
@@ -240,7 +240,7 @@ ACT.importOpen = (el) => {
   <label class="btn pri filebtn">Choisir un fichier<input type="file" accept=".gpx,.tcx,application/gpx+xml,application/vnd.garmin.tcx+xml,text/xml,application/xml" data-change="importFile" class="hidden" ${st.reading ? 'disabled' : ''}></label>
   <p id="track-import-status" class="tiny ${st.error ? 'bad-t' : 'muted'}" role="status">${st.reading ? 'Lecture du fichier…' : st.error}</p>
   ${t ? h`<div class="card flat stack tight"><b>${t.name || 'Activité'} · ${new Date(t.start).toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' })}</b><span class="small">${fmtTime(t.durationSec)} · ${t.distanceKm == null ? 'Distance non renseignée' : `${fr(t.distanceKm)} km`}${t.pace ? ` · ${t.pace}` : ''} · ${t.gain == null ? 'Dénivelé non renseigné' : `D+ ${t.gain} m`}${t.hrAvg ? ` · FC moy. ${t.hrAvg}` : ''}</span>${duplicate ? h`<p class="small muted">Ce fichier est déjà dans ton historique.</p>` : ''}</div>${duplicate ? '' : h`<button class="btn pri" data-act="importSave">Ajouter à mon historique</button>`}` : ''}
-  <p class="tiny muted">Le fichier est lu sur ton appareil ; seul son résumé est gardé. Cet import reste privé et n’est pas transmis à l’IA.</p></div>`);
+  <p class="tiny muted">Le fichier est lu sur ton appareil ; seul son résumé est gardé. Cet import reste privé et n’est jamais envoyé à l’assistant.</p></div>`);
 };
 CHG.importSource = (el) => { const st = importState(); st.source = el.value === 'strava' ? 'strava' : 'file'; if (S.imp && accountMatches(S.imp.owner)) S.imp.source = st.source; };
 CHG.importFile = async (el) => {

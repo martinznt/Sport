@@ -59,7 +59,7 @@ export function placeObjective(phasesIn, objIn) {
     const at = obj.when === 'start' ? firstWork : obj.when === 'end' ? lastWork : Math.min(lastWork, firstWork + Math.ceil(work / 2));
     rest.splice(at, 0, p);
     phases.splice(0, phases.length, ...rest);
-  } else if (p.locks?.order === 'user') notes.push('Ordre verrouillé : la phase de l’objectif reste à sa place.');
+  } else if (p.locks?.order === 'user') notes.push('Ordre choisi par toi : la phase de l’objectif reste à sa place.');
   const index = phases.indexOf(p);
   return { phases: phases.map((x, i) => normalizePhase(x, i)), index, notes };
 }
@@ -72,8 +72,9 @@ export const LINKS = {
 /** Maillons utiles pour une phase (une pause n'a ni objectif ni réglages de type). */
 export function chainFor(p) {
   if (p.type === 'pause') return ['type', 'intensite', 'lieu'];
-  if (['warmup', 'cool'].includes(p.type)) return ['type', 'intensite', 'lieu', 'contraintes', 'verrous'];
-  return Object.keys(LINKS);
+  // 8.35 : plus de rubrique « Ce que l'app décide » (verrous retirés : ce que tu changes est gardé, « ✏️ modifié par toi »).
+  if (['warmup', 'cool'].includes(p.type)) return ['type', 'intensite', 'lieu', 'contraintes'];
+  return Object.keys(LINKS).filter((k) => k !== 'verrous');
 }
 /** Réglages « du type » proposés (filtres contextuels + réglages propres : escalade, structures de sport). */
 export function paramsFor(p) {

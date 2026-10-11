@@ -23,8 +23,8 @@ ok('« et si » : intensité, ajout de phase, lieu ; un verrou bloque le changem
   assert.ok(simulate(S(), { type: 'intensity', id: 'b', value: 'mod' }).changes.some((x) => /Charge estimée/.test(x)));
   const add = simulate(S(), { type: 'add', at: 1, phase: { type: 'main', role: 'technique', minutes: 15 } }); assert.equal(add.phases.length, 6);
   const ph = S(); ph[1].locks = { ...ph[1].locks, minutes: 'user' };
-  assert.match(simulate(ph, { type: 'minutes', id: 'b', delta: -10 }).blocked, /verrouillée/);
-  assert.match(applyChange(ph, { type: 'remove', id: 'b' }).blocked, /verrouillés/);
+  assert.match(simulate(ph, { type: 'minutes', id: 'b', delta: -10 }).blocked, /réglée par toi/);
+  assert.match(applyChange(ph, { type: 'remove', id: 'b' }).blocked, /réglages faits par toi/);
   const envs = [{ id: 'x', name: 'Salle X', equipment: ['wall'] }];
   assert.ok(simulate(S(), { type: 'place', id: 'v', envId: 'x', travelMin: 20 }, { envs }).changes.some((c) => /Déplacements : 0 → 20/.test(c)));
 });

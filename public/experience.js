@@ -30,7 +30,8 @@ export function coachProfile(c) {
   return parts.join('\n').slice(0, 3000);
 }
 import { estimatedFormats } from './knowledge.js';
-export const interfaceMode = (settings) => settings?.interfaceMode === 'advanced' ? 'advanced' : 'simple';
+// 8.35 : une seule interface, la simple (le choix « Avancée » a été retiré ; un ancien réglage est sans effet).
+export const interfaceMode = () => 'simple';
 export function parseInterfaceRequest(input) {
   const s = String(input).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
   if (!/interface|affichage|mode/.test(s)) return null;
