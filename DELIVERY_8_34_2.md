@@ -20,7 +20,11 @@ Rien ne change dans la base de données (pas de migration), ni dans les variable
 
 ## Vérifications faites
 
-⟦VERIFICATIONS⟧
+La 8.34.2 n’a pas été livrée seule : la 8.35.0, préparée ensuite sur la même branche, la contient. **Les vérifications finales ont été faites sur la 8.35.0** ; leurs résultats exacts sont dans [DELIVERY_8_35.md](DELIVERY_8_35.md) et dans la section 3 du [rapport d’audit](docs/AUDIT_PLAYWRIGHT_2026-10-09.md).
+
+Ce qui avait été constaté sur la 8.34.2 elle-même, sans le cacher :
+- Le dernier passage complet de l’audit sur la 8.34.2 (6 profils d’écran + API, 566 tests, 31 min) avait laissé **16 échecs** : titre d’une séance au nom très long qui élargissait la page (A29, S06), focus pas rendu au bouton après Échap (AX02), zones à ménager (P03), duplication (S03), pages d’administration recouvertes. Repris dans la 8.35.0 : A29 et S06 corrigés (V08, cause trouvée : titre dans une rangée flexible), AX02 corrigé (focus rendu tout de suite), pages d’administration corrigées (V09, bandeau des nouveautés pour un compte neuf). P03 et S03 passent depuis, **sans que leur cause exacte ait été isolée** (échec d’un clic au bout de 8 s ; probablement lié à l’élargissement de la page en émulation mobile, non prouvé) : voir la section 3 du rapport pour le passage final.
+- Deux défauts de l’outil d’audit, découverts ensuite, rendaient ce passage moins sûr qu’annoncé : le contrôle de débordement ne voyait pas les débordements en émulation mobile, et l’explorateur « chaque bouton » échouait depuis le commit `a3d6cc7`. Les deux sont corrigés dans l’outil.
 
 ## Ce qui n’a pas pu être vérifié ici
 

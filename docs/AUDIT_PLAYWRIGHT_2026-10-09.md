@@ -88,6 +88,36 @@ Aucun trouvé. En particulier, aucune fuite entre comptes (IDOR), aucun secret d
 
 - Le premier correctif du clavier (M4) gardait le code avec `typeof document !== 'undefined'` : les tests unitaires qui simulent un `document` incomplet plantaient, et **`npm test` s’arrêtait à `player.test.mjs`** (les scripts suivants n’étaient pas exécutés). Ce défaut était poussé sur la branche (commit `9b74552`), jamais déployé. Corrigé dans `a3d6cc7` ; `npm test` refait en entier : 106 scripts, sortie 0.
 
+### Vérification de la 8.35.0 (10 et 11 octobre) : défauts trouvés et corrigés
+
+La 8.35.0 (demandes : phases, étirements, sources, captures, objectifs, interface unique…) a été vérifiée par les 25 scripts de bout en bout, les tests unitaires et 10 nouveaux scénarios d’audit (`tests/audit/nouveautes.spec.mjs`, NV01 à NV10). Le retrait de l’interface avancée, demandé, a caché des éléments qui n’existaient que dans l’ancien accueil « avancé » : les tests de bout en bout, écrits pour l’interface avancée, l’ont révélé. Chaque défaut est corrigé dans le site ; le test qui l’a montré passe après la correction.
+
+| N° | Gravité | Défaut | Reproduire | Attendu → Observé | Preuve |
+|---|---|---|---|---|---|
+| V01 | majeur | « Mes phases » absent de l’accueil du Profil | Profil (accueil de l’onglet) | « 🧩 Mes phases » → absent (seulement par un lien indirect du créateur) | NV01, `e2e.mjs` |
+| V02 | majeur | Programme en cours absent de l’accueil | Planning › Créer un programme (séance aujourd’hui) ; enregistrer | La carte du programme et « ▶ C’est parti » sur l’accueil → rien (seulement dans le calendrier) | `e2e.mjs` (programme) |
+| V03 | majeur | Un choix fait à la main dans une phase restait grisé | Créer une séance › Ta structure › une phase › changer le sport (ou le lieu, ou ses objectifs) | Toujours modifiable → liste grisée, impossible de revenir sur son choix | NV10, `objectives-phases-e2e` |
+| V04 | majeur | « ＋ » sur une de ses phases refusé sur une séance courte | Séance de 30 min proposée ; « ✏️ Modifier encore » ; ＋ sur sa phase « Spray wall » | Phase ajoutée → « Ce moment ne tient pas… Déverrouille ou allonge un bloc » (les verrous n’existent plus) | NV01, `routines.test.mjs` |
+| V05 | mineur | « Ajouter un échauffement » impossible quand toutes les durées sont réglées par la personne | Régler soi-même chaque durée ; Améliorations › Appliquer | Appliqué (séance allongée, dit sur la carte) → « Suggestion impossible à appliquer » | `e2e.mjs` (V1), `phaseplan.test.mjs` |
+| V06 | mineur | « 🔎 Analyser avec l’assistant » ouvrait un message vide | Administration › Signalements › capture › Analyser (assistant pas encore ouvert dans la session) | Demande préparée → champ vide | NV06 |
+| V07 | mineur | « Qui reçoit ta demande ? » restait faux | Ouvrir le coach, déplier « Qui reçoit ta demande ? » | « transmis à Google » (ou Cloudflare) → « pas encore connu » | `assistant-ui-e2e` |
+| V08 | mineur | Un nom de séance avec un long mot sans espace élargissait la page | Nom « <img src=x onerror=…> » à 390 px | Page de 390 px → 478 px (titre dans une rangée flexible) | A29, S06 (échouaient avant, passent après) |
+| V09 | mineur | Un compte tout neuf voyait « N mises à jour depuis ta dernière visite » | Créer un compte, recharger la page | Rien → bandeau et visite de rattrapage de toutes les versions | « toutes les pages — admin » (boutons recouverts par le bandeau) |
+| V10 | mineur | Deux messages coup sur coup : le premier pouvait être perdu | Importer deux fois le même CSV rapidement | « … déjà présent(s) (pas de doublon) » → jamais affiché | `e2e.mjs` (import CSV) |
+| V11 | mineur | « Plus de détails sur ma séance » se refermait à chaque choix | Fin de séance › Plus de détails › toucher un muscle | Reste ouvert → refermé | `e2e.mjs` (questionnaire) |
+| V12 | mineur | Carte « ✓ Séance enregistrée » (ce qui change pour la suite) absente | Terminer et enregistrer une séance | Carte sur l’accueil → absente | `e2e.mjs` |
+| V13 | mineur | « Petite question » du profil absente de l’accueil | Profil incomplet, ouvrir l’accueil | Question en un toucher → absente | `e2e.mjs` |
+| V14 | mineur | Chrono sans raccourci sur l’accueil | Accueil | « ⏱ Chrono » → seulement dans ☰ Menu | `e2e.mjs` (chrono) |
+| V15 | mineur | « ✍️ Avec tes mots » absent du créateur | Créer une séance sans cocher « Mes objectifs » | Champ à l’étape 1 → nulle part | `goal-profile-e2e` |
+| V16 | mineur | Bouton « ＋ Préparer des étirements pour cette séance » plus large que l’écran | Page d’une séance à 320 px | Passe à la ligne → barre de défilement horizontale | `free-session-e2e` |
+| V17 | mineur | Liens « va dans … » trop petits pour un doigt | Progrès › Résumé | ≥ 24 px de haut → 20 px | AX04 |
+| V18 | gêne | Rubrique vide « 8 · Ce que l’app décide » et messages « verrouillé » | Panneau d’une phase | Plus de verrous → rubrique vide, messages sur des réglages « verrouillés » | `v2chain.test.mjs`, `e2e.mjs` |
+| V19 | durcissement | Lien « Voir le passage » affiché sans vérifier son protocole | (le serveur est seul à le fournir) | Seuls https et http → aucun contrôle côté page | NV05 |
+
+Défauts de l’outil de test (corrigés dans l’outil, jamais dans le site) :
+- **Contrôle de débordement aveugle en émulation mobile.** Chromium élargit la fenêtre à la taille du contenu (`innerWidth` = 478 pour un écran de 390) : « largeur de la page ≤ largeur de la fenêtre » restait vrai même quand la page débordait. Les contrôles comparent maintenant à la vraie largeur de l’écran. Conséquence : **les contrôles de débordement des profils mobiles de l’audit 8.34.2 étaient moins sûrs qu’annoncé** ; V08 en est la preuve.
+- **Explorateur des boutons cassé depuis le commit `a3d6cc7`** (mise en commun de l’explorateur) : une variable n’était plus transmise et chaque test « chaque bouton » échouait à la fin, après tous ses clics. Les chiffres « 2 583 clics » de la section 1 viennent d’exécutions antérieures à ce commit. Corrigé ; voir la section 3 pour le passage final.
+
 ## 5. Étapes exactes de reproduction
 
 Elles sont dans les tableaux de la section 4. Chaque défaut a aussi son test automatique ; ces tests ont été vus en échec sur le code d’avant la correction, au moment où ils ont été écrits. Pour les rejouer sur la 8.34.1 (commande indicative, non rejouée après coup) :

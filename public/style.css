@@ -786,7 +786,7 @@ button.item.rowpick:last-child{border-bottom:0}
 #sheet .panel:focus{outline:none}
 
 /* 8.35 : messages « va dans … » cliquables, choix du créateur, actions sous les phases */
-.gohint{font-size:.86rem;color:var(--muted);margin:.25em 0;line-height:1.4}.gohint em{font-style:italic}.gohint .linkish{display:inline;font-style:italic;text-align:left;min-height:0;padding:0 0 1px;text-decoration:underline;text-underline-offset:2px}
+.gohint{font-size:.86rem;color:var(--muted);margin:.25em 0;line-height:1.4}.gohint em{font-style:italic}.gohint .linkish{display:inline;font-style:italic;text-align:left;min-height:0;padding:3px 0 4px;text-decoration:underline;text-underline-offset:2px}/* zone touchable d'au moins 24 px de haut, sans changer la ligne */
 .choosebar{display:grid;gap:6px;margin-top:10px;padding-top:10px;border-top:1px dashed var(--line)}.choosebar .chips{gap:6px}
 .chkrow{cursor:pointer}.chkrow input[type=checkbox]{width:22px;height:22px;flex:0 0 auto}
 .phacts{margin-top:4px}.phacts .btn{font-size:.8rem}.exdrop{margin-right:4px;min-width:28px;min-height:28px;padding:0 6px}
