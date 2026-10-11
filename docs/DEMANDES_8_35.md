@@ -84,8 +84,16 @@ Le retrait de l'interface avancée (ta demande) avait caché des éléments qui 
 | La « Petite question » du profil | Accueil |
 | Le chrono | Accueil › Créer ma séance › « ⏱ Chrono » (et ☰ Menu) |
 | « ✍️ Avec tes mots » dans le créateur sans « Mes objectifs » coché | Créer une séance, étape 1 |
+| Les chiffres détaillés de Progrès (séances, minutes, séries sur 7, 30, 90 jours, charge, régularité) | Progrès › Résumé › « 📊 Voir tous mes chiffres » |
 
 Autres défauts corrigés au passage : un choix fait à la main dans une phase (sport, lieu, objectifs) restait grisé ; « ＋ » sur une de tes phases et « Ajouter un échauffement » échouaient quand toutes les durées étaient réglées par toi (la séance s'allonge maintenant, et c'est dit) ; « Qui reçoit ta demande ? » restait sur « pas encore connu » ; « 🔎 Analyser avec l'assistant » ouvrait un message vide ; « Plus de détails sur ma séance » se refermait à chaque choix ; un message pouvait en effacer un autre avant d'être lu ; les messages parlaient encore de réglages « verrouillés ».
+
+L'audit complet (6 écrans simulés) a ensuite trouvé, et ces défauts sont corrigés :
+- Bibliothèque › Exercices : après « Copier dans mes exercices », toute l'app devenait plus large que l'écran jusqu'à 390 px (onglets et fenêtres coupés à droite) ; les boutons de la ligne passent sous le nom.
+- Messages d'erreur trop pâles (contraste 3,6:1, sous le minimum de 4,5:1) : rouge plus foncé, 6:1.
+- « Ajouter à ma séance » (✍️ Écrire des exercices) : un toucher juste après la frappe pouvait être perdu ; corrigé.
+- Visite guidée : le calque vide du démarrage bloquait les touchers ; corrigé.
+- Mode « Modifier les textes » (administrateurs) : la barre recouvrait le bouton « Fermer » des grandes fenêtres ; corrigé.
 
 ## Toujours valables
 

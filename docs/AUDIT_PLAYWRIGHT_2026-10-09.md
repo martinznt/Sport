@@ -1,6 +1,6 @@
-# Audit Playwright complet — Séances entraînement (9 et 10 octobre 2026)
+# Audit Playwright complet — Séances entraînement (9 au 11 octobre 2026)
 
-Version auditée : 8.34.1 (`main`, `b331d11`), puis la branche `claude/new-session-wi9olv` jusqu’à la 8.34.2.
+Version auditée : 8.34.1 (`main`, `b331d11`), puis la branche `claude/new-session-wi9olv` jusqu’à la 8.34.2. La 8.35.0 a ensuite été vérifiée avec la même suite, complétée (10 et 11 octobre) : voir « Vérification de la 8.35.0 » (section 4) et les sections 2 et 3.
 Tout a été exécuté dans le conteneur de travail, sur un serveur local qui fait tourner le vrai `worker.js` avec une base D1 simulée (`node:sqlite`) et sert `public/` comme Cloudflare. **Le site en ligne (https://seances-sport.pages.dev/) n’a pas été testé** : aucune donnée réelle n’a été touchée.
 
 Les consignes ont été suivies : aucun test supprimé ni affaibli pour passer, aucun échec masqué, chaque modification fonctionnelle est listée (section 4 et `CHANGELOG.md`), rien n’est déclaré testé sans avoir été exécuté. Quand un test échouait à cause de l’outil de test lui-même et non du site, c’est dit explicitement (section 7).
@@ -12,9 +12,9 @@ Les consignes ont été suivies : aucun test supprimé ni affaibli pour passer, 
 | Fichier (`tests/audit/`) | Scénarios | Ce qui est vérifié |
 |---|---:|---|
 | `reprise.spec.mjs` | 41 | Reprise A01–A41 des parcours de la suite existante (création, lecteur, agenda, sauvegarde, hors ligne, admin…) |
-| `pages.spec.mjs` | 5 | Chaque page (49 membres, 16 admin, adresses inexistantes) × membre/admin × interface simple/avancée : 65 étapes par combinaison ; écran d’erreur, défilement horizontal, éléments hors écran ou recouverts, contrôles sans nom, états ARIA, identifiants en double, texte cassé ; plus un auto-contrôle du vérificateur (défauts injectés) |
-| `boutons.spec.mjs` | 6 | Explorateur « chaque bouton » : chaque bouton de chaque page puis de chaque fenêtre ouverte (2 583 clics) |
-| `formulaires.spec.mjs` | 6 | Explorateur « chaque formulaire » : chaque formulaire rempli et envoyé, chaque liste ou champ « changement » modifié (156 essais) |
+| `pages.spec.mjs` | 3 | Chaque page (49 membres, 16 admin, adresses inexistantes) × membre/admin, interface unique depuis la 8.35 (avant : 5 scénarios, interfaces simple et avancée) : 65 étapes par combinaison ; écran d’erreur, défilement horizontal, éléments hors écran ou recouverts, contrôles sans nom, états ARIA, identifiants en double, texte cassé ; plus un auto-contrôle du vérificateur (défauts injectés) |
+| `boutons.spec.mjs` | 6 | Explorateur « chaque bouton » : chaque bouton de chaque page puis de chaque fenêtre ouverte ; depuis la 8.35, signale aussi tout clic qui rend la page plus large que l’écran (nombre de clics : section 3) |
+| `formulaires.spec.mjs` | 6 | Explorateur « chaque formulaire » : chaque formulaire rempli et envoyé, chaque liste ou champ « changement » modifié |
 | `seances.spec.mjs` | 9 | Créer (guidée, à sa façon), modifier, dupliquer, archiver, supprimer, texte collé, recherche, données inhabituelles, séparation des comptes |
 | `agenda.spec.mjs` | 5 | Rendez-vous unique et répété, exception, suppression d’une série, lien d’abonnement, agenda du téléphone (iCal) |
 | `stats.spec.mjs` | 3 | Chiffres 7 / 30 / 90 jours recalculés à la main, ressenti moyen, charge |
@@ -23,11 +23,12 @@ Les consignes ont été suivies : aucun test supprimé ni affaibli pour passer, 
 | `compte.spec.mjs` | 6 | Inscription, connexion, déconnexion et retour arrière, changement de mot de passe, apparence suivie, signalement, aide |
 | `ia.spec.mjs` | 5 | IA simulée : réponse valide, réponse piégée (HTML, actions), non-JSON, panne, objectif refusé |
 | `admin.spec.mjs` | 5 | Activation (mot de passe jamais gardé), signalement piégé, e-mail masqué, « Envoyer à tous » (annuler / confirmer), rôle limité |
-| `fiabilite.spec.mjs` | 7 | Fichier choisi pendant un redessin, session expirée, deux onglets, coupure réseau, 1 500 séances + 200 rendez-vous, clics rapides, retour arrière |
-| `accessibilite.spec.mjs` | 5 | WCAG 2.1 A/AA (axe-core 4.10.3) sur chaque page en interface simple et avancée, clavier, focus visible, taille des cibles |
-| **Total** | **114** | sur un profil d’appareil, plus 8 scénarios API |
+| `fiabilite.spec.mjs` | 8 | Fichier choisi pendant un redessin, session expirée, deux onglets, coupure réseau, 1 500 séances + 200 rendez-vous, clics rapides, retour arrière, toucher juste après la frappe (F08, 8.35) |
+| `accessibilite.spec.mjs` | 4 | WCAG 2.1 A/AA (axe-core 4.10.3) sur chaque page (interface unique depuis la 8.35) et sur les messages temporaires affichés, clavier, focus visible, taille des cibles |
+| `nouveautes.spec.mjs` | 10 | 8.35 (NV01–NV10) : phases du profil, créateur (cases « ce que je choisis », choix restés modifiables), étirements, objectifs en deux temps, sources et « Voir le passage », captures d’écran, interface unique, liens « va dans … », exercice suivant dans le lecteur |
+| **Total** | **114** | par profil d’appareil (8.35 ; 113 au premier passage, avant F08), plus 8 scénarios API sans navigateur ; sur les 6 profils Chromium : 692 tests (686 au premier passage) |
 
-Plus les tests existants du dépôt, relancés : `npm test` (106 scripts) et `npm run test:e2e` (25 scripts navigateur).
+Plus les tests existants du dépôt, relancés : `npm test` (109 scripts en 8.35, 106 en 8.34.2) et `npm run test:e2e` (25 scripts navigateur).
 
 ## 2. Tests réellement exécutés
 
@@ -113,10 +114,21 @@ La 8.35.0 (demandes : phases, étirements, sources, captures, objectifs, interfa
 | V17 | mineur | Liens « va dans … » trop petits pour un doigt | Progrès › Résumé | ≥ 24 px de haut → 20 px | AX04 |
 | V18 | gêne | Rubrique vide « 8 · Ce que l’app décide » et messages « verrouillé » | Panneau d’une phase | Plus de verrous → rubrique vide, messages sur des réglages « verrouillés » | `v2chain.test.mjs`, `e2e.mjs` |
 | V19 | durcissement | Lien « Voir le passage » affiché sans vérifier son protocole | (le serveur est seul à le fournir) | Seuls https et http → aucun contrôle côté page | NV05 |
+| V20 | majeur | Chiffres détaillés de Progrès inaccessibles | Progrès › Résumé, avec des séances faites | Séances, minutes et séries sur 7, 30 et 90 jours, charge de chaque semaine → seulement le résumé simple, aucun chemin vers ces chiffres (ils n’existaient que dans l’interface avancée retirée) | ST01, ST02, ST03 (échouaient au premier passage : `.kpis` jamais affiché) ; « 📊 Voir tous mes chiffres » ajouté |
+| V21 | mineur | Le démarrage d’une visite guidée bloquait les touchers | Paramètres › Mises à jour › « 🧭 Lancer la visite », puis toucher aussitôt un autre bouton | Le toucher passe → calque plein écran encore vide (jusqu’à 1,5 s, le temps de trouver l’élément à montrer) qui intercepte tout | Analyse des échecs de l’explorateur (Paramètres) |
+| V22 | majeur | Après « Copier dans mes exercices », toute l’app devient plus large que l’écran | Bibliothèque › Exercices › un exercice › « Copier dans mes exercices », à 320, 360 ou 390 px | Largeur de l’écran → 405 px pour un écran de 320 : barre d’onglets, fenêtres et messages élargis et coupés à droite, touchers qui tombent à côté (cause : « 💡 Proposer à tout le monde » sur une seule ligne dans la ligne de l’exercice copié) | Explorateur des boutons (Bibliothèque : dizaines de boutons « impossibles à cliquer » à 320 et 360 px) ; trace Playwright (la zone d’affichage passe à 405 × 810 au clic sur « Copier dans mes exercices ») ; sonde : 405 px avant, 320 px après correction (aussi vérifié à 390 et 768 px) |
+| V23 | mineur | Messages d’erreur peu lisibles | Toute erreur affichée en bas de l’écran (environ 125 messages dans le code) | Contraste ≥ 4,5:1 → 3,56:1 (3,86:1 en mode daltonien) | axe sur le message affiché : échoue avec l’ancienne couleur, passe avec la nouvelle (6:1 ; 6,2:1 en mode daltonien) ; nouvelle étape d’AX01 |
+| V24 | mineur | Un toucher sur « Ajouter à ma séance » juste après la frappe était perdu | Une séance › ✍️ Écrire des exercices › écrire « 3 × 10 squats » › toucher « Ajouter à ma séance » dans les 0,2 s | Exercice ajouté → rien : fenêtre toujours ouverte, 0 exercice (l’aperçu s’allonge pendant l’appui, le bouton descend de 31 px) | S09 à 360 px (échec instable au premier passage) ; sonde reproductible (appui à 0 et 150 ms : perdu ; après correction : ajouté) ; F08 |
+| V25 | mineur | Mode « Modifier les textes » (administrateurs) : la barre recouvrait « Fermer » | Activer le mode textes, ouvrir une grande fenêtre à 320 px, toucher « Fermer » | Fenêtre fermée → le toucher tombe sur « Terminer » de la barre (le mode textes s’arrête, la fenêtre reste) | Explorateur des boutons (Administration, 320 et 360 px) ; sonde : élément touché au centre de « Fermer » = « Terminer » avant, « Fermer » après |
 
 Défauts de l’outil de test (corrigés dans l’outil, jamais dans le site) :
 - **Contrôle de débordement aveugle en émulation mobile.** Chromium élargit la fenêtre à la taille du contenu (`innerWidth` = 478 pour un écran de 390) : « largeur de la page ≤ largeur de la fenêtre » restait vrai même quand la page débordait. Les contrôles comparent maintenant à la vraie largeur de l’écran. Conséquence : **les contrôles de débordement des profils mobiles de l’audit 8.34.2 étaient moins sûrs qu’annoncé** ; V08 en est la preuve.
 - **Explorateur des boutons cassé depuis le commit `a3d6cc7`** (mise en commun de l’explorateur) : une variable n’était plus transmise et chaque test « chaque bouton » échouait à la fin, après tous ses clics. Les chiffres « 2 583 clics » de la section 1 viennent d’exécutions antérieures à ce commit. Corrigé ; voir la section 3 pour le passage final.
+- **Explorateur : emplacement perdu dans les messages d’échec.** La position du bouton écrasait le champ « page / fenêtre de … », d’où « [object Object] » dans les messages du premier passage. Corrigé (champ « position »).
+- **Explorateur : états laissés entre deux clics.** Une visite guidée en train de démarrer (pas encore de bouton « Terminer ») et le mode « Modifier les textes » restaient actifs et recouvraient les boutons suivants ; un bouton grisé était compté « impossible à cliquer » ; un groupe SVG en deux morceaux (carte des douleurs) était touché en son centre, entre les deux ; un élément disparu avant le clic (« 1 modification(s) en attente » à la fin d’une synchronisation) était compté « impossible à cliquer ». Corrigé dans l’outil. L’analyse de ces cas a aussi fait trouver V21 et V25 dans le site.
+- **Explorateur : aucun contrôle de la largeur de la page après un clic.** Les contrôles de mise en page ne regardent que l’état initial des pages ; V22 n’apparaît qu’après une action. L’explorateur signale désormais tout clic qui rend la page plus large que l’écran.
+- **AX01 : message temporaire contrôlé pendant son apparition.** axe a mesuré un message en plein fondu (opacité entre 0 et 1, couleurs mêlées au fond) : « contraste 1,18:1 » sur l’accueil à 390 px. Le test attend maintenant la fin du fondu ; les messages affichés sont contrôlés à part, ce qui a révélé V23.
+- **S01, ST01 à ST03 écrits pour un parcours retiré** (étape « cpQuickGo », chiffres de l’interface avancée) : adaptés au parcours actuel ; ST01 à ST03 ont ainsi révélé V20.
 
 ## 5. Étapes exactes de reproduction
 

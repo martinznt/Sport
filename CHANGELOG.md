@@ -23,6 +23,13 @@ Livraison et étapes (dont Gemini) : [DELIVERY_8_35.md](DELIVERY_8_35.md) ; tout
 - Messages : deux messages coup sur coup, le premier pouvait disparaître sans être lu (ex. « … déjà présent(s), pas de doublon » de l'import CSV) ; ils passent l'un après l'autre (3 au plus, sans doublon).
 - Administration : « 🔎 Analyser avec l'assistant » ouvrait un message vide si l'assistant n'avait pas encore été ouvert ; la demande préparée est gardée (seulement pour le même compte).
 - Sources : le lien « Voir le passage » renvoyé par le serveur est vérifié (https ou http) avant d'être affiché.
+- Progrès : depuis le retrait de l'interface avancée, les chiffres détaillés (séances, minutes et séries sur 7, 30 ou 90 jours, charge de chaque semaine, régularité) n'étaient plus accessibles ; « 📊 Voir tous mes chiffres » sur le Résumé les ouvre, « ‹ Revenir au résumé simple » ramène au résumé.
+- Mes exercices : après « Copier dans mes exercices », la ligne de l'exercice rendait toute l'app plus large que l'écran jusqu'à 390 px (barre d'onglets et fenêtres coupées à droite, boutons difficiles à toucher) ; les boutons passent sous le nom et « 💡 Proposer à tout le monde » peut s'écrire sur deux lignes.
+- Messages d'erreur : texte blanc sur un rouge plus foncé, contraste 6:1 (avant 3,6:1, et 3,9:1 en mode daltonien, sous le minimum de 4,5:1).
+- « Ajouter à ma séance » (✍️ Écrire des exercices) : un toucher dans les 0,2 s après la frappe était perdu (l'aperçu s'allongeait et déplaçait le bouton sous le doigt) ; l'aperçu, et les listes filtrées pendant la frappe, attendent maintenant que le doigt soit levé.
+- Visite guidée : pendant son démarrage (jusqu'à 1,5 s), le calque encore vide bloquait les touchers ; il les laisse passer tant que la bulle n'est pas affichée.
+- Administration : en mode « Modifier les textes », la barre passait au-dessus des fenêtres et recouvrait leur bouton « Fermer » (le toucher terminait le mode textes) ; elle passe sous les fenêtres.
+- Liens « va dans … » : zone touchable d'au moins 24 px de haut (avant 20 px).
 - Base de données : une table ajoutée (captures), créée seule ; rien de supprimé.
 
 ## 8.34.2 — Audit Playwright complet : défauts corrigés et petites gênes en moins

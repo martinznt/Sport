@@ -93,11 +93,15 @@ test('F07 retour arrière avec une fenêtre ouverte : elle se ferme, la page res
 test('F08 toucher « Ajouter à ma séance » juste après avoir écrit : l’aperçu ne déplace plus le bouton sous le doigt (défaut V24, corrigé)', async ({ page }) => {
   await page.evaluate(async () => { const st = await import('/state.js'); st.saveSeance({ id: 's-f08', name: 'Toucher rapide', exercises: [] }); location.hash = '#/library/seance/s-f08'; });
   await page.click('#main [data-act=exWrite]'); await page.waitForSelector('#sheet textarea[name=text]');
-  await page.fill('#sheet textarea[name=text]', '3 × 10 squats');
-  // Doigt posé aussitôt (l'aperçu se met à jour 0,2 s après la frappe) et levé 0,25 s plus tard : avant la correction,
-  // l'aperçu s'allongeait pendant l'appui, le bouton descendait et le toucher était perdu.
+  await page.waitForTimeout(400); // fin de l'animation d'ouverture de la fenêtre (0,2 s) : le bouton est à sa place
+  // L'aperçu se met à jour 0,2 s après la dernière frappe. Pour que cette mise à jour tombe toujours pendant l'appui
+  // (quelle que soit la vitesse de la machine), le doigt est posé d'abord, puis le texte arrive (comme une frappe ou un
+  // collage qui vient de finir), et le doigt est levé 0,4 s plus tard. Avant la correction, l'aperçu s'allongeait
+  // pendant l'appui, le bouton descendait et le toucher était perdu.
   const b = await page.locator('#sheet form button[type=submit]').boundingBox();
-  await page.mouse.move(b.x + b.width / 2, b.y + b.height / 2); await page.mouse.down(); await page.waitForTimeout(250); await page.mouse.up();
+  await page.mouse.move(b.x + b.width / 2, b.y + b.height / 2); await page.mouse.down();
+  await page.evaluate(() => { const t = document.querySelector('#sheet textarea[name=text]'); t.value = '3 × 10 squats'; t.dispatchEvent(new Event('input', { bubbles: true })); });
+  await page.waitForTimeout(400); await page.mouse.up();
   await expect(page.locator('#sheet.open')).toHaveCount(0);
   expect(await page.evaluate(async () => (await import('/state.js')).S.seances.items.find((s) => s.id === 's-f08').exercises.map((e) => e.name))).toEqual(['Squats']);
 });
