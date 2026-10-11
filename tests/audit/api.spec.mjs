@@ -12,8 +12,11 @@ const test = base;
 const SRC = fs.readFileSync(path.join(ROOT, 'worker.js'), 'utf8');
 /** Routes littérales déclarées dans worker.js : [méthode, chemin]. */
 const ROUTES = [...new Set([...SRC.matchAll(/p === '(\/api\/[^']+)' && m === '(GET|POST|PUT|DELETE)'/g)].map((x) => `${x[2]} ${x[1]}`))].map((x) => x.split(' '));
-/** Routes ouvertes sans compte, voulues (lues avant la garde « Connexion requise » de handleApi). */
-const PUBLIC = new Set(['GET /api/health', 'GET /api/version', 'GET /api/global', 'GET /api/changes', 'GET /api/move', 'POST /api/auth/register', 'POST /api/auth/login', 'POST /api/auth/logout', 'POST /api/handoff', 'POST /api/handoff/peek', 'POST /api/handoff/claim', 'GET /api/push/key', 'GET /api/push/message']);
+/** Routes ouvertes sans compte, voulues (lues avant la garde « Connexion requise » de handleApi).
+ * 8.35 : « GET /api/sources/passages » (« Voir le passage » des sources, visibles aussi des invités), relue avant d'être
+ * ajoutée ici : identifiants limités à la liste des sources (8 au plus), 120 demandes par heure et par adresse, réponses
+ * gardées 30 jours, aucune donnée de compte ; le serveur n'appelle que PubMed, jamais une adresse donnée par le visiteur. */
+const PUBLIC = new Set(['GET /api/health', 'GET /api/version', 'GET /api/global', 'GET /api/changes', 'GET /api/move', 'POST /api/auth/register', 'POST /api/auth/login', 'POST /api/auth/logout', 'POST /api/handoff', 'POST /api/handoff/peek', 'POST /api/handoff/claim', 'GET /api/push/key', 'GET /api/push/message', 'GET /api/sources/passages']);
 const GEMINI = 'AIza-cle-gemini-de-test-ne-doit-jamais-sortir';
 
 async function accounts(env, ...names) { const out = {}; for (const n of names) { const c = out[n] = new Client(env); c.userId = (await c.register(n)).data.user.id; } return out; }
@@ -45,6 +48,9 @@ test('API02 chaque route privée refuse un visiteur sans compte (401) ; les rout
   expect(priv.length).toBeGreaterThan(40);
   for (const [m, p] of priv) expect.soft((await anon.call(m, p, m === 'GET' || m === 'DELETE' ? undefined : {})).status, `${m} ${p} sans compte`).toBe(401);
   for (const key of PUBLIC) { const [m, p] = key.split(' '); expect.soft((await anon.call(m, p, m === 'GET' ? undefined : {})).status, `${key} sans compte`).not.toBe(500); }
+  // Passages des sources : un identifiant hors de la liste (chemin, adresse, balise, inconnu) est ignoré, rien n'est lu.
+  const bad = await anon.get('/api/sources/passages?ids=' + encodeURIComponent('../../etc,https://exemple.invalid/x,<script>,inconnu'));
+  expect(bad.status, 'passages : identifiants inventés').toBe(200); expect(bad.data.passages).toEqual({});
 });
 
 test('API03 accès croisé (IDOR) : Bob ne lit, ne modifie ni ne supprime rien d’Alice, même avec les bons identifiants', async () => {

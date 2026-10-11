@@ -105,3 +105,16 @@ test('F08 toucher « Ajouter à ma séance » juste après avoir écrit : l’ap
   await expect(page.locator('#sheet.open')).toHaveCount(0);
   expect(await page.evaluate(async () => (await import('/state.js')).S.seances.items.find((s) => s.id === 's-f08').exercises.map((e) => e.name))).toEqual(['Squats']);
 });
+
+test('F09 double toucher sur « Ajouter à ma séance » : ajouté une fois, rien ne s’ouvre derrière la fenêtre (défaut V26, corrigé)', async ({ page }) => {
+  await page.evaluate(async () => { const st = await import('/state.js'); st.saveSeance({ id: 's-f09', name: 'Double toucher', exercises: [] }); location.hash = '#/library/seance/s-f09'; });
+  await page.click('#main [data-act=exWrite]'); await page.waitForSelector('#sheet textarea[name=text]'); await page.waitForTimeout(400);
+  await page.fill('#sheet textarea[name=text]', '10 pompes'); await page.waitForTimeout(400); // aperçu à jour : le bouton ne bouge plus
+  const hash = await page.evaluate(() => location.hash);
+  // Le premier toucher ajoute et ferme la fenêtre ; avant la correction, le second ouvrait ce qui se trouvait dessous
+  // (à 768 px : « ＋ Préparer des étirements pour cette séance », donc la page Étirements).
+  await page.locator('#sheet form button[type=submit]').dblclick({ delay: 20 }); await page.waitForTimeout(500);
+  expect(await page.evaluate(() => location.hash), 'toujours sur la page de la séance').toBe(hash);
+  await expect(page.locator('#sheet.open, #dialog.open')).toHaveCount(0);
+  expect(await page.evaluate(async () => (await import('/state.js')).S.seances.items.find((s) => s.id === 's-f09').exercises.length)).toBe(1);
+});

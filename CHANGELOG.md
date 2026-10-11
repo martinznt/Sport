@@ -30,6 +30,7 @@ Livraison et étapes (dont Gemini) : [DELIVERY_8_35.md](DELIVERY_8_35.md) ; tout
 - Visite guidée : pendant son démarrage (jusqu'à 1,5 s), le calque encore vide bloquait les touchers ; il les laisse passer tant que la bulle n'est pas affichée.
 - Administration : en mode « Modifier les textes », la barre passait au-dessus des fenêtres et recouvrait leur bouton « Fermer » (le toucher terminait le mode textes) ; elle passe sous les fenêtres.
 - Liens « va dans … » : zone touchable d'au moins 24 px de haut (avant 20 px).
+- Double toucher : sur un bouton qui ferme une fenêtre (« Ajouter à ma séance »…), le second toucher actionnait le bouton de la page situé dessous (page Étirements ouverte à 768 px, retour à la Bibliothèque à 320 px) ; il est ignoré, un nouveau toucher passe normalement.
 - Base de données : une table ajoutée (captures), créée seule ; rien de supprimé.
 
 ## 8.34.2 — Audit Playwright complet : défauts corrigés et petites gênes en moins

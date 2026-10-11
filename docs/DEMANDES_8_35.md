@@ -94,6 +94,7 @@ L'audit complet (6 écrans simulés) a ensuite trouvé, et ces défauts sont cor
 - « Ajouter à ma séance » (✍️ Écrire des exercices) : un toucher juste après la frappe pouvait être perdu ; corrigé.
 - Visite guidée : le calque vide du démarrage bloquait les touchers ; corrigé.
 - Mode « Modifier les textes » (administrateurs) : la barre recouvrait le bouton « Fermer » des grandes fenêtres ; corrigé.
+- Double toucher sur « Ajouter à ma séance » : le second toucher ouvrait ce qui était dessous (page Étirements, retour à la Bibliothèque) ; corrigé.
 
 ## Toujours valables
 

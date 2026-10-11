@@ -64,12 +64,23 @@ export const exLine = (e) => `${oneEach(e) && !e.unit && e.sets === 1 ? '1 fois'
 /* ───────── Appui en cours ───────── */
 // 8.35 : un redessin différé (aperçu, liste filtrée pendant la frappe) attend que le doigt soit levé. Sinon le bouton
 // visé bougeait sous le doigt et le toucher était perdu (« Ajouter à ma séance » descendait quand l'aperçu s'allongeait).
-let pressedAt = 0;
+let pressedAt = 0, lastPress = null, shield = null;
 if (typeof addEventListener === 'function') {
-  addEventListener('pointerdown', () => { pressedAt = Date.now(); }, true);
+  addEventListener('pointerdown', (e) => { pressedAt = Date.now(); lastPress = { x: e.clientX, y: e.clientY, t: pressedAt, inWin: !!e.target?.closest?.('#sheet, #dialog') }; }, true);
   const up = () => { setTimeout(() => { pressedAt = 0; }, 0); }; // après le « click » qui suit le relâchement
   addEventListener('pointerup', up, true); addEventListener('pointercancel', up, true);
+  // 8.35 : double toucher sur un bouton qui ferme une fenêtre (« Ajouter à ma séance »…) : le second toucher tombait sur
+  // le bouton de la page situé dessous (à 768 px, « Préparer des étirements » ouvrait la page Étirements). Juste après
+  // la fermeture, le second toucher d'un double toucher (compté 2 par le navigateur) au même endroit est ignoré, une
+  // fois ; un nouveau toucher, même au même endroit, passe normalement.
+  addEventListener('click', (e) => {
+    if (!shield || Date.now() > shield.until) { shield = null; return; }
+    if (e.detail < 2 || e.target?.closest?.('#sheet.open, #dialog.open') || Math.abs(e.clientX - shield.x) > 30 || Math.abs(e.clientY - shield.y) > 30) return;
+    shield = null; e.preventDefault(); e.stopImmediatePropagation();
+  }, true);
 }
+/** Une fenêtre se ferme après un toucher dans la fenêtre : le second toucher d'un double toucher au même endroit est ignoré. */
+function guardBehind() { if (lastPress?.inWin && Date.now() - lastPress.t < 1500) shield = { x: lastPress.x, y: lastPress.y, until: Date.now() + 400 }; }
 /** Lance fn tout de suite, ou dès que l'appui en cours est terminé (3 s au plus : un appui long ne bloque rien). */
 export function whenReleased(fn) { if (!pressedAt || Date.now() - pressedAt > 3000) return fn(); setTimeout(() => whenReleased(fn), 100); }
 
@@ -164,7 +175,7 @@ export function openSheet(content, { wide = false } = {}) {
   s.classList.toggle('redraw', !!old); s.classList.add('open'); sheetStack++; // redessinée : pas d'animation (sinon elle clignote à chaque choix)
   setTimeout(() => { if (!s.classList.contains('open')) return; const f = s.querySelector('[autofocus]'); if (f) f.focus(); else if (!s.contains(document.activeElement)) s.querySelector('.panel')?.focus({ preventScroll: true }); }, 30);
 }
-export function closeSheet() { const s = $('#sheet'), wasOpen = s.classList.contains('open'); s.classList.remove('open'); s.innerHTML = ''; if (wasOpen) { giveBackFocus(returnFocus); returnFocus = null; } sheetStack = 0; for (const k of [...userOpen.keys()]) if (k.startsWith('sheet:')) userOpen.delete(k); }
+export function closeSheet() { const s = $('#sheet'), wasOpen = s.classList.contains('open'); s.classList.remove('open'); s.innerHTML = ''; if (wasOpen) { giveBackFocus(returnFocus); returnFocus = null; guardBehind(); } sheetStack = 0; for (const k of [...userOpen.keys()]) if (k.startsWith('sheet:')) userOpen.delete(k); }
 export const sheetOpen = () => $('#sheet')?.classList.contains('open');
 
 /** Confirmation dans une feuille (testable, accessible). Résout true / false. */
@@ -177,7 +188,7 @@ export function askText(message, { value = '', placeholder = '', ok = 'Valider',
       <div class="row wrapf end"><button class="btn" data-dlg="0">${cancel}</button><button class="btn pri" data-dlg="1">${ok}</button></div></div>`.s;
     d.classList.add('open');
     const input = d.querySelector('#dlg-in');
-    const done = (v) => { const t = v ? String(input.value || '').trim() : null; d.classList.remove('open'); d.innerHTML = ''; d.removeEventListener('click', onClick); resolve(t); };
+    const done = (v) => { const t = v ? String(input.value || '').trim() : null; guardBehind(); d.classList.remove('open'); d.innerHTML = ''; d.removeEventListener('click', onClick); resolve(t); };
     const onClick = (e) => { const b = e.target.closest('[data-dlg]'); if (b) done(b.dataset.dlg === '1'); else if (e.target.classList.contains('back')) done(false); };
     d.addEventListener('click', onClick);
     input.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); done(true); } else if (e.key === 'Escape') done(false); });
@@ -190,7 +201,7 @@ export function ask(message, { ok = 'Confirmer', cancel = 'Annuler', danger = fa
     d.innerHTML = h`<div class="back"></div><div class="panel" role="alertdialog" aria-modal="true" aria-labelledby="dlg-t"><h2 id="dlg-t" style="margin:0">${message}</h2>${detail ? h`<p class="muted small">${detail}</p>` : ''}
       <div class="row wrapf end"><button class="btn" data-dlg="0">${cancel}</button><button class="btn ${danger ? 'danger' : 'pri'}" data-dlg="1" autofocus>${ok}</button></div></div>`.s;
     d.classList.add('open');
-    const done = (v) => { d.classList.remove('open'); d.innerHTML = ''; d.removeEventListener('click', onClick); resolve(v); if (back && back.el.isConnected) setTimeout(() => { if (!document.querySelector('#dialog.open')) back.el.focus?.({ preventScroll: true }); }, 0); };
+    const done = (v) => { guardBehind(); d.classList.remove('open'); d.innerHTML = ''; d.removeEventListener('click', onClick); resolve(v); if (back && back.el.isConnected) setTimeout(() => { if (!document.querySelector('#dialog.open')) back.el.focus?.({ preventScroll: true }); }, 0); };
     const onClick = (e) => { const b = e.target.closest('[data-dlg]'); if (b) done(b.dataset.dlg === '1'); else if (e.target.classList.contains('back')) done(false); };
     d.addEventListener('click', onClick);
     setTimeout(() => d.querySelector('[autofocus]')?.focus(), 20);
