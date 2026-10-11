@@ -50,8 +50,9 @@ PW_EXEC=/opt/pw-browsers/chromium AUDIT_WORKERS=3 node node_modules/playwright/c
 | `npm run check`, `npm test` (109 scripts), `npm run test:e2e` (25 scripts) | `2006174` | 11 oct. 3 h 22 → 3 h 33 | contrôle réussi ; 1 029 vérifications unitaires réussies, 0 échec ; 25 scripts de bout en bout réussis |
 | Second passage complet | `2006174` | 11 oct. 3 h 34 → 5 h 48 (2 h 14) | 698 = 115 scénarios × 6 profils + 8 API |
 | Sonde « taille du texte » sur toutes les pages (320 et 390 px), corrections V27 et V28, AX05 sur les 6 profils, explorateurs Profil et Paramètres à 320 px | `4c6a70d` | 11 oct. | AX05 : 6 sur 6 ; explorateurs : 2 sur 2 (1 232 clics, aucun bouton impossible à toucher) |
-| `npm run check`, `npm test`, `npm run test:e2e` sur le code final | `4c6a70d` | 11 oct. | ⟦E2E_FINAL⟧ |
-| Troisième passage complet (code final) | `4c6a70d` | ⟦P3_QUAND⟧ | 704 = 116 scénarios × 6 profils + 8 API |
+| `npm run check`, `npm test` : réussis ; `npm run test:e2e` : `backup-e2e` en échec (V29, défaut antérieur rendu visible), corrigé | `4c6a70d` | 11 oct. 6 h 15 → 6 h 27 | 24 scripts sur 25 |
+| `npm run check`, `npm test`, `npm run test:e2e` sur le code final | `662b8cd` | 11 oct. | ⟦E2E_FINAL⟧ |
+| Troisième passage complet (code final) | `662b8cd` | ⟦P3_QUAND⟧ | 704 = 116 scénarios × 6 profils + 8 API |
 
 Explorateurs au premier passage : 14 424 clics de boutons sur les 6 profils (12 086 avec un effet visible, 1 626 boutons disparus après un redessin, 446 sans effet visible, 102 grisés, 164 « impossibles à cliquer ») et 920 essais de formulaires (868 avec effet, 44 sans effet visible, 8 « impossibles à utiliser »). Aucune erreur JavaScript, aucun écran d’erreur.
 
@@ -110,7 +111,7 @@ Les 48 échecs, un par un, ont une cause établie :
 
 Explorateurs au second passage : 14 393 clics (12 146 avec effet, 54 « impossibles à cliquer », tous sur la carte des douleurs, 7 « page plus large que l’écran ») et 920 essais de formulaires, dont « Signaler un bug » envoyé sur les 6 profils. Aucune erreur JavaScript, aucun écran d’erreur.
 
-### Troisième passage (code final `4c6a70d`)
+### Troisième passage (code final `662b8cd`)
 
 ⟦RESULTATS_P3⟧
 
