@@ -20,13 +20,18 @@ export function buildGeminiInput(options, { json = true } = {}) {
     if (!lastUser) contents.push(lastUser = { role: 'user', parts: [] });
     lastUser.parts.push(...images.map((x) => ({ inline_data: { mime_type: x.mime, data: x.data } })));
   }
-  const max = Number(options.max_tokens), temperature = Number(options.temperature);
+  const max = Number(options.max_tokens), temperature = Number(options.temperature), thinkingLevel = inputThinking(options);
+  const answer = Number.isFinite(max) ? Math.max(100, Math.min(2400, Math.round(max))) : 900;
+  // La réflexion est comptée dans maxOutputTokens : une marge par niveau évite qu’elle consomme la réponse (MAX_TOKENS).
   return { ...(system.length ? { systemInstruction: { parts: system } } : {}), contents,
-    generationConfig: { maxOutputTokens: Number.isFinite(max) ? Math.max(100, Math.min(2400, Math.round(max))) : 900,
+    generationConfig: { maxOutputTokens: answer + THINKING_HEADROOM[thinkingLevel],
       ...(Number.isFinite(temperature) ? { temperature: Math.max(0, Math.min(2, temperature)) } : {}),
-      ...(json ? { responseMimeType: 'application/json' } : {}), thinkingConfig: { thinkingLevel: inputThinking(options), includeThoughts: false } } };
+      ...(json ? { responseMimeType: 'application/json' } : {}), thinkingConfig: { thinkingLevel, includeThoughts: false } } };
 }
-const inputThinking = (options) => options.thinking_level === 'LOW' ? 'LOW' : 'MINIMAL';
+// gemini-3.8-flash accepte LOW, MEDIUM et HIGH ; MINIMAL renvoie une erreur 400. « Rapide » (réglage minimal) devient
+// donc LOW, le plus léger accepté, et « Approfondie » (réglage low) devient MEDIUM, le niveau par défaut du modèle.
+const THINKING_HEADROOM = { LOW: 1024, MEDIUM: 3072 };
+const inputThinking = (options) => options.thinking_level === 'LOW' ? 'MEDIUM' : 'LOW';
 export async function runGemini(env, input, { fetchFn = fetch, timeoutMs = 30000, json = true } = {}) {
   const key = String(env.GEMINI_API_KEY || '').trim();
   if (!key) throw fail('L’assistant n’est pas activé sur ce serveur (secret GEMINI_API_KEY absent sur Cloudflare).', 503, 'AI_UNAVAILABLE');

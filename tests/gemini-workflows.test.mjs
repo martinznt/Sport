@@ -70,7 +70,9 @@ globalThis.fetch = async (url, options) => {
   const body = JSON.parse(options.body);
   assert.equal(body.generationConfig.responseMimeType, 'application/json');
   assert.equal(body.generationConfig.thinkingConfig.includeThoughts, false);
-  assert.ok(body.generationConfig.maxOutputTokens >= 100 && body.generationConfig.maxOutputTokens <= 2400);
+  assert.ok(['LOW', 'MEDIUM'].includes(body.generationConfig.thinkingConfig.thinkingLevel), 'MINIMAL est refusé par gemini-3.8-flash');
+  const headroom = body.generationConfig.thinkingConfig.thinkingLevel === 'LOW' ? 1024 : 3072, answer = body.generationConfig.maxOutputTokens - headroom;
+  assert.ok(answer >= 100 && answer <= 2400);
   assert.doesNotMatch(JSON.stringify(body), /fake-gemini-workflow-key/);
   requests.push({ url: String(url), body });
   if (nextFailure) { const error = nextFailure; nextFailure = null; throw error; }
@@ -160,7 +162,7 @@ try {
     assert.equal(state.status, 200); assert.equal(state.data.available, true); assert.equal(state.data.model, GEMINI_MODEL); assert.equal(state.data.unit, 'requests'); assert.equal(state.data.budget, 40); assertNoSecret(state.data);
     assert.equal((await member.post('/api/admin/ai/test', {})).status, 403); assert.equal((await content.post('/api/admin/ai/test', {})).status, 403); assert.equal(requests.length, before);
     const test = await client.post('/api/admin/ai/test', {}); assert.equal(test.status, 200, JSON.stringify(test.data));
-    assert.equal(test.data.reply, 'L’IA est disponible.'); assert.equal(test.data.provider, 'gemini'); assert.equal(test.data.used, 1); assert.equal(requests.at(-1).body.generationConfig.maxOutputTokens, 100); assertNoSecret(test.data);
+    assert.equal(test.data.reply, 'L’IA est disponible.'); assert.equal(test.data.provider, 'gemini'); assert.equal(test.data.used, 1); assert.equal(requests.at(-1).body.generationConfig.maxOutputTokens, 100 + 3072); assertNoSecret(test.data);
   });
 
   await ok('Studio Gemini : contenu nettoyé et rangé en brouillon, publication toujours explicite', async () => {

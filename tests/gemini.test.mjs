@@ -27,7 +27,8 @@ await ok('entrée Gemini : système séparé, rôles traduits, JSON et raisonnem
   assert.deepEqual(body.contents.map((entry)=>entry.role),['user','model','user']);
   assert.equal(body.contents[1].parts[0].text,'Proposition');
   assert.equal(body.generationConfig.responseMimeType,'application/json');
-  assert.equal(body.generationConfig.thinkingConfig.thinkingLevel,'MINIMAL');
+  assert.equal(body.generationConfig.thinkingConfig.thinkingLevel,'LOW','MINIMAL est refusé par gemini-3.8-flash');
+  assert.equal(body.generationConfig.maxOutputTokens,900+1024,'la marge de réflexion s’ajoute à la réponse');
   assert.equal(body.generationConfig.thinkingConfig.includeThoughts,false);
   assert.equal(buildGeminiInput(input,{json:false}).generationConfig.responseMimeType,undefined);
   assert.deepEqual(buildGeminiInput({prompt:'Question simple'}).contents,[{role:'user',parts:[{text:'Question simple'}]}]);
@@ -43,23 +44,23 @@ await ok('transport : URL et modèle fixes, clé dans l’en-tête serveur, sort
   assert.equal(received.url,'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent');
   assert.equal(received.options.method,'POST');assert.equal(new Headers(received.options.headers).get('x-goog-api-key'),TEST_KEY);
   assert.equal(received.options.redirect,'error','une redirection ne transporte jamais la clé vers un autre hôte');
-  assert.equal(new URL(received.url).search,'');assert.equal(received.body.generationConfig.maxOutputTokens,2400);
-  assert.equal(received.body.generationConfig.thinkingConfig.thinkingLevel,'LOW');assert.equal(received.body.generationConfig.thinkingConfig.includeThoughts,false);
+  assert.equal(new URL(received.url).search,'');assert.equal(received.body.generationConfig.maxOutputTokens,2400+3072);
+  assert.equal(received.body.generationConfig.thinkingConfig.thinkingLevel,'MEDIUM');assert.equal(received.body.generationConfig.thinkingConfig.includeThoughts,false);
   assert.equal(received.body.generationConfig.temperature,0.1,'le réglage de créativité borne la température demandée');
   assert.match(received.body.systemInstruction.parts[0].text,/status:"clarify"/);assert.match(received.body.systemInstruction.parts[0].text,/sources réellement fournies par le serveur/);
   assert.equal(JSON.stringify(input),before);assert.equal(JSON.stringify(received.body).includes(TEST_KEY),false);assert.equal(JSON.stringify(status).includes(TEST_KEY),false);
   assert.equal(responseText(raw),'{"reply":"Conseil utile","actions":[]}');assert.deepEqual(extractJson(raw),{reply:'Conseil utile',actions:[]});
-  await runAI(env,{...input,max_tokens:1},{json:false,fetchFn});assert.equal(received.body.generationConfig.maxOutputTokens,100);assert.equal(received.body.generationConfig.responseMimeType,undefined);
+  await runAI(env,{...input,max_tokens:1},{json:false,fetchFn});assert.equal(received.body.generationConfig.maxOutputTokens,100+3072);assert.equal(received.body.generationConfig.responseMimeType,undefined);
 });
 
 await ok('préférences Gemini : raisonnement et créativité restent ceux du site malgré les paramètres du demandeur',async()=>{
   const env=makeEnv();await saveAIConfig(env,{model:GEMINI,budget:40,preferences:{reasoning:'minimal',creativity:0.05,answerStyle:'pedagogical',detail:'detailed'}});
   let body;const fetchFn=async(_url,options)=>{body=JSON.parse(options.body);return Response.json(answer());};
   const original={...input,temperature:2,thinking_level:'HIGH'},before=JSON.stringify(original);await runAI(env,original,{fetchFn});
-  assert.equal(body.generationConfig.thinkingConfig.thinkingLevel,'MINIMAL');assert.equal(body.generationConfig.thinkingConfig.includeThoughts,false);assert.equal(body.generationConfig.temperature,0.05);
+  assert.equal(body.generationConfig.thinkingConfig.thinkingLevel,'LOW');assert.equal(body.generationConfig.thinkingConfig.includeThoughts,false);assert.equal(body.generationConfig.temperature,0.05);
   assert.match(body.systemInstruction.parts[0].text,/Explique progressivement/);assert.match(body.systemInstruction.parts[0].text,/Développe les étapes/);assert.equal(JSON.stringify(original),before);
   await saveAIConfig(env,{model:GEMINI,budget:40,preferences:{reasoning:'low'}});
-  await runAI(env,{...input,temperature:0.02,thinking_level:'MINIMAL'},{fetchFn});assert.equal(body.generationConfig.thinkingConfig.thinkingLevel,'LOW');assert.equal(body.generationConfig.temperature,0.02);
+  await runAI(env,{...input,temperature:0.02,thinking_level:'MINIMAL'},{fetchFn});assert.equal(body.generationConfig.thinkingConfig.thinkingLevel,'MEDIUM');assert.equal(body.generationConfig.temperature,0.02);
 });
 
 await ok('clarification Gemini : réponse ambiguë ou non vérifiée bloquée, statut conservé pour le nettoyeur dédié',async()=>{
