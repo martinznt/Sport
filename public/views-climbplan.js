@@ -2,7 +2,7 @@ import { comparisonView, advancedUI } from './views-experience.js';
 import { proposable } from './sportprefs.js';
 import { sessionFromHistory } from './live.js';
 // views-climbplan.js — « Structurer ma séance d'escalade » : par objectif de fin de séance, ou partie par partie.
-import { h, raw, chip, openSheet, closeSheet, toast, ask, askText, seg, goHint } from './ui.js';
+import { h, raw, chip, openSheet, closeSheet, toast, ask, askText, seg, goHint, whenReleased } from './ui.js';
 import { S, accountToken, accountMatches, ACT, CHG, INPUT, ctx, render, go, saveSeance, ls, putItem, delItem, itemsOf, api } from './state.js';
 import { aiEvidence, aiProposalReady } from './srcui.js';
 import { uid } from './shared.js';
@@ -937,7 +937,7 @@ ACT.cpPick = (el) => {
   rebuild(); render(); reopen();
 };
 ACT.cpWant = (el) => { const c = CP(), i = Number(el.dataset.i); c.want = { ...(c.want || {}), [i]: c.want?.[i] === el.dataset.id ? '' : el.dataset.id }; render(); reopen(); };
-INPUT.cpQ = (el) => { const c = CP(), i = Number(el.dataset.i); c.q = { ...(c.q || {}), [i]: el.value }; const pos = el.selectionStart; setTimeout(() => { optsSheet(i); const x = document.querySelector('#sheet input[data-input=cpQ]'); if (x) { x.focus(); try { x.setSelectionRange(pos, pos); } catch { /* rien */ } } }, 200); };
+INPUT.cpQ = (el) => { const c = CP(), i = Number(el.dataset.i); c.q = { ...(c.q || {}), [i]: el.value }; const pos = el.selectionStart; setTimeout(() => whenReleased(() => { optsSheet(i); const x = document.querySelector('#sheet input[data-input=cpQ]'); if (x) { x.focus(); try { x.setSelectionRange(pos, pos); } catch { /* rien */ } } }), 200); };
 CHG.cpAll = (el) => { const c = CP(), i = Number(el.dataset.i); c.freeAll = { ...(c.freeAll || {}), [i]: el.checked }; optsSheet(i); };
 CHG.cpBMin = (el) => { const c = CP(), p = c.built?.[Number(el.dataset.i)]; if (!p) return; p.minutes = Math.max(5, Math.min(180, Number(el.value) || p.minutes)); const source = CP().parts.find((part) => part.id === p.id); if (source) source.minutes = p.minutes; CP().partsTouched = true; keep(); rebuild(); render(); };
 // Changer qui choisit les exercices repart de zéro pour les choix d'exercices : « Je compose » commence vide,

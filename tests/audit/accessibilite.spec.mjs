@@ -13,6 +13,9 @@ const PAGES = MEMBER_ROUTES.filter((r) => !/inexistant|settings\/admin/.test(r))
 
 async function axe(page) {
   if (!(await page.evaluate(() => !!window.axe))) await page.addScriptTag({ content: AXE });
+  // Message temporaire en train d'apparaître ou de disparaître (fondu de 0,2 s) : axe mélangerait ses couleurs avec le
+  // fond et trouverait un faux manque de contraste. On attend la fin du fondu ; le message affiché reste contrôlé.
+  await page.waitForFunction(() => { const t = document.querySelector('#toast'); const o = t ? getComputedStyle(t).opacity : '0'; return o === '0' || o === '1'; }, null, { timeout: 4000 }).catch(() => {});
   return page.evaluate(async () => {
     // Le message temporaire caché (opacité 0, en train de disparaître) n'est pas vu : il n'est pas contrôlé.
     const r = await window.axe.run({ exclude: [['#toast:not(.show)']] }, { runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'] }, resultTypes: ['violations'] });
@@ -33,6 +36,19 @@ for (const mode of ['simple']) { // 8.35 : interface unique
         expect.soft(grave.map((x) => `${x.impact} ${x.id} (${x.nodes}) : ${x.help} — ${x.exemples[0] || ''}`), `${route} : violations graves`).toEqual([]);
       });
     }
+    // 8.35 : les messages temporaires eux-mêmes, affichés (message normal, message d'erreur, aussi en mode daltonien).
+    for (const [cb, kind] of [['off', ''], ['off', 'bad'], ['on', 'bad']]) {
+      await test.step(`message temporaire ${kind || 'normal'}${cb === 'on' ? ' (mode daltonien)' : ''}`, async () => {
+        const msg = `Message de contrôle du contraste (${kind || 'normal'}, daltonien ${cb})`;
+        await page.evaluate(async ([cb, kind, msg]) => { document.documentElement.dataset.cb = cb; (await import('/ui.js')).toast(msg, 6000, kind); }, [cb, kind, msg]);
+        await page.waitForFunction(([kind, msg]) => { const t = document.querySelector('#toast'); return t.textContent === msg && t.classList.contains('show') && t.classList.contains('bad') === (kind === 'bad') && getComputedStyle(t).opacity === '1'; }, [kind, msg]);
+        await page.waitForTimeout(300); // fin du fondu des couleurs (0,2 s)
+        const v = (await axe(page)).filter((x) => ['critical', 'serious'].includes(x.impact) && x.exemples.some((e) => e.startsWith('#toast')));
+        report['#toast ' + (kind || 'normal') + ' cb=' + cb] = v;
+        expect.soft(v.map((x) => `${x.id} : ${x.exemples[0]}`), `message temporaire ${kind || 'normal'} (daltonien ${cb})`).toEqual([]);
+      });
+    }
+    await page.evaluate(() => { delete document.documentElement.dataset.cb; });
     await info.attach('axe-par-page.json', { body: JSON.stringify(report, null, 2), contentType: 'application/json' });
   });
 }

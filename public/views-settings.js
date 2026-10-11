@@ -5,7 +5,7 @@ import { registerPaths } from './pathlinks.js';
 import { adminSearchCard } from './admin-search.js';
 // views-settings.js — Paramètres : séance, apparence, compte, données (export / import JSON, import CSV),
 // synchronisation et diagnostic, administration (EDIT_PASSWORD vérifié par le serveur), signalement de bug.
-import { h, raw, icon, $, toast, openSheet, closeSheet, ask, seg, chip, tag, empty, fmtDateTime, fmtDay, relDate, buzzOk, skeleton, subHead, menuList } from './ui.js';
+import { h, raw, icon, $, toast, openSheet, closeSheet, ask, seg, chip, tag, empty, fmtDateTime, fmtDay, relDate, buzzOk, skeleton, subHead, menuList, whenReleased } from './ui.js';
 import { shotField, shotsOf, shotsPayload, clearShots, shotsView } from './shots.js';
 import { S, ACT, SUBMIT, CHG, INPUT, APP_VERSION, ctx, go, render, api, queue, saveSettings, syncAll, retryFailed, discardFailed, restoreConflict, pendingCount, persistNow, clearLocal, DEFAULT_SETTINGS, putItem, itemsOf, addHistory, saveEvent, ls, own, writePending, persist, bump, syncSoon, accountToken, accountMatches } from './state.js';
 import { uid, normalizeSession } from './shared.js';
@@ -564,7 +564,7 @@ function vAdminUsers() {
 }
 ACT.usersReload = () => { S.admin.users = null; loadUsers(); };
 ACT.userSort = (el) => { S.admin.userSort = el.dataset.id; render(); };
-INPUT.userQ = (el) => { S.admin.userQ = el.value; clearTimeout(INPUT.userQ.t); INPUT.userQ.t = setTimeout(() => { render(); const i = document.querySelector('input[data-input=userQ]'); if (i) { i.focus(); i.setSelectionRange(i.value.length, i.value.length); } }, 250); };
+INPUT.userQ = (el) => { S.admin.userQ = el.value; clearTimeout(INPUT.userQ.t); INPUT.userQ.t = setTimeout(() => whenReleased(() => { render(); const i = document.querySelector('input[data-input=userQ]'); if (i) { i.focus(); i.setSelectionRange(i.value.length, i.value.length); } }), 250); };
 SUBMIT.adminOn = async (f) => {
   const token = accountToken();
   const pw = new FormData(f).get('password'); f.reset(); // la valeur saisie est effacée du formulaire immédiatement

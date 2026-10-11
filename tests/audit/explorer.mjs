@@ -29,6 +29,8 @@ export const SIGNATURE = async () => {
     data: [S.outbox.length, S.dirtyItems.size, S.seancesVer, S.seances.items.length, S.history.length, S.events.length, [...S.items.values()].filter((i) => !i.del).length].join(','),
     counts: { seances: S.seances.items.length, history: S.history.length, events: S.events.length, items: [...S.items.values()].filter((i) => !i.del).length },
     fx: JSON.stringify(window.__fx || {}), user: S.user?.id || null,
+    // Largeur réelle de la page : Chromium mobile agrandit la zone d'affichage quand un contenu dépasse de l'écran.
+    wide: Math.max(innerWidth, document.documentElement.scrollWidth),
   };
 };
 export const CANDIDATES = (scopes) => {
@@ -107,9 +109,10 @@ export async function explorer({ page, context, audit, info, name }) {
       // attente » qui disparaît quand la synchronisation se termine). Ce n'est pas un bouton impossible à toucher.
       if (/not visible|detached|not attached/.test(String(e.message)) && !(await loc.isVisible().catch(() => false))) return { outcome: 'disparu avant le clic', detail: 'plus affiché au moment du clic (état changé entre-temps)' };
       // Preuve : capture et position de la fenêtre au moment de l'échec.
-      const where = await loc.evaluate((el) => { const r = el.getBoundingClientRect(), top = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2), panel = el.closest('.panel'); return { rect: [r.left, r.top, r.width, r.height].map(Math.round), dessus: top?.outerHTML.slice(0, 100) || '', defilement: panel ? panel.scrollTop : window.scrollY, hauteur: innerHeight }; }).catch(() => null);
+      // « position » (et non « where ») : le journal garde son champ « where » (page ou fenêtre de …).
+      const position = await loc.evaluate((el) => { const r = el.getBoundingClientRect(), top = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2), panel = el.closest('.panel'); return { rect: [r.left, r.top, r.width, r.height].map(Math.round), dessus: top?.outerHTML.slice(0, 100) || '', defilement: panel ? panel.scrollTop : window.scrollY, hauteur: innerHeight }; }).catch(() => null);
       const shot = info.outputPath(`non-cliquable-${++shots}.png`); await page.screenshot({ path: shot }).catch(() => {});
-      return { outcome: 'impossible à cliquer', detail: (String(e.message).split('\n').find((l) => /intercepts|not visible|outside|detached|disabled/.test(l)) || String(e.message).split('\n')[0]).trim(), where, shot: shot.split('/').pop() };
+      return { outcome: 'impossible à cliquer', detail: (String(e.message).split('\n').find((l) => /intercepts|not visible|outside|detached|disabled/.test(l)) || String(e.message).split('\n')[0]).trim(), position, shot: shot.split('/').pop() };
     }
     await page.waitForTimeout(380); await page.waitForLoadState('networkidle', { timeout: 2000 }).catch(() => {});
     const after = await page.evaluate(SIGNATURE).catch(() => null);
@@ -118,6 +121,18 @@ export async function explorer({ page, context, audit, info, name }) {
     if (newErr.length) return { outcome: 'erreur JavaScript', detail: newErr.join(' | ').slice(0, 300) };
     if (!after) return { outcome: 'effet', detail: 'page rechargée ou quittée' };
     if (await page.locator('#main').innerText().then((t) => /n’a pas pu s’afficher/.test(t)).catch(() => false)) return { outcome: 'écran d’erreur', detail: (await page.locator('#main').innerText()).slice(0, 200) };
+    // 8.35 : un clic qui rend la page plus large que l'écran. Tout ce qui est fixe (barre d'onglets, fenêtres) prend alors
+    // cette largeur et se retrouve coupé à droite, et les touchers suivants tombent à côté (vu à 320 px après
+    // « Copier dans mes exercices »). Signalé une fois, au clic qui le provoque.
+    const W = page.viewportSize()?.width || 0;
+    if (W && after.wide > W + 1 && !(before && before.wide > W + 1)) {
+      const culprits = await page.evaluate((W) => [...document.querySelectorAll('body *')].filter((el) => {
+        if (el.closest('svg, nav.tabs, header.top, #toast')) return false;
+        const out = (x) => { const b = x.getBoundingClientRect(); return b.width > 0 && b.right > W + 1; };
+        return out(el) && ![...el.children].some(out);
+      }).slice(0, 3).map((el) => el.outerHTML.slice(0, 140)), W).catch(() => []);
+      return { outcome: 'débordement horizontal', detail: `page de ${after.wide} px pour un écran de ${W} px : ${culprits.join(' | ') || 'élément non trouvé'}` };
+    }
     const changed = before ? Object.keys(after).filter((k) => k !== 'counts' && JSON.stringify(after[k]) !== JSON.stringify(before[k])) : ['?'];
     if (external.length > ext) changed.push('lien externe ' + external.slice(ext).join(' '));
     if (JSON.stringify(other) !== oth) changed.push('navigateur ' + JSON.stringify(other));

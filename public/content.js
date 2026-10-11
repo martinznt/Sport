@@ -270,11 +270,12 @@ const SHARE = {
   format: (id) => { const f = parseFormats(item('config', 'formats')?.formats).find((x) => x.id === id); return f && { label: f.name, data: { name: f.name, parts: f.parts } }; },
 };
 const WHAT = { grading: 'système de cotation', style: 'style', exercise: 'exercice', catalog: 'séance prête', format: 'format de séance', intent: 'intention', category: 'catégorie', idea: 'idée' };
-/** Bouton sous un élément créé par la personne : proposer (tout le monde) ou publier (administrateur). */
+/** Bouton sous un élément créé par la personne : proposer (tout le monde) ou publier (administrateur).
+ * 8.35 : son texte passe à la ligne s'il le faut (à 320 px, « 💡 Proposer à tout le monde » élargissait la page). */
 export function shareButton(kind, id) {
   if (!S.user || S.user.guest) return '';
-  return isAdmin() ? h`<button class="btn sm" data-act="pubGlobal" data-k="${kind}" data-id="${id}">🌍 Pour tout le monde</button>`
-    : h`<button class="btn sm" data-act="propose" data-k="${kind}" data-id="${id}">💡 Proposer à tout le monde</button>`;
+  return isAdmin() ? h`<button class="btn sm wrapbtn" data-act="pubGlobal" data-k="${kind}" data-id="${id}">🌍 Pour tout le monde</button>`
+    : h`<button class="btn sm wrapbtn" data-act="propose" data-k="${kind}" data-id="${id}">💡 Proposer à tout le monde</button>`;
 }
 ACT.pubGlobal = async (el) => {
   const x = SHARE[el.dataset.k]?.(el.dataset.id); if (!x) { toast('Impossible : il manque des informations.'); return; }

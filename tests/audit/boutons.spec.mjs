@@ -3,7 +3,7 @@
 // Après chaque clic : erreur JavaScript ? écran d'erreur ? effet visible (page, fenêtre, message, téléchargement,
 // partage, copie, voix…) ? données supprimées sans confirmation ? Les confirmations sont toujours refusées
 // (« Annuler ») pour ne rien détruire ; les liens externes sont bloqués et notés.
-// Échecs : erreur JavaScript, écran d'erreur, bouton visible impossible à cliquer. « Sans effet visible » et
+// Échecs : erreur JavaScript, écran d'erreur, bouton visible impossible à cliquer, page devenue plus large que l'écran. « Sans effet visible » et
 // « suppression sans confirmation » sont listés pour être examinés un par un (pièce jointe explorateur.json).
 import { test, expect, loaded, synced, seedRealistic, setInterface } from './fixtures.mjs';
 import { CANDIDATES, explorer } from './explorer.mjs';
@@ -45,7 +45,7 @@ for (const plan of plans) {
     await restore(plan.routes[0]); await synced(page).catch(() => {});
     const by = (o) => log.filter((x) => x.outcome === o);
     await info.attach('explorateur.json', { body: JSON.stringify({ total: log.length, resume: Object.fromEntries([...new Set(log.map((x) => x.outcome))].map((o) => [o, by(o).length])), externes: [...new Set(external)], clics: log }, null, 2), contentType: 'application/json' });
-    for (const bad of [...by('erreur JavaScript'), ...by('écran d’erreur'), ...by('impossible à cliquer')]) expect.soft(bad, `${bad.route} › ${bad.where} › ${bad.label || bad.act}`).toBeNull();
+    for (const bad of [...by('erreur JavaScript'), ...by('écran d’erreur'), ...by('impossible à cliquer'), ...by('débordement horizontal')]) expect.soft(bad, `${bad.route} › ${bad.where} › ${bad.label || bad.act}`).toBeNull();
     expect(log.length, 'des boutons ont réellement été cliqués').toBeGreaterThan(10);
   });
 }

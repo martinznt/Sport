@@ -7,7 +7,7 @@ import { personalFit } from './fit.js';
 import { vGym } from './views-gym.js';
 import { myRoutines } from './views-routines.js';
 import { vStretch, seanceStretches } from './views-stretch.js';
-import { h, raw, esc, $, goHint, toast, openSheet, closeSheet, ask, seg, chip, menuList, menuRow, subHead, tag, empty, howBox, exLine, fmtDay, relDate, numberField, buzzOk, skeleton } from './ui.js';
+import { h, raw, esc, $, goHint, toast, openSheet, closeSheet, ask, seg, chip, menuList, menuRow, subHead, tag, empty, howBox, exLine, fmtDay, relDate, numberField, buzzOk, skeleton, whenReleased } from './ui.js';
 import { linkSheet } from './share.js';
 import './duo.js';
 import './views-ai.js';
@@ -215,7 +215,7 @@ ACT.sfDrop = (el) => { const f = sf(); f[el.dataset.k] = f[el.dataset.k].filter(
 ACT.sfClear = () => { Object.assign(sf(), { places: [], sports: [], cats: [], q: '' }); sfSave(); closeSheet(); render(); };
 ACT.sfDone = () => closeSheet();
 let sfT = null;
-INPUT.sfQ = (el) => { sf().q = el.value; clearTimeout(sfT); sfT = setTimeout(() => { const pos = el.selectionStart; render(); const i = $('.sfbar input'); if (i) { i.focus(); try { i.setSelectionRange(pos, pos); } catch { /* rien */ } } }, 250); };
+INPUT.sfQ = (el) => { sf().q = el.value; clearTimeout(sfT); sfT = setTimeout(() => whenReleased(() => { const pos = el.selectionStart; render(); const i = $('.sfbar input'); if (i) { i.focus(); try { i.setSelectionRange(pos, pos); } catch { /* rien */ } } }), 250); };
 /** Nouvelle séance : les façons de la créer, expliquées en une ligne. */
 ACT.exMore = () => { S.exMore = true; render(); };
 ACT.newChoose = () => openSheet(h`<div class="stack"><h2 style="margin:0">Nouvelle séance</h2>${draftBanner()}
@@ -481,7 +481,7 @@ ACT.exWrite = () => openSheet(h`<div class="stack"><h2 style="margin:0">✍️ �
   <div id="exWritePrev" aria-live="polite">${writePreview('')}</div>
   <details class="how"><summary>Exemples compris</summary><ul class="clean tight tiny">${['« 3 × 10 squats » ou « Squats 3x10 »', '« 4 x 8-10 tractions repos 2 min »', '« Gainage 3 × 30 s », « Planche 1 min 30 »', '« 5 min de corde à sauter », « Grimpe libre 1 h 30 »', '« 6 × 400 m repos 1:30 », « Footing 5 km »', '« Squat 5 × 5 à 60 kg », « Fentes 3 × 10 par jambe »', 'Une ligne qui finit par « : » ouvre une partie (« Circuit A : »)', 'Un nom seul (« Étirements doux ») est gardé tel quel'].map((t) => h`<li>${t}</li>`)}</ul></details>
   <button class="btn pri big" type="submit">Ajouter à ma séance</button><button class="btn" type="button" data-act="closeSheet">Annuler</button></form></div>`);
-INPUT.exWriteQ = (el) => { clearTimeout(INPUT.exWriteQ.t); INPUT.exWriteQ.t = setTimeout(() => { const box = $('#exWritePrev'); if (box) box.innerHTML = writePreview(el.value).s; }, 200); };
+INPUT.exWriteQ = (el) => { clearTimeout(INPUT.exWriteQ.t); INPUT.exWriteQ.t = setTimeout(() => whenReleased(() => { const box = $('#exWritePrev'); if (box) box.innerHTML = writePreview(el.value).s; }), 200); };
 SUBMIT.exWriteGo = (f) => {
   const { exercises } = parseQuickList(String(new FormData(f).get('text') || ''));
   if (!exercises.length) { toast('Écris au moins un exercice (une ligne).'); return; }
@@ -655,12 +655,12 @@ function vExercises() {
     <div class="grid2"><select data-change="exAct" aria-label="Activité"><option value="">Toutes activités</option>${Object.entries(ACTIVITIES).map(([id, a]) => h`<option value="${id}" ${act === id ? 'selected' : ''}>${a.emoji} ${a.label}</option>`)}</select>
     <select data-change="exCap" aria-label="Capacité"><option value="">Toutes capacités</option>${raw(capOptionGroups(Object.keys(CAPACITIES), cap))}</select></div>
     ${tried.length && !q ? h`<div class="card flat"><b class="small">🆕 Jamais essayé</b>${tried.map((t) => h`<div class="item"><div class="ico">${t.lib.emoji}</div><div class="grow"><b>${t.lib.name}</b><div class="tiny muted">${t.reason}</div></div><button class="btn sm" data-act="libInfo" data-id="${t.lib.id}">Voir</button></div>`)}</div>` : ''}
-    <div class="card"><div class="row between"><h3>Mes exercices</h3><button class="btn sm" data-act="persNew">＋ Nouveau</button></div>${S.personal.filter((p) => match(p.name)).map((p) => h`<div class="item"><div class="ico">${p.data?.emoji || '💪'}</div><div class="grow"><b>${p.name}</b><div class="tiny muted">${exLine(normalizeEx(p.data))}</div></div><button class="btn sm" data-act="persInfo" data-id="${p.id}">Voir</button>${shareButton('exercise', p.id)}</div>`)}${S.personal.length ? '' : h`<p class="muted small">Aucun exercice personnel.</p>`}</div>
+    <div class="card"><div class="row between"><h3>Mes exercices</h3><button class="btn sm" data-act="persNew">＋ Nouveau</button></div>${S.personal.filter((p) => match(p.name)).map((p) => h`<div class="item wraprow"><div class="ico">${p.data?.emoji || '💪'}</div><div class="grow"><b>${p.name}</b><div class="tiny muted">${exLine(normalizeEx(p.data))}</div></div><div class="row wrapf"><button class="btn sm" data-act="persInfo" data-id="${p.id}">Voir</button>${shareButton('exercise', p.id)}</div></div>`)}${S.personal.length ? '' : h`<p class="muted small">Aucun exercice personnel.</p>`}</div>
     <div class="card"><h3>Catalogue intégré (${lib.length})</h3>${lib.slice(0, S.exMore ? 200 : 15).map((x) => h`<div class="item"><div class="ico">${x.emoji}</div><div class="grow"><b>${x.name}</b><div class="tiny muted">${Object.entries(x.caps).sort((a, b) => b[1] - a[1]).slice(0, 2).map(([k]) => capL(k)).join(', ')} · difficulté ${x.diff}/5</div></div><button class="btn sm" data-act="libInfo" data-id="${x.id}">Voir</button></div>`)}${!S.exMore && lib.length > 15 ? h`<button class="btn ghost" data-act="exMore">Voir les ${lib.length - 15} autres exercices</button>` : ''}</div>
     <div class="card"><div class="row between"><h3>Exercices communs</h3><button class="btn sm" data-act="cexNew">＋ Proposer</button></div>${S.commonEx.filter((x) => match(x.name)).map((x) => h`<div class="item"><div class="ico">${x.data?.emoji || '💪'}</div><div class="grow"><b>${x.name}</b><div class="tiny muted">par ${x.author || 'compte supprimé'}</div></div><button class="btn sm" data-act="cexInfo" data-id="${x.id}">Voir</button></div>`)}${S.commonEx.length ? '' : h`<p class="muted small">Aucun exercice commun pour l’instant.</p>`}</div>
     <details class="card"><summary><b>Sources d’inspiration</b></summary>${SOURCES.map((s) => h`<p class="small"><b>${s.title}</b> — ${s.by}<br><span class="muted">${s.note}</span></p>`)}</details>`;
 }
-INPUT.exQ = (el) => { S.filters.exq = el.value; clearTimeout(INPUT.exQ.t); INPUT.exQ.t = setTimeout(() => { render(); const i = $('[data-input=exQ]'); if (i) { i.focus(); i.setSelectionRange(i.value.length, i.value.length); } }, 250); };
+INPUT.exQ = (el) => { S.filters.exq = el.value; clearTimeout(INPUT.exQ.t); INPUT.exQ.t = setTimeout(() => whenReleased(() => { render(); const i = $('[data-input=exQ]'); if (i) { i.focus(); i.setSelectionRange(i.value.length, i.value.length); } }), 250); };
 CHG.exAct = (el) => { S.filters.exAct = el.value; render(); };
 CHG.exCap = (el) => { S.filters.exCap = el.value; render(); };
 export function exerciseSheet(ex, actions = '', session = null) {

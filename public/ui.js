@@ -61,6 +61,18 @@ const secTxt = (a, b) => (a >= 120 ? (a === b ? fmtDur(a) : `${fmtDur(a)} à ${f
 const oneEach = (e) => e.mode !== 'time' && e.repsMax === 1 && e.repsMin === 1;
 export const exLine = (e) => `${oneEach(e) && !e.unit && e.sets === 1 ? '1 fois' : oneEach(e) && /^\d/.test(e.unit || '') ? `${e.sets} × ${e.unit}${e.perSide ? ' / côté' : ''}` : oneEach(e) && /^\S+s(?=\s|$)/.test(e.unit || '') ? `${e.sets} ${e.sets > 1 ? e.unit : e.unit.replace(/^(\S+)s(?=\s|$)/, '$1')}` : `${e.sets === 1 && (e.mode === 'time' || e.unit) ? '' : e.sets + ' × '}${e.mode === 'time' ? secTxt(e.secMin, e.secMax) : rng(e.repsMin, e.repsMax) + (e.unit ? ' ' + e.unit : '')}${e.perSide ? ' / côté' : ''}`}${e.rest ? ' · repos ' + fmtDur(e.rest) : ''}${e.load ? ' · ' + e.load : ''}`;
 
+/* ───────── Appui en cours ───────── */
+// 8.35 : un redessin différé (aperçu, liste filtrée pendant la frappe) attend que le doigt soit levé. Sinon le bouton
+// visé bougeait sous le doigt et le toucher était perdu (« Ajouter à ma séance » descendait quand l'aperçu s'allongeait).
+let pressedAt = 0;
+if (typeof addEventListener === 'function') {
+  addEventListener('pointerdown', () => { pressedAt = Date.now(); }, true);
+  const up = () => { setTimeout(() => { pressedAt = 0; }, 0); }; // après le « click » qui suit le relâchement
+  addEventListener('pointerup', up, true); addEventListener('pointercancel', up, true);
+}
+/** Lance fn tout de suite, ou dès que l'appui en cours est terminé (3 s au plus : un appui long ne bloque rien). */
+export function whenReleased(fn) { if (!pressedAt || Date.now() - pressedAt > 3000) return fn(); setTimeout(() => whenReleased(fn), 100); }
+
 /* ───────── Messages et feuilles ───────── */
 // Un message reste au moins 1,8 s à l'écran avant d'être remplacé (sinon un « Nouveau badge » effaçait aussitôt
 // « Séances exportées… »). 8.35 : les suivants attendent leur tour dans l'ordre (3 au plus, sans doublon) ; avant,
