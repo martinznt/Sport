@@ -44,7 +44,12 @@
 
 ## Vérifications faites
 
-⟦VERIFICATIONS⟧
+- **Code final testé** : `7976b75` (site identique à `662b8cd`). Les commits suivants de `claude/new-session-wi9olv` et de sa copie `claude/site-apres-audit-playwright` ne changent que la documentation.
+- `npm run check` réussi ; `npm test` : 109 scripts, 1 029 vérifications, aucune en échec ; `npm run test:e2e` : 25 scripts sur 25 réussis.
+- **Audit Playwright** sur 6 écrans simulés (320, 360 et 390 px, Pixel 7, tablette 768 px, ordinateur 1440 px) et l’API, en trois passages complets : 638 réussis sur 686 (code d’avant l’audit), 691 sur 698, puis **704 sur 704** sur le code final. La cause de chaque échec des deux premiers passages est écrite dans le rapport.
+- **29 défauts trouvés et corrigés** pendant cette vérification (V01 à V29). Les derniers : chiffres détaillés de Progrès introuvables (V20), page plus large que l’écran après « Copier dans mes exercices » (V22), messages d’erreur trop pâles (V23), toucher perdu juste après la frappe (V24), double toucher qui ouvrait ce qui était dessous (V26), texte « Grand » ou « Très grand » à 320 px (V27, V28), copie locale pas encore écrite quand l’app se ferme juste après une synchronisation (V29).
+- **Revenus dans l’interface simple** (ils n’existaient que dans l’ancien tableau de bord « avancé ») : Mes phases et le Carnet (Profil), le programme en cours, « ✓ Séance enregistrée », la Petite question, le Chrono, « ✍️ Avec tes mots », et les chiffres détaillés de Progrès (« 📊 Voir tous mes chiffres »).
+- Rapport complet (scénarios, résultats par écran, défauts par gravité, reproduction, couverture, limites, conclusion) : [docs/AUDIT_PLAYWRIGHT_2026-10-09.md](docs/AUDIT_PLAYWRIGHT_2026-10-09.md).
 
 ## Ce qui n'a pas pu être vérifié ici
 

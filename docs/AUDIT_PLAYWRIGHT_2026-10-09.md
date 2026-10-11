@@ -51,8 +51,8 @@ PW_EXEC=/opt/pw-browsers/chromium AUDIT_WORKERS=3 node node_modules/playwright/c
 | Second passage complet | `2006174` | 11 oct. 3 h 34 → 5 h 48 (2 h 14) | 698 = 115 scénarios × 6 profils + 8 API |
 | Sonde « taille du texte » sur toutes les pages (320 et 390 px), corrections V27 et V28, AX05 sur les 6 profils, explorateurs Profil et Paramètres à 320 px | `4c6a70d` | 11 oct. | AX05 : 6 sur 6 ; explorateurs : 2 sur 2 (1 232 clics, aucun bouton impossible à toucher) |
 | `npm run check`, `npm test` : réussis ; `npm run test:e2e` : `backup-e2e` en échec (V29, défaut antérieur rendu visible), corrigé | `4c6a70d` | 11 oct. 6 h 15 → 6 h 27 | 24 scripts sur 25 |
-| `npm run check`, `npm test`, `npm run test:e2e` sur le code final | `662b8cd` | 11 oct. | ⟦E2E_FINAL⟧ |
-| Troisième passage complet (code final) | `662b8cd` | ⟦P3_QUAND⟧ | 704 = 116 scénarios × 6 profils + 8 API |
+| `npm run check`, `npm test`, `npm run test:e2e` sur le code final | `7976b75` (site identique à `662b8cd`) | 11 oct. 6 h 34 → 6 h 46 | contrôle réussi ; 1 029 vérifications unitaires réussies, 0 échec (109 scripts) ; 25 scripts de bout en bout réussis, dont `backup-e2e` (83 étapes pour `e2e.mjs`) |
+| Troisième passage complet (code final) | `7976b75` (site identique à `662b8cd`) | 11 oct. 6 h 46 → 9 h 01 (2 h 15) | 704 = 116 scénarios × 6 profils + 8 API |
 
 Explorateurs au premier passage : 14 424 clics de boutons sur les 6 profils (12 086 avec un effet visible, 1 626 boutons disparus après un redessin, 446 sans effet visible, 102 grisés, 164 « impossibles à cliquer ») et 920 essais de formulaires (868 avec effet, 44 sans effet visible, 8 « impossibles à utiliser »). Aucune erreur JavaScript, aucun écran d’erreur.
 
@@ -111,9 +111,25 @@ Les 48 échecs, un par un, ont une cause établie :
 
 Explorateurs au second passage : 14 393 clics (12 146 avec effet, 54 « impossibles à cliquer », tous sur la carte des douleurs, 7 « page plus large que l’écran ») et 920 essais de formulaires, dont « Signaler un bug » envoyé sur les 6 profils. Aucune erreur JavaScript, aucun écran d’erreur.
 
-### Troisième passage (code final `662b8cd`)
+### Troisième passage (code final `7976b75`, site identique à `662b8cd`)
 
-⟦RESULTATS_P3⟧
+| Profil | Réussis | Échoués | Bloqués | Non exécutés |
+|---|---:|---:|---:|---:|
+| Chromium 320 px | 116 | 0 | 0 | 0 |
+| Chromium 360 px | 116 | 0 | 0 | 0 |
+| Chromium 390 px | 116 | 0 | 0 | 0 |
+| Chromium Pixel 7 | 116 | 0 | 0 | 0 |
+| Chromium tablette 768 px | 116 | 0 | 0 | 0 |
+| Chromium ordinateur 1440 px | 116 | 0 | 0 | 0 |
+| API (sans navigateur) | 8 | 0 | 0 | 0 |
+| **Total** | **704** | **0** | **0** | **0** |
+| Firefox, WebKit (iPhone) | — | — | — | 2 × 116 : navigateurs absents (section 9) |
+
+Chaque test a réussi du premier coup (aucune nouvelle tentative n’est permise par la configuration).
+
+Explorateurs au troisième passage : 14 459 clics de boutons sur les 6 profils (12 274 avec un effet visible, 1 626 boutons disparus après un redessin, 445 sans effet visible, 108 grisés, 6 disparus avant le clic ; aucun bouton impossible à toucher, aucune page devenue plus large que l’écran) et 923 essais de formulaires (881 avec effet, 42 sans effet visible). Aucune erreur JavaScript, aucun écran d’erreur.
+
+Les clics « sans effet visible » (74 par profil, les mêmes sur les 6) ont été revus par catégorie, pas un par un : onglet déjà ouvert, filtre ou réglage déjà dans l’état demandé, rechargement sans changement, essais de son (un son n’est pas vu par la signature de l’explorateur). Aucun n’a été classé comme défaut.
 
 ## 4. Défauts trouvés, par gravité
 
@@ -230,9 +246,9 @@ Voir la section 4 : chaque ligne donne le résultat attendu et le résultat obse
 
 ## 7. Captures, traces et erreurs
 
-- Rapports Playwright (HTML et JSON), traces des échecs, captures des boutons non cliquables, journaux du navigateur (erreurs JavaScript, requêtes en échec) : archive de preuves remise à part (`preuves-audit-playwright.zip`).
+- Rapports Playwright (HTML et JSON), traces des échecs, captures des boutons non cliquables, journaux du navigateur (erreurs JavaScript, requêtes en échec) : archive de preuves remise à part (`preuves-audit-playwright.zip`). Pour la 8.35 : `preuves-audit-playwright-8-35.zip`, remise à part elle aussi (résultats JSON et journaux des trois passages complets, couverture de chaque passage, sorties des contrôles finaux, journaux des essais répétés de `backup-e2e` avant et après V29, captures des boutons non cliquables de V22 et du texte « Très grand » à 320 px). Les traces Playwright (plusieurs centaines de Mo) n’y sont pas.
 - Captures avant / après dans `docs/assets/audit-playwright/` : accueil d’un nouveau compte (icône « 17 juillet », 4 notifications) et suggestion « ▶ » qui ouvrait le créateur.
-- Erreurs relevées par l’explorateur des boutons avant correction : 8 × `TypeError: Cannot read properties of null (reading 'style')` (m10). Après correction : ⟦ERREURS_APRES⟧.
+- Erreurs relevées par l’explorateur des boutons avant correction : 8 × `TypeError: Cannot read properties of null (reading 'style')` (m10). Après correction : aucune erreur JavaScript ni écran d’erreur dans les trois passages complets de la 8.35 (explorateurs des boutons et des formulaires, 6 profils, plus de 14 000 clics par passage).
 - Échecs dus à l’outil de test, et non au site (corrigés dans l’outil, jamais dans le site) :
   - A41 : Chromium lancé en locale « C » ignorait les chemins de fichiers accentués → la configuration force UTF-8.
   - Vérificateur des pages : texte des replis fermés compté comme visible → replis exclus.
@@ -245,7 +261,17 @@ Voir la section 4 : chaque ligne donne le résultat attendu et le résultat obse
 
 Couverture mesurée par `node tests/audit/couverture.mjs` (actions réellement déclenchées dans le navigateur pendant l’audit, d’après les traces de chaque test) :
 
-⟦COUVERTURE⟧
+Troisième passage (code final) : 696 traces (les 704 tests moins les 8 tests API, sans navigateur).
+
+| Ce qui est compté | Défini dans le code | Touché par l’audit | Part |
+|---|---:|---:|---:|
+| Boutons (`ACT`) | 906 | 356 | 39,3 % |
+| Formulaires (`SUBMIT`) | 83 | 51 | 61,4 % |
+| Champs « changement » (`CHG`) | 115 | 34 | 29,6 % |
+| Saisies (`INPUT`) | 27 | 8 | 29,6 % |
+| Pages visitées | — | 73 | — |
+
+Premier passage : 354 / 904 boutons, mêmes chiffres pour le reste ; second passage : 354 / 906. Les fichiers dont le plus d’actions ne sont jamais touchées par l’audit navigateur : `views-climbplan.js` (97 boutons, 31 champs : le créateur de séance, couvert surtout par `e2e.mjs`, `objectives-phases-e2e`, `climb-grades-e2e` et les tests unitaires), `views-profile.js` (45), `views-library.js` (41 : sélection multiple, fusion, étiquettes), `player.js` (29 : questions de fin de séance), `content.js` (27 : contenus modifiés par les administrateurs), `views-planning.js` (20 : décaler, semaine automatique). Le détail (chaque action jamais touchée) est dans `couverture.json` de l’archive de preuves.
 
 Restent peu ou pas couverts par l’audit navigateur (certains le sont par les tests unitaires ou E2E existants) :
 - les champs « changement » du créateur de séance (curseurs, phases, déplacements, verrous) : couverts surtout par `npm test` et `test:e2e`, peu par l’audit ;
@@ -253,6 +279,18 @@ Restent peu ou pas couverts par l’audit navigateur (certains le sont par les t
 - notifications push réelles, installation de l’application (PWA), partage natif, micro et voix ;
 - séance à plusieurs sur deux vrais appareils ;
 - Studio d’administration en profondeur (brouillons, publication, retour arrière) : seulement ouvert et parcouru.
+
+### Tests modifiés pour la 8.35, et pourquoi
+
+Aucun test n’a été retiré ni affaibli pour faire passer un défaut. Ceux qui ont changé :
+- **Interface unique (ta demande)** : les variantes « interface avancée » n’ont plus d’objet. `pages.spec` passe de 5 à 3 scénarios, AX01 ne tourne plus qu’en interface unique, `navigation-coach-e2e`, `formulaires.spec` et `profil.spec` aussi. `experience-e2e` et A30 vérifient maintenant qu’un ancien réglage « avancée » est sans effet et que rien n’est perdu ; `finder.test` vérifie que la recherche ne propose plus ce choix.
+- **Parcours changés** : S01 (la séance est proposée directement, plus d’étape « cpQuickGo »), ST01 à ST03 (chiffres détaillés derrière « 📊 Voir tous mes chiffres », V20), `e2e.mjs` (accueil simple, réglages, créateur), `goal-profile-e2e`, `objectives-phases-e2e`, `climb-grades-e2e`, `simple-discovery-e2e`, `assistant-ui-e2e` (le nom du modèle n’est plus affiché aux membres), `navigation-coach-e2e` (pages « Étirements » et « Mes phases »).
+- **Textes changés** : `ai-workflows.test` (« réserve » au lieu de « gratuit », sans le mot IA), `phase`, `phaseplan`, `v2chain`, `v2engine` (plus de réglages « verrouillés »), `strava.test` (version du schéma 14 avec les captures).
+- **Outil de test corrigé** : `fixtures.mjs` (largeur de l’écran en émulation mobile), `explorer.mjs` et `boutons.spec.mjs` (section 4), `accessibilite.spec.mjs` (fondu des messages).
+- **Attente mise à jour après relecture** : API02 (route publique « Voir le passage »).
+- **Ajouts** : `nouveautes.spec` (NV01 à NV10), F08, F09, AX05, l’étape d’AX01 sur les messages affichés, les tests unitaires `gohint`, `attachments`, `sources-passage`, et des cas dans `routines` et `phaseplan`.
+
+Ce que la suite ne vérifie plus : le contrôle des options du créateur en mode « l’app choisit » (`cpOpts` dans `e2e.mjs`), ce mode n’existant plus ; et les explorateurs ne cliquent plus les boutons rangés dans des rubriques repliées, que l’interface avancée montrait tous : environ 2 410 clics par profil au troisième passage, contre 2 583 annoncés pour la 8.34.2, sur un seul profil et avant le commit `a3d6cc7` (section 4).
 
 ## 9. Limites de l’audit
 
@@ -269,4 +307,16 @@ Restent peu ou pas couverts par l’audit navigateur (certains le sont par les t
 
 ## 10. Conclusion : prêt pour la production ?
 
-⟦CONCLUSION⟧
+**Oui pour une mise en production prudente, à trois conditions, pas avant qu’elles soient remplies.**
+
+Ce qui appuie ce « oui » (preuves aux sections 2 et 3) :
+- Sur le code final (`7976b75`, site identique à `662b8cd`), les 704 tests de l’audit réussissent du premier coup sur les 6 écrans simulés et l’API ; les 109 scripts unitaires (1 029 vérifications) et les 25 scripts de bout en bout aussi.
+- Aucun défaut critique trouvé : pas d’accès entre comptes, aucun secret exposé, routes d’administration protégées par le serveur, contenus piégés affichés comme du texte, mot de passe administrateur jamais gardé (API01 à API08, AD01, AD02, IA02).
+- La vérification de la 8.35 a trouvé 29 défauts (6 majeurs, 21 mineurs, 1 gêne, 1 durcissement), tous corrigés. Chacun a un test vu en échec avant la correction ; pour les défauts liés au temps (V24, V29), le test a d’abord été rendu reproductible.
+
+Pourquoi ces conditions :
+1. **Safari (iPhone) et Firefox n’ont pas été exécutés** (absents de cet environnement). Avant de publier, relancer `--project=webkit-iphone` et `--project=firefox-desktop` sur une machine qui les a, ou au minimum parcourir l’app sur un vrai iPhone.
+2. **Rien n’a tourné sur le vrai Cloudflare** : vraie base D1, Workers AI et Gemini réels, notifications sur de vrais téléphones, liens PubMed. Après la fusion, faire un tour du site en ligne (connexion, une séance, une sauvegarde, l’assistant).
+3. **La couverture navigateur reste partielle** : l’audit touche 39 % des boutons ; le reste n’est couvert que par les tests unitaires et de bout en bout, ou pas du tout (photos, imports de fichiers, séance à plusieurs sur deux appareils). Un défaut peut subsister là.
+
+Risque restant : faible pour les données (aucune perte constatée ; V29 ne touchait que la copie gardée sur l’appareil, jamais le serveur), moyen pour l’affichage sur les navigateurs non testés.
