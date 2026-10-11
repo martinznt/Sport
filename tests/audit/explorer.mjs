@@ -78,6 +78,10 @@ export async function explorer({ page, context, audit, info, name }) {
     await page.evaluate(async (route) => {
       // Visite guidée, modes « modifier les textes », « viser un élément », « Organiser », sélection : refermés.
       for (let i = 0; i < 3 && document.querySelector('#tour [data-act=tourEnd]'); i++) document.querySelector('#tour [data-act=tourEnd]').click();
+      // Visite en train de démarrer (calque posé, bulle pas encore dessinée) : Échap la ferme, comme au clavier.
+      if (document.querySelector('#tour')) document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+      // Mode « Modifier les textes » : sortie par son bouton (sinon la barre restait affichée et recouvrait d'autres boutons).
+      document.querySelector('#textbar [data-act=textModeOff]')?.click();
       const st = await import('/state.js'); for (const k of ['textMode', 'pick', 'lay', 'sel']) if (st.S[k]) st.S[k] = null;
       for (let i = 0; i < 3 && document.querySelector('#dialog.open'); i++) document.querySelector('#dialog.open [data-dlg="0"]')?.click() || document.querySelector('#dialog .back')?.click();
       const ui = await import('/ui.js'); for (let i = 0; i < 3 && document.querySelector('#sheet.open'); i++) ui.closeSheet();
@@ -93,9 +97,15 @@ export async function explorer({ page, context, audit, info, name }) {
   };
   const tryClick = async (route, key, path) => {
     const before = await page.evaluate(SIGNATURE).catch(() => null), errs = audit.events.pageerrors.length, ext = external.length, oth = JSON.stringify(other);
-    const loc = await open(key); if (!loc) return { outcome: 'absent après redessin' };
-    if (key.disabled) return { outcome: 'désactivé' };
+    let loc = await open(key); if (!loc) return { outcome: 'absent après redessin' };
+    if (key.disabled || await loc.isDisabled().catch(() => false)) return { outcome: 'désactivé' };
+    // Groupe SVG en plusieurs morceaux (carte des douleurs : deux cercles éloignés) : on touche sa première forme,
+    // pas le centre du groupe (qui tombe entre les deux, sur le corps).
+    if (await loc.evaluate((el) => el instanceof SVGGElement).catch(() => false)) { const part = loc.locator('circle, ellipse, rect, path').first(); if (await part.count()) loc = part; }
     try { await loc.click({ timeout: 2500 }); } catch (e) {
+      // Élément qui n'est plus affiché : l'état a changé entre la collecte et le clic (ex. « 1 modification(s) en
+      // attente » qui disparaît quand la synchronisation se termine). Ce n'est pas un bouton impossible à toucher.
+      if (/not visible|detached|not attached/.test(String(e.message)) && !(await loc.isVisible().catch(() => false))) return { outcome: 'disparu avant le clic', detail: 'plus affiché au moment du clic (état changé entre-temps)' };
       // Preuve : capture et position de la fenêtre au moment de l'échec.
       const where = await loc.evaluate((el) => { const r = el.getBoundingClientRect(), top = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2), panel = el.closest('.panel'); return { rect: [r.left, r.top, r.width, r.height].map(Math.round), dessus: top?.outerHTML.slice(0, 100) || '', defilement: panel ? panel.scrollTop : window.scrollY, hauteur: innerHeight }; }).catch(() => null);
       const shot = info.outputPath(`non-cliquable-${++shots}.png`); await page.screenshot({ path: shot }).catch(() => {});

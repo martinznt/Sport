@@ -44,7 +44,7 @@ ACT.progSub = (el) => { if (el.dataset.id === 'journal' && !el.dataset.keep) S.j
 const pct = (x) => (x == null ? '—' : `${x > 0 ? '+' : ''}${x} %`);
 
 function vSummary() {
-  if (!advancedUI() && !S.lay && !savedLayouts().progress && ctx().history.length) return simpleProgress();
+  if (!advancedUI() && !S.lay && !S.progDetails && !savedLayouts().progress && ctx().history.length) return simpleProgress();
   const c = ctx(), days = S.benchDays || 30, b = benchmarks(c, days), per = S.sumKind || 'week', s = periodSummary(c, per), reg = regularity(c), load = loadAnalysis(c);
   if (!c.history.length) return h`<section class="card hero center"><div style="font-size:3rem">🌱</div><h2>Ta progression commence ici</h2><p>Fais ta première séance : tes chiffres, tes records et ta régularité apparaîtront ici.</p><button class="btn pri big" data-act="genOpen">🎯 Me proposer une séance</button></section>${storyCard()}`;
   const delta = (x) => (x == null ? '' : x > 0 ? h`<i class="up">▲ ${x} %</i>` : x < 0 ? h`<i class="down">▼ ${Math.abs(x)} %</i>` : h`<i>=</i>`);
@@ -67,7 +67,8 @@ function vSummary() {
   const kpisView = () => h`<div class="kpiwrap"><div class="row between">${seg('benchDays', String(days), [['7', '7 jours'], ['30', '30 jours'], ['90', '90 jours']])}</div>
     <div class="kpis">${kpi('🏋️', 'Séances', b.cur.sessions, b.deltas.sessions)}${kpi('⏱', 'Minutes', b.cur.minutes, b.deltas.minutes)}${kpi('🔁', 'Séries', b.cur.sets, b.deltas.sets)}${kpi('😮‍💨', 'Ressenti', b.cur.rpe == null ? '—' : String(b.cur.rpe).replace('.', ','), null)}</div>
     <p class="tiny muted center">Comparé aux ${days} jours d’avant · uniquement toi</p></div>`;
-  return composePage('progress', {
+  const back = !advancedUI() && S.progDetails ? h`<button class="btn ghost" data-act="progSimple">‹ Revenir au résumé simple</button>` : '';
+  return h`${back}${composePage('progress', {
     streak: () => streakCard(),
     kpis: kpisView,
     wins: () => (wins.length ? h`<section class="card ok-b"><span class="kicker ok-t">Tes bonnes nouvelles</span>${wins.map(([ic, t]) => h`<div class="win"><span>${ic}</span>${t}</div>`)}</section>` : ''),
@@ -80,7 +81,7 @@ function vSummary() {
     weeksum: () => SUM(),
     learned: () => learnedCard(),
     story: () => storyCard(),
-  });
+  })}`;
 }
 ACT.benchDays = (el) => { S.benchDays = Number(el.dataset.id); render(); };
 ACT.sumKind = (el) => { S.sumKind = el.dataset.id; render(); };
@@ -225,5 +226,8 @@ ACT.labDel = async (el) => { if (await ask('Supprimer cette expérience ?', { da
 
 function simpleProgress() {
  const c=ctx(), days=S.benchDays || 30, b=benchmarks(c,days), r=regularity(c), less=undertrained(c).items.slice(0,3), load=loadAnalysis(c);
- return h`<section class="card"><h3>Ce qui change</h3><div class="chips">${[7,30,90].map((d) => chip(days===d, d+' jours', 'data-act="benchDays" data-id="'+d+'"'))}</div><p class="small">${r.text}</p>${b.capDiff.slice(0,4).map((x) => h`<div class="item"><div class="grow"><b>${x.label}</b><div class="tiny muted">${x.cur > x.prev ? 'Plus travaillé' : x.cur < x.prev ? 'Moins travaillé' : 'Stable'} · volume observé, pas une mesure de niveau</div></div></div>`)}${!b.capDiff.length ? h`<p class="muted small">Données insuffisantes pour comparer les capacités. Tes activités sont bien dans le journal.</p>` : ''}</section><details class="card"><summary>Ce qui mérite mon attention</summary>${less.map((x) => h`<p class="small">${x.text || x.label || x.capId}</p>`)}<p class="small">${load.text}</p>${load.signals.length?h`<ul class="small">${load.signals.map(text=>h`<li>${text}</li>`)}</ul><p class="tiny muted">Ces observations décrivent tes séances et ton ressenti.</p>`:''}</details><button class="btn" data-act="progSub" data-id="journal">Mon journal réel</button>${storyCard()}`;
+ return h`<section class="card"><h3>Ce qui change</h3><div class="chips">${[7,30,90].map((d) => chip(days===d, d+' jours', 'data-act="benchDays" data-id="'+d+'"'))}</div><p class="small">${r.text}</p>${b.capDiff.slice(0,4).map((x) => h`<div class="item"><div class="grow"><b>${x.label}</b><div class="tiny muted">${x.cur > x.prev ? 'Plus travaillé' : x.cur < x.prev ? 'Moins travaillé' : 'Stable'} · volume observé, pas une mesure de niveau</div></div></div>`)}${!b.capDiff.length ? h`<p class="muted small">Données insuffisantes pour comparer les capacités. Tes activités sont bien dans le journal.</p>` : ''}</section><details class="card"><summary>Ce qui mérite mon attention</summary>${less.map((x) => h`<p class="small">${x.text || x.label || x.capId}</p>`)}<p class="small">${load.text}</p>${load.signals.length?h`<ul class="small">${load.signals.map(text=>h`<li>${text}</li>`)}</ul><p class="tiny muted">Ces observations décrivent tes séances et ton ressenti.</p>`:''}</details><div class="row wrapf"><button class="btn" data-act="progSub" data-id="journal">Mon journal réel</button><button class="btn" data-act="progDetails">📊 Voir tous mes chiffres</button></div><p class="tiny muted"><em>Séances, minutes et séries sur 7, 30 ou 90 jours, charge de chaque semaine, régularité.</em></p>${storyCard()}`;
 }
+// 8.35 : une seule interface ; les chiffres détaillés (avant : interface avancée) restent à un toucher.
+ACT.progDetails = () => { S.progDetails = true; render(); window.scrollTo(0, 0); };
+ACT.progSimple = () => { S.progDetails = false; render(); window.scrollTo(0, 0); };

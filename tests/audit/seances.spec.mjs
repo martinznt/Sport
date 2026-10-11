@@ -10,7 +10,8 @@ const server = async (audit, who = 'AuditAlice') => (await audit.users[who].get(
 test('S01 créer une séance guidée : « ⚡ Proposer ma séance », générer, enregistrer, retrouver partout', async ({ page, audit }) => {
   await go(page, 'library/climbplan', '[data-act=cpQuick]');
   await expect(page.locator('[data-act=cpQuick]')).toBeEnabled(); await page.click('[data-act=cpQuick]');
-  await page.click('[data-act=cpQuickGo]'); await page.waitForSelector('[data-act=cpSave]');
+  // 8.35 : « ⚡ Proposer ma séance » génère directement la séance (plus d'étape « cpQuickGo »).
+  await page.waitForSelector('#cpresult [data-act=cpSave]');
   const proposed = await state(page, async () => { const s = (await import('/state.js')).S.cp?.result; return s ? { name: s.name, n: s.exercises.length, minutes: s.durationMin } : null; });
   expect(proposed?.n, 'des exercices proposés').toBeGreaterThan(0);
   await page.click('[data-act=cpSave]'); await expect(page.locator('#toast')).toContainText('Enregistrée'); await synced(page);

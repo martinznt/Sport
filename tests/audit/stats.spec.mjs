@@ -22,11 +22,17 @@ async function seedHistory(audit) {
     if (r.status !== 200) throw new Error('historique ' + r.status);
   }
 }
+/** 8.35 : interface unique ; les chiffres détaillés s'ouvrent par « 📊 Voir tous mes chiffres » sur le Résumé. */
+async function details(page, selector) {
+  await go(page, 'progress/summary', '#main');
+  if (!(await page.locator(selector).count())) await page.click('[data-act=progDetails]');
+  await page.waitForSelector(selector);
+}
 const kpis = (page) => page.locator('.kpis .kpi').evaluateAll((els) => Object.fromEntries(els.map((k) => [k.querySelector('span').innerText.replace(/^\S+\s/, '').trim(), [k.querySelector('b').innerText.trim(), (k.querySelector('i')?.innerText || '').trim()]])));
 
 test('ST01 Résumé : séances, minutes, séries et écarts sur 7, 30 et 90 jours', async ({ page, audit }) => {
   await seedHistory(audit); await synced(page); await setInterface(page);
-  await go(page, 'progress/summary', '.kpis');
+  await details(page, '.kpis');
   for (const days of [7, 30, 90]) {
     await page.click(`[data-act=benchDays][data-id="${days}"]`); await page.waitForTimeout(150);
     const shown = await kpis(page);
@@ -39,7 +45,7 @@ test('ST01 Résumé : séances, minutes, séries et écarts sur 7, 30 et 90 jour
 
 test('ST02 Charge : 420 cette semaine, 270 la semaine d’avant, 0 sans ressenti', async ({ page, audit }) => {
   await seedHistory(audit); await synced(page); await setInterface(page);
-  await go(page, 'progress/summary', '.stat');
+  await details(page, '.stat');
   const card = page.locator('section.card', { has: page.locator('h3', { hasText: 'Charge' }) });
   const values = await card.locator('.stat').evaluateAll((els) => els.map((e) => [e.querySelector('span').innerText.trim(), e.querySelector('b').innerText.trim()]));
   expect(values).toEqual([['cette semaine', '420'], ['sem. −1', '270'], ['sem. −2', '0']]);
@@ -53,6 +59,6 @@ test('ST03 Historique : chaque séance faite apparaît une fois, avec sa durée 
   expect(text).toMatch(/1 h|60 min/); expect(text).toMatch(/1 h 30|90 min/);
   await page.evaluate(async () => { (await import('/state.js')).deleteHistory('calc-0'); }); await synced(page);
   expect((await audit.users.AuditAlice.get('/api/history')).data.history.map((h) => h.id)).not.toContain('calc-0');
-  await go(page, 'progress/summary', '.kpis'); await page.click('[data-act=benchDays][data-id="30"]');
+  await details(page, '.kpis'); await page.click('[data-act=benchDays][data-id="30"]');
   expect((await kpis(page))['Séances']).toEqual(['5', '▲ 25 %']);
 });
