@@ -126,7 +126,10 @@ try {
   });
   await step('exports Strava sans OAuth : suppression accessible et aucune révocation inventée', async () => {
     assert.equal(await page.locator('[data-act=stravaConnect]').count(), 0); await page.click('[data-act=stravaDisconnect]'); await page.click('#dialog [data-dlg="1"]');
-    await poll(async () => (await history()).length === 1); assert.match(await page.locator('main').innerText(), /imports Strava ont été supprimés/); assert.doesNotMatch(await page.locator('main').innerText(), /révocation/); assert.equal(vendorCalls.length, 0);
+    // Le serveur supprime d'abord ; l'app n'affiche son message qu'après avoir enregistré sa copie locale : l'attendre
+    // (sur la CI, plus lente, la lecture de l'historique arrivait avant ce message).
+    await poll(async () => (await history()).length === 1); await page.waitForFunction(() => /imports Strava ont été supprimés/.test(document.querySelector('main')?.innerText || ''));
+    assert.match(await page.locator('main').innerText(), /imports Strava ont été supprimés/); assert.doesNotMatch(await page.locator('main').innerText(), /révocation/); assert.equal(vendorCalls.length, 0);
     await page.locator('[data-act=importOpen][data-source=strava]').click(); await upload(file.replaceAll('2026-10-02', '2026-10-03')); await page.click('[data-act=importSave]'); await poll(async () => (await history()).length === 2);
   });
   await step('OAuth : accès activités privées consenti, état réel relu, aucun jeton navigateur', async () => {

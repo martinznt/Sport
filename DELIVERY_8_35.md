@@ -44,7 +44,7 @@
 
 ## Vérifications faites
 
-- **Code final testé** : `7976b75` (site identique à `662b8cd`). Les commits suivants de `claude/new-session-wi9olv` et de sa copie `claude/site-apres-audit-playwright` ne changent que la documentation.
+- **Code final testé** : `7976b75` (site identique à `662b8cd`). Les commits suivants ne changent pas le site : documentation, archives (ZIP et preuves) et un test de bout en bout rendu fiable sur la CI de GitHub (`integrations-e2e`, voir le rapport, section 8).
 - `npm run check` réussi ; `npm test` : 109 scripts, 1 029 vérifications, aucune en échec ; `npm run test:e2e` : 25 scripts sur 25 réussis.
 - **Audit Playwright** sur 6 écrans simulés (320, 360 et 390 px, Pixel 7, tablette 768 px, ordinateur 1440 px) et l’API, en trois passages complets : 638 réussis sur 686 (code d’avant l’audit), 691 sur 698, puis **704 sur 704** sur le code final. La cause de chaque échec des deux premiers passages est écrite dans le rapport.
 - **29 défauts trouvés et corrigés** pendant cette vérification (V01 à V29). Les derniers : chiffres détaillés de Progrès introuvables (V20), page plus large que l’écran après « Copier dans mes exercices » (V22), messages d’erreur trop pâles (V23), toucher perdu juste après la frappe (V24), double toucher qui ouvrait ce qui était dessous (V26), texte « Grand » ou « Très grand » à 320 px (V27, V28), copie locale pas encore écrite quand l’app se ferme juste après une synchronisation (V29).
