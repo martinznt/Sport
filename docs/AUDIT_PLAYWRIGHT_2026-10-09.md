@@ -32,11 +32,62 @@ Plus les tests existants du dépôt, relancés : `npm test` (109 scripts en 8.35
 
 ## 2. Tests réellement exécutés
 
-⟦EXECUTION⟧
+Tout a tourné dans le conteneur de travail, avec Chromium (seul navigateur installé). Commande de chaque passage complet :
+
+```bash
+PW_EXEC=/opt/pw-browsers/chromium AUDIT_WORKERS=3 node node_modules/playwright/cli.js test -c tests/audit/playwright.config.mjs \
+  --project=chromium-small320 --project=chromium-small360 --project=chromium-phone390 \
+  --project=chromium-android --project=chromium-tablet --project=chromium-desktop --project=api
+```
+
+3 tests en parallèle, **aucune nouvelle tentative automatique** (`retries: 0`) : un test instable reste visible.
+
+| Exécution | Code | Quand (UTC) | Tests |
+|---|---|---|---|
+| Premier passage complet (8.35.0 avant les corrections de cet audit) | `1a67411` | 10 oct. 23 h 47 → 11 oct. 2 h 08 (2 h 20) | 686 = 113 scénarios × 6 profils + 8 API |
+| Vérifications ciblées de chaque correction (sondes et scénarios rejoués avant / après) | branche de correction | 11 oct., pendant et après le premier passage | voir section 4 (V20 à V26) |
+| Reprise (A01–A41) et fiabilité (F01–F09), 320 px et tablette, après la dernière correction | `2006174` | 11 oct. | 98 |
+| `npm run check`, `npm test` (109 scripts), `npm run test:e2e` (25 scripts) sur le code final | `2006174` | 11 oct. | ⟦E2E_FINAL⟧ |
+| Second passage complet (code final) | ⟦P2_COMMIT⟧ | ⟦P2_QUAND⟧ | 698 = 115 scénarios × 6 profils + 8 API |
+
+Explorateurs au premier passage : 14 424 clics de boutons sur les 6 profils (12 086 avec un effet visible, 1 626 boutons disparus après un redessin, 446 sans effet visible, 102 grisés, 164 « impossibles à cliquer ») et 920 essais de formulaires (868 avec effet, 44 sans effet visible, 8 « impossibles à utiliser »). Aucune erreur JavaScript, aucun écran d’erreur.
 
 ## 3. Résultats : réussis, échoués, bloqués, non exécutés
 
-⟦RESULTATS⟧
+### Premier passage (`1a67411`)
+
+| Profil | Réussis | Échoués | Bloqués | Non exécutés |
+|---|---:|---:|---:|---:|
+| Chromium 320 px | 105 | 8 | 0 | 0 |
+| Chromium 360 px | 104 | 9 | 0 | 0 |
+| Chromium 390 px | 105 | 8 | 0 | 0 |
+| Chromium Pixel 7 | 106 | 7 | 0 | 0 |
+| Chromium tablette 768 px | 105 | 8 | 0 | 0 |
+| Chromium ordinateur 1440 px | 106 | 7 | 0 | 0 |
+| API (sans navigateur) | 7 | 1 | 0 | 0 |
+| **Total** | **638** | **48** | **0** | **0** |
+| Firefox, WebKit (iPhone) | — | — | — | 2 × 113 : navigateurs absents (section 9) |
+
+Les 48 échecs, un par un, ont une cause établie :
+
+| Cause | Échecs | Où | Nature |
+|---|---:|---|---|
+| ST01, ST02, ST03 : chiffres détaillés de Progrès introuvables | 18 | 6 profils | **défaut du site V20** (scénarios adaptés au nouveau chemin « 📊 Voir tous mes chiffres ») |
+| S01 : l’étape « cpQuickGo » n’existe plus (la séance est proposée directement) | 6 | 6 profils | scénario à jour avec le parcours actuel |
+| Chaque bouton — Bibliothèque | 6 | 6 profils | **V22** à 320, 360 et 390 px (page élargie après « Copier dans mes exercices ») ; sur tous les profils, un bouton « ↑ » grisé compté à tort (outil) |
+| Chaque bouton — Profil | 6 | 6 profils | outil : carte des douleurs touchée entre deux formes, « Synchronisation… » disparu avant le clic |
+| Chaque bouton — Paramètres | 6 | 6 profils | outil : visite guidée en train de démarrer jamais refermée (analyse qui a fait trouver **V21**), « N modification(s) en attente » disparu avant le clic |
+| Chaque bouton — Administration | 2 | 320, 360 px | **V25** (barre « Modifier les textes » sur le bouton « Fermer ») ; outil : mode textes laissé actif |
+| AX01 sur l’accueil | 1 | 390 px | outil : message mesuré pendant son fondu ; le contrôle du message affiché a révélé **V23** |
+| S09 | 1 | 360 px | **V24** (toucher perdu pendant la mise à jour de l’aperçu) |
+| A04 | 1 | tablette | **V26** (double toucher qui actionne le bouton dessous) |
+| API02 | 1 | API | attente à mettre à jour : route publique voulue de la 8.35, relue (section 4) |
+
+À noter aussi, sans échec de test : l’explorateur des formulaires n’a pas pu envoyer « Signaler un bug » sur les 6 profils, juste après l’essai de la fenêtre d’import Strava. La cause exacte n’est pas isolée ; dans un état propre (sonde) et avec l’outil corrigé, le formulaire est envoyé.
+
+### Second passage (code final)
+
+⟦RESULTATS_P2⟧
 
 ## 4. Défauts trouvés, par gravité
 
