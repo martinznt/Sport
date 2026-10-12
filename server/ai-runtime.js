@@ -1,9 +1,10 @@
 // Gemini / Workers AI : choix explicite, réponses et réserve commune à toutes les fonctions IA.
 // Tarifs en neurones / million de tokens, documentation Cloudflare vérifiée le 04/10/2026.
-import { GEMINI_MODEL, runGemini } from './gemini.js';
+import { GEMINI_LATEST_MODEL, GEMINI_MODEL, runGemini } from './gemini.js';
 export const DEFAULT_MODEL = '@cf/qwen/qwen3-30b-a3b-fp8';
 export const AI_MODELS = {
   [GEMINI_MODEL]: { label: 'Gemini 3.8 Flash · recommandé', provider: 'gemini', unit: 'requests', minBudget: 1, maxBudget: 500, defaultBudget: 40 },
+  [GEMINI_LATEST_MODEL]: { label: 'Gemini Flash · toujours la dernière version', provider: 'gemini', unit: 'requests', minBudget: 1, maxBudget: 500, defaultBudget: 40 },
   [DEFAULT_MODEL]: { label: 'Qwen 3 · Cloudflare', provider: 'cloudflare', unit: 'neurons', input: 4625, output: 30475, minBudget: 1000, maxBudget: 9000, defaultBudget: 8000 },
   '@cf/meta/llama-3.3-70b-instruct-fp8-fast': { label: 'Llama 3.3 70B · Cloudflare', provider: 'cloudflare', unit: 'neurons', input: 26668, output: 204805, minBudget: 1000, maxBudget: 9000, defaultBudget: 8000 },
 };
@@ -144,7 +145,7 @@ export async function runAI(env, options, { json = true, timeoutMs = 30000, fetc
   if (provider === 'gemini') {
     input.thinking_level=c.preferences.reasoning.toUpperCase();
     await reserveGemini(env, input, c.budget);
-    return checkedResponse(await runGemini(env, input, { json, timeoutMs, ...(fetchFn ? { fetchFn } : {}) }),{json,allowClarification});
+    return checkedResponse(await runGemini(env, input, { json, timeoutMs, model: c.model, ...(fetchFn ? { fetchFn } : {}) }),{json,allowClarification});
   }
   if (json) input.response_format = { type: 'json_object' };
   if (c.model === DEFAULT_MODEL && input.messages?.length) {
