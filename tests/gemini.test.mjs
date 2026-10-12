@@ -53,6 +53,16 @@ await ok('transport : URL et modèle fixes, clé dans l’en-tête serveur, sort
   await runAI(env,{...input,max_tokens:1},{json:false,fetchFn});assert.equal(received.body.generationConfig.maxOutputTokens,100+3072);assert.equal(received.body.generationConfig.responseMimeType,undefined);
 });
 
+await ok('Gemini « dernière version » : alias Google suivi, modèle hors liste refusé avant tout appel',async()=>{
+  const env=makeEnv();await saveAIConfig(env,{model:'gemini-flash-latest',budget:40});
+  let url;const fetchFn=async(u)=>{url=u;return Response.json(answer());};
+  const status=await aiStatus(env);assert.equal(status.model,'gemini-flash-latest');assert.equal(status.provider,'gemini');
+  assert.ok(status.models.some((m)=>m.id==='gemini-flash-latest'&&m.provider==='gemini'));
+  await runAI(env,input,{fetchFn});assert.equal(url,'https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent');
+  let called=false;const error=await fail(()=>runGemini({GEMINI_API_KEY:TEST_KEY},input,{model:'autre-modele',fetchFn:async()=>{called=true;return Response.json(answer());}}));
+  assert.equal(error.code,'AI_CONFIG');assert.equal(called,false);
+});
+
 await ok('préférences Gemini : raisonnement et créativité restent ceux du site malgré les paramètres du demandeur',async()=>{
   const env=makeEnv();await saveAIConfig(env,{model:GEMINI,budget:40,preferences:{reasoning:'minimal',creativity:0.05,answerStyle:'pedagogical',detail:'detailed'}});
   let body;const fetchFn=async(_url,options)=>{body=JSON.parse(options.body);return Response.json(answer());};

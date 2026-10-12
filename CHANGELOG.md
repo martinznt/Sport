@@ -1,9 +1,10 @@
 # CHANGELOG — Séances entraînement
 
-## Correctif Gemini (après 8.35.0) — niveau de réflexion accepté par gemini-3.8-flash
+## Correctif Gemini (après 8.35.0) — niveau de réflexion accepté, choix « dernière version »
 
 - Gemini : le site envoyait `thinkingLevel: MINIMAL` par défaut, que `gemini-3.8-flash` refuse (erreur 400 : « L’assistant est momentanément indisponible »). « Rapide » envoie maintenant `LOW` et « Approfondie » `MEDIUM`, les niveaux acceptés selon la documentation Google ([page du modèle](https://ai.google.dev/gemini-api/docs/models/gemini-3.8-flash), [réflexion](https://ai.google.dev/gemini-api/docs/generate-content/thinking)).
 - La réflexion étant comptée dans `maxOutputTokens`, une marge est ajoutée (1 024 jetons en `LOW`, 3 072 en `MEDIUM`) pour qu’elle ne coupe pas la réponse.
+- Nouveau choix dans Administration › Assistant du site : **Gemini Flash · toujours la dernière version** (`gemini-flash-latest`), un alias que Google déplace vers chaque nouvelle version de Gemini Flash ([versions des modèles](https://ai.google.dev/gemini-api/docs/models)). `gemini-3.8-flash` reste le choix par défaut, plus stable.
 
 ## 8.35.0 — Phases, étirements, objectifs simples, sources, captures d'écran, une seule interface
 
