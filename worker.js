@@ -30,6 +30,7 @@ import { SPORT_INTENTS } from './public/intentions.js';
 import { duoCode, normCode, cleanDuoState, DUO_TTL, DUO_MAX, cleanGroupState, GROUP_TTL } from './server/duo.js';
 import { cleanConfig as cleanGroupConfig, GROUP_MAX } from './public/group.js';
 import { changesRoute } from './server/changes.js';
+import { getMaint, setMaint, mayEnter, unlock, addWaiter, countWaiters, takeReady, notifyWaiters, DEFAULT_MESSAGE, MAX_ALLOW } from './server/maintenance.js';
 import { vapid, sendPush, runReminders, messageFor, notifyType, updateNotice, broadcastNotice, TYPES as PUSH_TYPES, b64u } from './server/push.js';
 import { buildIcs } from './public/ics.js';
 import { APP_ICON_LIMITS, listCustomAppIcons, startAppIconUpload, uploadAppIconPart, completeAppIconUpload, abortAppIconUpload, deleteCustomAppIcon, customAppIconsRoute, existingCustomAppIconUrls, appIconApiError } from './server/app-icons.js';
@@ -46,7 +47,7 @@ const MAX_ITEMS_PER_USER = 20000;
 
 // Seuls ces fichiers sont servis publiquement (worker.js, wrangler.json, README, tests… restent privés).
 // tests/assets.test.mjs vérifie que chaque module importé par le navigateur figure ici ET dans le précache du Service Worker.
-const PUBLIC_FILES = new Set(['/external.js', '/pathlinks.js', '/sportprefs.js', '/library-howto.js', '/choices.js', '/views-choices.js', '/backup.js', '/integrations.js', '/views-integrations.js', '/', '/index.html', '/style.css', '/boot.js', '/app.js', '/ui.js', '/state.js', '/views-home.js', '/views-progress.js', '/views-library.js', '/views-profile.js', '/views-settings.js', '/views-setup.js', '/install.js', '/questions.js', '/views-ai.js', '/tour.js', '/move.js', '/news.js', '/hr.js', '/fx.js', '/anim.js', '/timer.js', '/sound.js', '/climb.js', '/views-climb.js', '/motivation.js', '/views-motiv.js', '/program.js', '/views-program.js', '/views-coach.js', '/reminders.js', '/ics.js', '/layout.js', '/body.js', '/body-rules.js', '/intentions.js', '/views-gen.js', '/inbox.js', '/sources.js', '/srcui.js', '/catalog.js', '/views-catalog.js', '/qr.js', '/share.js', '/duo.js', '/scene.js', '/i18n.js', '/format.js', '/finder.js', '/find-ui.js', '/global.js', '/content.js', '/help.js', '/merge.js', '/sfilter.js', '/explain.js', '/climbplan.js', '/views-climbplan.js', '/surprise.js', '/guide.js', '/goaldone.js', '/nav.js', '/places.js', '/picker.js', '/hints.js', '/sportplan.js', '/catchup.js', '/phase.js', '/phaseplan.js', '/adminlist.js', '/sessionmeta.js', '/views-studio.js', '/intents.js', '/filters.js', '/budget.js', '/sessionchain.js', '/whatif.js', '/dna.js', '/strategy.js', '/knowledge.js', '/sessionedit.js', '/assess.js', '/views-assistant.js', '/loop.js', '/fit.js', '/aimplan.js', '/physique.js', '/pagetour.js', '/adapt.js', '/views-adapt.js', '/group.js', '/views-group.js', '/bodycomp.js', '/coachbrain.js', '/views-forme.js', '/agenda.js', '/experience.js', '/views-agenda.js', '/views-experience.js', '/planning.js', '/views-planning.js', '/live.js', '/sports.js', '/views-sports.js', '/story.js', '/views-story.js', '/views-community.js', '/demo.js', '/catgen.js', '/gym.js', '/routines.js', '/views-routines.js', '/stretch.js', '/views-stretch.js', '/shots.js', '/views-goalwizard.js', '/views-gym.js', '/library-more.js', '/player.js',
+const PUBLIC_FILES = new Set(['/external.js', '/pathlinks.js', '/sportprefs.js', '/library-howto.js', '/choices.js', '/views-choices.js', '/backup.js', '/integrations.js', '/views-integrations.js', '/', '/index.html', '/style.css', '/boot.js', '/app.js', '/ui.js', '/state.js', '/views-home.js', '/views-progress.js', '/views-library.js', '/views-profile.js', '/views-settings.js', '/views-setup.js', '/install.js', '/questions.js', '/views-ai.js', '/tour.js', '/move.js', '/news.js', '/hr.js', '/fx.js', '/anim.js', '/timer.js', '/sound.js', '/climb.js', '/views-climb.js', '/motivation.js', '/views-motiv.js', '/program.js', '/views-program.js', '/views-coach.js', '/reminders.js', '/ics.js', '/layout.js', '/body.js', '/body-rules.js', '/intentions.js', '/views-gen.js', '/inbox.js', '/sources.js', '/srcui.js', '/catalog.js', '/views-catalog.js', '/qr.js', '/share.js', '/duo.js', '/scene.js', '/i18n.js', '/format.js', '/finder.js', '/find-ui.js', '/global.js', '/content.js', '/help.js', '/merge.js', '/sfilter.js', '/explain.js', '/climbplan.js', '/views-climbplan.js', '/surprise.js', '/guide.js', '/goaldone.js', '/nav.js', '/places.js', '/picker.js', '/hints.js', '/sportplan.js', '/catchup.js', '/phase.js', '/phaseplan.js', '/adminlist.js', '/sessionmeta.js', '/views-studio.js', '/intents.js', '/filters.js', '/budget.js', '/sessionchain.js', '/whatif.js', '/dna.js', '/strategy.js', '/knowledge.js', '/sessionedit.js', '/assess.js', '/views-assistant.js', '/loop.js', '/fit.js', '/aimplan.js', '/physique.js', '/pagetour.js', '/adapt.js', '/views-adapt.js', '/group.js', '/views-group.js', '/bodycomp.js', '/coachbrain.js', '/views-forme.js', '/agenda.js', '/experience.js', '/views-agenda.js', '/views-experience.js', '/planning.js', '/views-planning.js', '/live.js', '/sports.js', '/views-sports.js', '/story.js', '/views-story.js', '/views-community.js', '/demo.js', '/catgen.js', '/gym.js', '/routines.js', '/views-routines.js', '/views-maintenance.js', '/stretch.js', '/views-stretch.js', '/shots.js', '/views-goalwizard.js', '/views-gym.js', '/library-more.js', '/player.js',
   '/objectivelinks.js', '/engine.js', '/library.js', '/shared.js', '/items.js', '/model.js', '/grading.js', '/brain.js', '/estimate.js', '/generator.js', '/csv.js', '/search.js', '/anatomy.js', '/commands.js', '/outbox.js',
   '/sw.js', '/manifest.json', '/icon-192.png', '/icon-512.png', '/icon-maskable-512.png', '/badge-96.png', '/robots.txt',
   '/app-icon-seances-v1-badge-96.png', '/app-icon-gold-v1-badge-96.png', '/app-icon-slate-v1-badge-96.png', '/app-icon-white-v1-badge-96.png', '/app-icon-forest-v1-badge-96.png', '/app-icon-ocean-v1-badge-96.png', '/app-icon-climb-v1-badge-96.png', '/app-icon-route-v1-badge-96.png', '/app-icon-rope-v1-badge-96.png', '/app-icon-mono-v1-badge-96.png', '/app-icon-terra-v1-badge-96.png', '/app-icons.js', '/app-icons.css', '/icon-art.js', '/admin-search.js', '/app-icon-seances-v1-180.png', '/app-icon-seances-v1-192.png', '/app-icon-seances-v1-512.png', '/app-icon-seances-v1-maskable-512.png', '/manifest-icons-seances-v1.json', '/app-icon-gold-v1-180.png', '/app-icon-gold-v1-192.png', '/app-icon-gold-v1-512.png', '/app-icon-gold-v1-maskable-512.png', '/manifest-icons-gold-v1.json', '/app-icon-slate-v1-180.png', '/app-icon-slate-v1-192.png', '/app-icon-slate-v1-512.png', '/app-icon-slate-v1-maskable-512.png', '/manifest-icons-slate-v1.json', '/app-icon-white-v1-180.png', '/app-icon-white-v1-192.png', '/app-icon-white-v1-512.png', '/app-icon-white-v1-maskable-512.png', '/manifest-icons-white-v1.json', '/app-icon-forest-v1-180.png', '/app-icon-forest-v1-192.png', '/app-icon-forest-v1-512.png', '/app-icon-forest-v1-maskable-512.png', '/manifest-icons-forest-v1.json', '/app-icon-ocean-v1-180.png', '/app-icon-ocean-v1-192.png', '/app-icon-ocean-v1-512.png', '/app-icon-ocean-v1-maskable-512.png', '/manifest-icons-ocean-v1.json', '/app-icon-climb-v1-180.png', '/app-icon-climb-v1-192.png', '/app-icon-climb-v1-512.png', '/app-icon-climb-v1-maskable-512.png', '/manifest-icons-climb-v1.json', '/app-icon-route-v1-180.png', '/app-icon-route-v1-192.png', '/app-icon-route-v1-512.png', '/app-icon-route-v1-maskable-512.png', '/manifest-icons-route-v1.json', '/app-icon-rope-v1-180.png', '/app-icon-rope-v1-192.png', '/app-icon-rope-v1-512.png', '/app-icon-rope-v1-maskable-512.png', '/manifest-icons-rope-v1.json', '/app-icon-mono-v1-180.png', '/app-icon-mono-v1-192.png', '/app-icon-mono-v1-512.png', '/app-icon-mono-v1-maskable-512.png', '/manifest-icons-mono-v1.json', '/app-icon-terra-v1-180.png', '/app-icon-terra-v1-192.png', '/app-icon-terra-v1-512.png', '/app-icon-terra-v1-maskable-512.png', '/manifest-icons-terra-v1.json']);
@@ -312,7 +313,7 @@ const can = (u, role) => !!u?.isAdmin && (u.roles || []).some((r) => r === 'supe
 function roleFor(p, m) {
   if (/^\/api\/admin\/users\/[\w-]+\/(role|roles)$/.test(p)) return 'super';
   if (p.startsWith('/api/admin/users')) return 'users';
-  if (p.startsWith('/api/admin/bugs') || p === '/api/admin/push-status' || p === '/api/admin/push-broadcast' || p.startsWith('/api/admin/code') || p === '/api/admin/maintenance') return 'technical';
+  if (p.startsWith('/api/admin/bugs') || p === '/api/admin/push-status' || p === '/api/admin/push-broadcast' || p.startsWith('/api/admin/code') || p === '/api/admin/maintenance' || p === '/api/admin/maintenance-mode') return 'technical';
   if ((p === '/api/admin/ai' || p === '/api/admin/ai/test') && m === 'POST') return 'intelligence';
   if (p === '/api/admin/studio/ai' || p === '/api/admin/lab' || p === '/api/admin/health') return 'intelligence';
   if (p === '/api/admin/assistant/code') return 'technical';
@@ -425,6 +426,30 @@ async function handleApi(request, env, url) {
     if ((len > 0 || request.body) && ct && !/^application\/json\b/i.test(ct)) return fail('Format non accepté.', 415);
   }
   try { await ensureSchema(env); } catch (e) { console.error('schema', e); return fail('Initialisation de la base impossible.', 500); }
+  // Mode maintenance : état public, inscription « me prévenir », déverrouillage par le mot de passe administrateur,
+  // puis blocage serveur de TOUT le reste pour les comptes non autorisés (l'interface n'est qu'un affichage).
+  const maint = await getMaint(env);
+  if (p === '/api/maintenance/status' && m === 'GET') {
+    const a = await authenticate(request, env);
+    return json({ ok: true, on: maint.on, message: maint.message, since: maint.since, signedIn: !!a, adminConfigured: !!env.EDIT_PASSWORD, allowed: maint.on ? await mayEnter(env, maint, a, !!env.EDIT_PASSWORD) : true });
+  }
+  if (p === '/api/maintenance/notify' && m === 'POST') {
+    if (await limited(env, 'mnotify:' + clientIp(request), 20, 3600000)) return fail('Trop de demandes. Réessaie plus tard.', 429);
+    const b = await readJson(request, 4000); let ep; try { ep = new URL(String(b?.endpoint || '')); } catch { return fail('Abonnement invalide.'); }
+    if (ep.protocol !== 'https:' || !PUSH_HOSTS.test(ep.hostname) || ep.href.length > 800) return fail('Service de notification non reconnu.');
+    if (!(await addWaiter(env, ep.href, b?.cancel === true))) return fail('Liste d’attente pleine.', 409);
+    return json({ ok: true, waiting: b?.cancel !== true });
+  }
+  if (p === '/api/maintenance/unlock' && m === 'POST') {
+    const a = await authenticate(request, env); if (!a) return fail('Connecte-toi d’abord avec ton compte.', 401);
+    const r = await adminActivate(request, env, a.user);
+    if (r.status === 200) await unlock(env, a.hash);
+    return r;
+  }
+  if (maint.on && !['/api/auth/login', '/api/auth/logout', '/api/auth/me', '/api/push/key', '/api/push/message'].includes(p)) {
+    const a = await authenticate(request, env);
+    if (!(await mayEnter(env, maint, a, !!env.EDIT_PASSWORD))) return json({ ok: false, error: maint.message, maintenance: true, message: maint.message, since: maint.since, signedIn: !!a, needsAdminPassword: !!a?.user.isAdmin && !!env.EDIT_PASSWORD }, 503, { 'Cache-Control': 'no-store' });
+  }
   // Contenu modifié par les administrateurs pour tous les comptes : lisible par tout le monde (même sans compte).
   if (p === '/api/global' && m === 'GET') return globalList(env);
   // 8.35 : « Voir le passage » des sources (lisible sans compte, comme les sources elles-mêmes). Chaque passage est lu
@@ -456,6 +481,7 @@ async function handleApi(request, env, url) {
   if (p === '/api/handoff/claim' && m === 'POST') return handoffClaim(request, env, secure);
   if (p === '/api/push/key' && m === 'GET') return json({ ok: true, key: (await vapid(env)).pub });
   if (p === '/api/push/message' && m === 'GET') {
+    const ready = await takeReady(env, str(url.searchParams.get('endpoint'), 800)); if (ready) return json({ ok: true, ...ready });
     const a = await authenticate(request, env), tz = /^[\w/+-]{1,40}$/.test(url.searchParams.get('tz') || '') ? url.searchParams.get('tz') : 'Europe/Paris';
     return json({ ok: true, ...(await messageFor(env, str(url.searchParams.get('endpoint'), 800), a?.user.id || null, tz)) });
   }
@@ -703,6 +729,27 @@ async function routeAuthed(request, env, url, auth, secure) {
       if (!roles.length) return fail('Choisis au moins un rôle.');
       await env.DB.batch([db(env, 'UPDATE users SET admin_roles=? WHERE id=?', roles.includes('super') ? '' : roles.join(','), x[1]), auditStmt(env, u, 'roles', { type: 'user', id: x[1], before: { roles: rolesOf(t) }, after: { roles } })]);
       return json({ ok: true, roles });
+    }
+    if (p === '/api/admin/maintenance-mode') {
+      const cur = await getMaint(env);
+      const view = async () => { const names = cur.allow.length ? (await db(env, `SELECT id,username FROM users WHERE id IN (${cur.allow.map(() => '?').join(',')})`, ...cur.allow).all()).results || [] : []; return { ok: true, on: cur.on, message: cur.message, since: cur.since, by: cur.by, allowed: names, waiting: await countWaiters(env) }; };
+      if (m === 'GET') return json(await view());
+      if (m !== 'POST') return fail('Méthode non permise.', 405);
+      const b = await readJson(request, 2000), act = str(b?.action, 20);
+      if (act === 'start') {
+        const message = str(b?.message, 300) || DEFAULT_MESSAGE;
+        Object.assign(cur, { on: true, message, since: Date.now(), by: u.username, allow: [] }); await setMaint(env, cur); await unlock(env, auth.hash); // l'administrateur qui démarre reste dedans
+      } else if (act === 'stop') {
+        cur.on = false; await setMaint(env, cur);
+        if (b?.notify === true) { const r = await notifyWaiters(env); await auditStmt(env, u, 'maintenance', { type: 'maintenance', id: 'mode', after: { on: false, notified: r } }).run(); return json({ ...(await view()), notified: r }); }
+      } else if (act === 'notify') { return json({ ...(await view()), notified: await notifyWaiters(env) }); }
+      else if (act === 'allow' || act === 'disallow') {
+        const t = await db(env, 'SELECT id FROM users WHERE lower(username)=lower(?)', str(b?.username, 120)).first(); if (!t) return fail('Compte introuvable.', 404);
+        if (act === 'allow') { if (cur.allow.length >= MAX_ALLOW) return fail('Trop de comptes autorisés.', 409); cur.allow = [...new Set([...cur.allow, t.id])]; } else cur.allow = cur.allow.filter((i) => i !== t.id);
+        await setMaint(env, cur);
+      } else return fail('Action inconnue.', 400);
+      await auditStmt(env, u, 'maintenance', { type: 'maintenance', id: 'mode', after: { action: act, on: cur.on } }).run();
+      return json(await view());
     }
     if (p === '/api/admin/health' && m === 'GET') {
       const rows = (await db(env, 'SELECT kind,id,data_json,hidden FROM global_content').all()).results || [];

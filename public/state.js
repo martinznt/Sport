@@ -209,6 +209,8 @@ export async function moveLocal(from, to) {
 /* ═════════ Réseau ═════════ */
 let onExpired = () => {};
 export const setOnExpired = (fn) => { onExpired = fn; };
+let onMaintenance = () => {};
+export const setOnMaintenance = (fn) => { onMaintenance = fn; };
 export async function api(method, path, body, opts = {}) {
   const requestOwner = S.user?.id ?? null, requestEpoch = accountEpoch;
   if (S.user?.guest && !opts.guestOk) { const e = new Error('Mode invité : crée un compte gratuit (en haut des Paramètres : « Créer mon compte ») pour utiliser cette fonction. Tes données d’invité seront conservées.'); e.guest = true; throw e; }
@@ -225,6 +227,7 @@ export async function api(method, path, body, opts = {}) {
   let data = null;
   try { data = await res.json(); } catch { /* pas de JSON */ }
   if (res.status === 401 && !opts.quiet401 && (S.user?.id ?? null) === requestOwner && accountEpoch === requestEpoch) onExpired();
+  if (res.status === 503 && data?.maintenance) onMaintenance(data);
   if (!res.ok) { const e = new Error(data?.error || `Erreur ${res.status}`); e.status = res.status; e.data = data; throw e; }
   return data || {};
 }
