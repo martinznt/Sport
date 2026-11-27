@@ -1,5 +1,13 @@
 # CHANGELOG — Séances entraînement
 
+## Mode maintenance (après 8.35.0)
+
+- Administration › Mode maintenance : démarrer/arrêter, message affiché, comptes autorisés, notification de retour. État dans `system_state` (clé `maintenance`) : **aucune migration, aucune donnée existante modifiée**.
+- Pendant la maintenance, le **serveur** répond 503 à tout sauf connexion, déconnexion, état public, notification et clés push : les membres, les visiteurs et les inscriptions sont bloqués même sans l'interface.
+- Un administrateur entre en saisissant le mot de passe administrateur (`EDIT_PASSWORD`, vérifié avec les mêmes limites d'essais que l'activation). Celui qui démarre reste dedans. Sans `EDIT_PASSWORD` configuré, un administrateur n'est jamais bloqué dehors.
+- « Me prévenir quand le site est disponible » : abonnement push sans compte (clé `mwait:…`, 2 000 appareils au plus), notification envoyée à l'arrêt si l'administrateur le choisit.
+- Tests : `tests/maintenance.test.mjs` (9), `tests/maintenance-e2e.mjs` (4, navigateur).
+
 ## Correctif Gemini (après 8.35.0) — niveau de réflexion accepté, choix « dernière version »
 
 - Gemini : le site envoyait `thinkingLevel: MINIMAL` par défaut, que `gemini-3.8-flash` refuse (erreur 400 : « L’assistant est momentanément indisponible »). « Rapide » envoie maintenant `LOW` et « Approfondie » `MEDIUM`, les niveaux acceptés selon la documentation Google ([page du modèle](https://ai.google.dev/gemini-api/docs/models/gemini-3.8-flash), [réflexion](https://ai.google.dev/gemini-api/docs/generate-content/thinking)).

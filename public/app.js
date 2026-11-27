@@ -5,7 +5,7 @@ import { returnBar, hintsBar } from './nav.js';
 import './picker.js';
 import { linkPaths } from './pathlinks.js';
 import { restoreUserDetails, onSheetRender, h, raw, icon, $, toast, openSheet, closeSheet, sheetOpen, ask, tag, skeleton, fmtDay } from './ui.js';
-import { S, ACT, SUBMIT, CHG, INPUT, APP_VERSION, api, ls, saveSeance, loadLocal, persistNow, writePending, syncAll, setRenderer, setOnExpired, setSyncListener, render, go, parseHash, pendingCount, ctx, clearLocal, moveLocal, GUEST, putItem, safeDecode } from './state.js';
+import { S, ACT, SUBMIT, CHG, INPUT, APP_VERSION, api, ls, saveSeance, loadLocal, persistNow, writePending, syncAll, setRenderer, setOnExpired, setOnMaintenance, setSyncListener, render, go, parseHash, pendingCount, ctx, clearLocal, moveLocal, GUEST, putItem, safeDecode } from './state.js';
 import { installCard, maybeTour, openSetup, mainConfig } from './views-setup.js';
 import { normalizeSession, uid } from './shared.js';
 import { maybeMove, maybeClaim } from './move.js';
@@ -18,6 +18,7 @@ import { checkBadges } from './views-motiv.js';
 import { topIcons, layoutEditing, layoutEditor, layoutPreviewBar } from './layout.js';
 import { refreshInbox, refreshAnnouncements } from './inbox.js';
 import { vHome } from './views-home.js';
+import { vMaintenance, showMaintenance, checkMaintenance } from './views-maintenance.js';
 import { vProgress } from './views-progress.js';
 import { vLibrary, blocksOf } from './views-library.js';
 import { vProfile } from './views-profile.js';
@@ -74,6 +75,7 @@ function doRender() {
   if (route && !same && lastRoute) backTo = { route: lastRoute, y: window.scrollY, at: Date.now() };
   const pub = (location.hash || '').match(/^#\/profile\/public\/([^/]+)$/);
   const pl = pendingLink();
+  if (S.maint?.blocked) { app.innerHTML = vMaintenance().s; return; }
   if (!S.user) { app.innerHTML = (pub ? vPublicVisitor(safeDecode(pub[1])) : pl && !S.authMode ? h`<main class="wrap">${vLanding(pl)}</main>` : vAuth()).s; return; }
   if (!S.loaded) { app.innerHTML = h`<main class="wrap">${skeleton(4)}</main>`.s; return; }
   document.documentElement.dataset.interface = 'simple'; // 8.35 : interface unique
@@ -204,6 +206,7 @@ function expireSession() {
   render();
 }
 setOnExpired(expireSession);
+setOnMaintenance(showMaintenance);
 
 /* ═════════ Page publique (visiteur, avec ou sans compte) ═════════ */
 function vPublicVisitor(name) {
@@ -470,6 +473,7 @@ async function start() {
   const doIt = new URLSearchParams(location.search).get('do');
   if (['timer', 'gen', 'checkin'].includes(doIt)) { history.replaceState(null, '', location.pathname + location.hash); setTimeout(() => { if (S.user) ({ timer: ACT.timerOpen, gen: ACT.genOpen, checkin: ACT.checkin })[doIt]?.(); }, 900); }
   registerSW();
+  checkMaintenance();
   loadGlobal(); setInterval(refreshPublication, 30000);
   document.addEventListener('visibilitychange', refreshPublication);
   catchLink();
